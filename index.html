@@ -851,6 +851,8 @@ $('#openData').onclick=()=>openOv('#ovData');
 const exportJSON=()=>JSON.stringify({app:'inshi-tree',version:1,exported:new Date().toISOString(),...S},null,1);
 $('#dExport').onclick=async()=>{
   const name='因子血統プランナー_'+new Date().toISOString().slice(0,10)+'.json';
+  const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+  if(!framed){try{const url=URL.createObjectURL(new Blob([exportJSON()],{type:'application/json'}));const l=document.createElement('a');l.href=url;l.download=name;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);toast('JSONファイルを保存しました（ダウンロードフォルダ）',3500);return}catch(e){}}
   try{const dl=window.claude?.use?await window.claude.use('downloads'):null;
     if(!dl)throw{code:'unavailable'};await dl.save({filename:name,data:exportJSON()});toast('書き出しました')}
   catch(e){if(e&&e.code==='declined')return;showText();toast('ファイル保存が使えないため、テキストで表示しました')}
