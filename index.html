@@ -182,7 +182,7 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
   #printArea .pdf-sum{zoom:.92}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
-.credit{font-size:11.5px;color:var(--muted);margin-top:14px}
+.credit{text-align:right;font-size:11.5px;color:var(--muted);margin-top:14px}
 .agrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
 .agrid label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:1px}
 .agrid select{padding:3px 4px;font-size:13px;color:var(--ink)}
@@ -332,6 +332,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 
 <datalist id="dl-whites"></datalist>
 <datalist id="dl-names"></datalist>
+<p class="credit" id="appUpdated">最終更新：2026年10月12日</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 
