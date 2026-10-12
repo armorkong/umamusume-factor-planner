@@ -183,7 +183,7 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
   #printArea .pdf-sum{zoom:.92}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
-.howto{align-self:center;font-size:12.5px;font-weight:700;color:var(--accent);border:1.5px solid var(--accent);border-radius:999px;padding:2px 12px;text-decoration:none;white-space:nowrap}
+.howto{align-self:center;background:none;font-family:inherit;cursor:pointer;line-height:1.5;font-size:12.5px;font-weight:700;color:var(--accent);border:1.5px solid var(--accent);border-radius:999px;padding:2px 12px;text-decoration:none;white-space:nowrap}
 .howto:hover{background:var(--accent);color:var(--accent-ink)}
 .credit{text-align:right;font-size:11.5px;color:var(--muted);margin-top:14px}
 .agrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
@@ -283,7 +283,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 </style>
 
 <header class="top">
-  <div class="brand"><h1>ウマ娘血統プランナー</h1><a class="howto" href="https://github.com/armorkong/umamusume-factor-planner#readme" target="_blank" rel="noopener">使用方法</a></div>
+  <div class="brand"><h1>ウマ娘血統プランナー</h1><a class="howto" href="https://github.com/armorkong/umamusume-factor-planner#readme" target="_blank" rel="noopener">使用方法</a><button type="button" class="howto" id="showSample">使用例</button></div>
   <div class="row">
     <select id="planSel" aria-label="計画を選択"></select>
     <button class="btn" id="planNew">＋ 新しい計画</button>
@@ -312,8 +312,8 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <button class="tog plain" id="onlyUseful" aria-pressed="false">白因子を折りたたむ</button>
 </section>
 <div class="banner" id="sampleBanner" hidden>
-  <span>これは操作を試すための<b>サンプル計画</b>です（キャラ・因子は例です）。</span>
-  <button class="btn sm" id="sampleDrop">サンプルを削除</button>
+  <span>これは<b>使用例</b>です。自由に触って試せます。閉じても上の「使用例」からいつでも再表示できます。</span>
+  <button class="btn sm" id="sampleDrop">使用例を閉じる</button>
 </div>
 
 <main class="layout">
@@ -411,22 +411,19 @@ const WHITE_RAW=[["右回り○","s"],["左回り○","s"],["東京レース場�
 const WCAT={s:'スキル',r:'レース',c:'シナリオ',h:'隠し',o:'その他'};
 const WHITES=WHITE_RAW.map(([n,c])=>({n,c,q:kana(n)}));
 const WHITE_SET=new Set(WHITE_RAW.map(x=>x[0]));
+const SAMPLE_TITLE='使用例：LOH11月差し';
+const OLD_SAMPLE_TITLES=['サンプル：ダート・マイル計画','サンプル：マンハッタンカフェ計画'];
 function samplePlan(){
   const e=()=>[blank(),blank()];
-  const C=(id,o)=>{const c=CARD_BY.get(id);return mk(Object.assign({card:id,name:c.name,green:{n:c.uniq,s:0}},o))};
-  const W=l=>l.map(([n,s])=>({n,s}));
-  // ステイゴールドの継承元（4代前まで）
-  const oguri=C(100601,{status:'have',blue:{t:'パワー',s:2},red:{t:'マイル',s:3},green:{n:'勝利の鼓動',s:1},whites:W([['コーナー回復○',1]]),parents:[C(105201,{status:'have',red:{t:'ダート',s:3}}),C(104601,{status:'have',red:{t:'ダート',s:3}})]});
-  const el=C(101401,{status:'have',blue:{t:'スピード',s:1},red:{t:'マイル',s:1},green:{n:'プランチャ☆ガナドール',s:2},parents:[C(109901,{status:'have',red:{t:'ダート',s:3}}),C(109801,{status:'have',red:{t:'ダート',s:3}})]});
-  const air=C(101802,{status:'have',blue:{t:'スピード',s:3},red:{t:'差し',s:3},green:{n:'薫風、永遠なる瞬間を',s:2},genes:[{t:'ダート',s:3}],whites:W([['シンパシー',2],['直線巧者',1]]),parents:[oguri,el]});
-  const glass=C(101101,{status:'have',blue:{t:'スタミナ',s:2},red:{t:'長距離',s:3},green:{n:'精神一到何事か成らざらん',s:1},genes:[{t:'ダート',s:3}],whites:W([['阿吽の呼吸',2]]),parents:[C(101001,{status:'have',red:{t:'マイル',s:3}}),C(110001,{status:'have',red:{t:'ダート',s:3}})]});
-  const sg=C(113501,{status:'plan',memo:'ダート・マイルを伸ばして育成予定',targets:['阿吽の呼吸'],parents:[air,glass]});
-  // もう一方の親
-  const mac=C(101301,{status:'have',blue:{t:'スタミナ',s:3},red:{t:'長距離',s:2},green:{n:'貴顕の使命を果たすべく',s:1},whites:W([['長距離コーナー○',2]]),parents:e()});
-  const rice=C(103001,{status:'have',blue:{t:'スタミナ',s:2},red:{t:'長距離',s:3},green:{n:'ブルーローズチェイサー',s:2},whites:W([['阿吽の呼吸',1],['菊花賞',1]]),parents:e()});
-  const gold=C(100701,{status:'have',blue:{t:'スタミナ',s:3},red:{t:'長距離',s:3},green:{n:'不沈艦、抜錨ォッ！',s:2},whites:W([['阿吽の呼吸',3],['直線巧者',2],['有馬記念',1]]),parents:[mac,rice]});
-  const root=C(102501,{status:'plan',parents:[sg,gold]});
-  return{id:rid(),title:'サンプル：マンハッタンカフェ計画',goals:[],root,sample:true,updated:Date.now()};
+  const C=(id,o)=>{const c=CARD_BY.get(id);return mk(Object.assign({card:id,name:c.name,green:{n:c.uniq,s:0}},o||{}))};
+  const U=(t,s)=>mk({red:{t,s}});
+  const crown=C(108802,{parents:[C(102901),C(101401,{parents:[U('ダート',1)]})]});
+  const earth=C(110201,{parents:[C(113601),C(100801)]});
+  const sg=C(113501,{parents:[crown,earth]});
+  const groove=C(101803,{status:'plan',parents:[C(103401,{parents:[U('長距離',3),U('長距離',3)]}),C(102902,{parents:[U('長距離',3),U('長距離',3)]})]});
+  const top=C(107702,{status:'plan',parents:[groove,mk({parents:e()})]});
+  const root=C(102503,{parents:[sg,top]});
+  return{id:rid(),title:SAMPLE_TITLE,goals:[],root,sample:true,created:0,updated:Date.now()};
 }
 function defaultUseful(){return[['阿吽の呼吸',2],['食い下がり',2],['シンパシー',2],['連綿',2],['レースの真髄・体',1],['大立ち回り',1],['存在感',1],['直滑降',1],['秋ウマ娘○',1]].map(([n,p])=>({n,p}))}
 
@@ -437,7 +434,7 @@ let UI={onlyUseful:false,cur:null,collapsed:[]};
 try{UI=Object.assign(UI,JSON.parse(localStorage.getItem(UKEY)||'{}'))}catch(e){}
 function saveUI(){try{localStorage.setItem(UKEY,JSON.stringify(UI))}catch(e){}}
 let hadData=false;try{const raw=localStorage.getItem(LKEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.plans)){hadData=true;S=normalize(d)}}}catch(e){}
-function migrateSample(){let ch=false;S.plans=S.plans.map(p=>{if(p.sample&&p.title==='サンプル：ダート・マイル計画'){const np=samplePlan();np.id=p.id;ch=true;return np}return p});return ch}
+function migrateSample(){let ch=false;S.plans=S.plans.map(p=>{if(p.sample&&OLD_SAMPLE_TITLES.includes(p.title)){const np=samplePlan();np.id=p.id;ch=true;return np}return p});return ch}
 let sampleMigrated=migrateSample();if(sampleMigrated){try{saveLocal()}catch(e){}}
 if(!S.plans.length&&!hadData){S.plans=[samplePlan()];sampleOnly=true}
 curId=(UI.cur&&S.plans.find(p=>p.id===UI.cur))?UI.cur:(S.plans[0]?S.plans[0].id:null);
@@ -614,7 +611,7 @@ function renderTree(){if(!plan())return;
 function renderEmpty(){
   $('#planSel').innerHTML='<option value="">（計画がありません）</option>';$('#planSel').disabled=true;
   $('#planMenuBtn').disabled=true;$('#pdfBtn').disabled=true;$('#planMenu').hidden=true;$('#sampleBanner').hidden=true;
-  $('#genHead').innerHTML='';$('#tree').innerHTML=`<div class="empty-note" style="max-width:420px">計画がありません。<br><button class="btn primary" data-newplan style="margin-top:8px">＋ 新しい計画を作る</button></div>`;
+  $('#genHead').innerHTML='';$('#tree').innerHTML=`<div class="empty-note" style="max-width:420px">計画がありません。<br><button class="btn primary" data-newplan style="margin-top:8px">＋ 新しい計画を作る</button> <button class="btn" data-sample style="margin-top:8px">使用例を見る</button></div>`;
   $('#editor').innerHTML=`<p class="empty-note">計画を作ると、ここで因子を編集できます。</p>`;$('#summary').innerHTML='';
 }
 function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#pdfBtn').disabled=false;
@@ -908,7 +905,8 @@ $('#openData').onclick=()=>openOv('#ovData');
 /* ---------- data export/import ---------- */
 const exportJSON=()=>JSON.stringify({app:'inshi-tree',version:1,exported:new Date().toISOString(),...S},null,1);
 $('#dExport').onclick=async()=>{
-  const name='ウマ娘血統プランナー_'+new Date().toISOString().slice(0,10)+'.json';
+  const d0=new Date(),z=v=>String(v).padStart(2,'0');
+  const name='ウマ娘血統プランナー_'+d0.getFullYear()+'-'+z(d0.getMonth()+1)+'-'+z(d0.getDate())+'_'+z(d0.getHours())+z(d0.getMinutes())+'.json';
   const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
   if(!framed){try{const url=URL.createObjectURL(new Blob([exportJSON()],{type:'application/json'}));const l=document.createElement('a');l.href=url;l.download=name;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);toast('JSONファイルを保存しました（ダウンロードフォルダ）',3500);return}catch(e){}}
   try{const dl=window.claude?.use?await window.claude.use('downloads'):null;
@@ -945,14 +943,19 @@ function createFromPanel(){const v=$('#newPlanName').value.trim();$('#planNewPan
 $('#newPlanOk').onclick=createFromPanel;
 $('#newPlanCancel').onclick=()=>{$('#planNewPanel').hidden=true};
 $('#newPlanName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();createFromPanel()}else if(e.key==='Escape'){$('#planNewPanel').hidden=true}});
-$('#tree').addEventListener('click',e=>{if(e.target.closest('[data-newplan]'))openNewPanel()});
+$('#tree').addEventListener('click',e=>{if(e.target.closest('[data-newplan]'))openNewPanel();else if(e.target.closest('[data-sample]'))showSample()});
+function showSample(){let p=S.plans.find(x=>x.sample);
+  if(!p){p=samplePlan();S.plans.unshift(p);dirty.add('plan:'+p.id);touch('settings')}
+  curId=p.id;UI.cur=curId;saveUI();selId=null;$('#planMenu').hidden=true;$('#planNewPanel').hidden=true;renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});toast('使用例を表示しました')}
+$('#showSample').onclick=showSample;
 $('#planMenuBtn').onclick=()=>{const m=$('#planMenu');m.hidden=!m.hidden;$('#planNewPanel').hidden=true;$('#planMenuBtn').setAttribute('aria-expanded',!m.hidden);$('#planDelConfirm').hidden=true};
 $('#planTitle').addEventListener('input',e=>{if(!plan())return;plan().title=e.target.value||'無題の計画';touch('plan');const o=$('#planSel').selectedOptions[0];if(o)o.textContent=plan().title});
 $('#planDel').onclick=()=>$('#planDelConfirm').hidden=false;
 $('#planDelNo').onclick=()=>$('#planDelConfirm').hidden=true;
 $('#planDelYes').onclick=()=>deletePlan(curId);
 function deletePlan(id){S.plans=S.plans.filter(p=>p.id!==id);dirty.add('plan:'+id);curId=S.plans[0]?S.plans[0].id:null;UI.cur=curId;saveUI();touch('settings');selId=null;$('#planMenu').hidden=true;renderAll();toast('計画を削除しました')}
-$('#sampleDrop').onclick=()=>deletePlan(curId);
+$('#sampleDrop').onclick=()=>{deletePlan(curId);toast('使用例を閉じました。上の「使用例」からいつでも再表示できます',4000)};
 $('#onlyUseful').onclick=()=>{UI.onlyUseful=!UI.onlyUseful;saveUI();renderHeader();renderTree()};
 $('#tabEdit').onclick=()=>setTab('edit');
 $('#backTree').onclick=()=>{const c=selId&&document.querySelector(`.card[data-id="${selId}"]`);(c||$('#treewrap')).scrollIntoView({behavior:'smooth',block:'center'})};
