@@ -138,12 +138,12 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .ro{border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-family:var(--font-num);color:var(--ink);font-size:13px;background:var(--surface2)}
 .costume{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:-3px}
 .pdfstage{position:absolute;left:-100000px;top:0;pointer-events:none}
-.pdf-sheet{background:var(--bg);color:var(--ink);padding:28px 32px;width:max-content;display:flex;flex-direction:column;gap:14px;font-family:var(--font-body)}
+.pdf-sheet{--font-display:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP","Noto Sans CJK JP",sans-serif;--font-body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP","Noto Sans CJK JP",sans-serif;--font-num:ui-monospace,Menlo,Consolas,"Noto Sans Mono",monospace;background:var(--bg);color:var(--ink);padding:28px 32px;width:max-content;display:flex;flex-direction:column;gap:14px;font-family:var(--font-body)}
 .pdf-sum{width:760px}
 .pdf-frame{width:max-content;border:3px double var(--ink);border-radius:4px;padding:18px 22px;display:flex;flex-direction:column;gap:14px;position:relative}
 .pdf-frame::after{content:"";position:absolute;inset:5px;border:1px solid var(--line);border-radius:2px;pointer-events:none}
 .pdf-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px}
-.pdf-head h1{font-family:var(--font-display);font-weight:400;font-size:22px;margin:0}
+.pdf-head h1{font-family:var(--font-display);font-weight:800;font-size:22px;margin:0}
 .pdf-head .m{font-size:12px;color:var(--muted)}
 .pdf-sum .pane{padding:0}
 .pdf-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -291,6 +291,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <div class="row">
     <button class="btn" id="openRoster">保有キャラ</button>
     <button class="btn" id="pdfBtn">PDFで書き出す</button>
+    <button class="btn" id="imgBtn">画像で書き出す</button>
     <button class="btn" id="openData">書き出し・読み込み</button>
     <span class="status" id="saveStatus"><i></i><span>読み込み中…</span></span>
   </div>
@@ -362,6 +363,12 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 <p class="credit" id="appUpdated">最終更新：2026年10月12日</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
+<div class="ov" id="ovImg" hidden><div class="dlg" role="dialog" aria-labelledby="hImg" style="max-width:min(96vw,900px)">
+  <header><h2 id="hImg">画像で書き出す</h2><button class="btn" data-close>閉じる</button></header>
+  <p class="hint">画像を長押しして「"写真"に保存」を選ぶと、写真アプリに保存できます。</p>
+  <div class="row"><button class="btn primary" id="imgSave">ファイルに保存</button></div>
+  <div style="overflow:auto;max-height:70vh;margin-top:8px;border:1px solid var(--line);border-radius:6px"><img id="imgPrev" alt="血統表の画像" style="display:block;max-width:100%;height:auto"></div>
+</div></div>
 
 <script>
 (function(){
@@ -602,11 +609,11 @@ function renderTree(){if(!plan())return;
 /* ---------- render: header ---------- */
 function renderEmpty(){
   $('#planSel').innerHTML='<option value="">（計画がありません）</option>';$('#planSel').disabled=true;
-  $('#planMenuBtn').disabled=true;$('#pdfBtn').disabled=true;$('#planMenu').hidden=true;$('#sampleBanner').hidden=true;
+  $('#planMenuBtn').disabled=true;$('#pdfBtn').disabled=true;$('#imgBtn').disabled=true;$('#planMenu').hidden=true;$('#sampleBanner').hidden=true;
   $('#genHead').innerHTML='';$('#tree').innerHTML=`<div class="empty-note" style="max-width:420px">計画がありません。<br><button class="btn primary" data-newplan style="margin-top:8px">＋ 新しい計画を作る</button> <button class="btn" data-sample style="margin-top:8px">使用例を見る</button></div>`;
   $('#editor').innerHTML=`<p class="empty-note">計画を作ると、ここで因子を編集できます。</p>`;$('#summary').innerHTML='';
 }
-function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#pdfBtn').disabled=false;
+function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#pdfBtn').disabled=false;$('#imgBtn').disabled=false;
   $('#planSel').innerHTML=S.plans.map(p=>`<option value="${p.id}"${p.id===curId?' selected':''}>${esc(p.title)}</option>`).join('');
   $('#onlyUseful').setAttribute('aria-pressed',UI.onlyUseful);
   $('#planTitle').value=plan().title;
@@ -1049,6 +1056,48 @@ $('#pdfBtn').onclick=async()=>{
 };
 
 /* ---------- Excel export ---------- */
+
+/* ---------- 画像（PNG）書き出し ---------- */
+let imgBusy=false,imgURL=null,imgBlob=null,imgName='';
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function saveBlobLink(blob,name){const url=URL.createObjectURL(blob);const l=document.createElement('a');l.href=url;l.download=name;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}
+$('#imgSave').onclick=async()=>{if(!imgBlob)return;
+  try{const f=new File([imgBlob],imgName,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e&&e.name==='AbortError')return}
+  saveBlobLink(imgBlob,imgName)};
+$('#imgBtn').onclick=async()=>{
+  if(imgBusy||!plan())return;
+  const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+  const hasClaude=framed&&!!(window.claude&&typeof window.claude.use==='function');
+  imgBusy=true;const btn=$('#imgBtn');btn.disabled=true;btn.textContent='画像を作成中…';
+  let restore=null,stage=null;
+  try{
+    let dl=null;if(hasClaude){dl=await withTimeout(window.claude.use('downloads'),5000);if(!dl)throw{code:'unavailable'}}
+    if(!window.htmlToImage)await loadScript(LIB_H2I);
+    restore=forceLight();
+    stage=document.createElement('div');stage.className='pdfstage';stage.innerHTML=sheetsHTML();
+    document.body.appendChild(stage);cleanSheets(stage);
+    const sheet=stage.firstElementChild;const w=sheet.scrollWidth,h=sheet.scrollHeight;
+    const pr=Math.max(1,Math.min(2,Math.sqrt(16e6/(w*h))));
+    const bg=getComputedStyle(document.body).backgroundColor||'#ffffff';
+    const opt={pixelRatio:pr,backgroundColor:bg,skipFonts:true,cacheBust:false,width:w,height:h};
+    await withTimeout(window.htmlToImage.toBlob(sheet,opt),20000); // Safariは1回目に描画が欠けることがあるため2回実行
+    const blob=await withTimeout(window.htmlToImage.toBlob(sheet,opt),20000);
+    if(!blob)throw new Error('画像化がタイムアウトしました');
+    stage.remove();stage=null;restore();restore=null;
+    const name=((plan().title||'無題の計画').trim()).replace(/[\\/:*?"<>|]/g,'_')+'.png';
+    if(dl){await dl.save({filename:name,data:blob});toast('画像を書き出しました');return}
+    if(isIOS){imgBlob=blob;imgName=name;if(imgURL)URL.revokeObjectURL(imgURL);imgURL=URL.createObjectURL(blob);$('#imgPrev').src=imgURL;openOv('#ovImg');return}
+    saveBlobLink(blob,name);toast('画像を保存しました（ダウンロードフォルダ）',3500);
+  }catch(e){
+    const c=e&&e.code;
+    if(c==='declined'){}
+    else if(c)toast('この表示では画像の保存が使えません。claude.aiのページを開き直してお試しください',5000);
+    else toast('画像を作成できませんでした'+(e&&e.message?'：'+e.message:'')+'（ネット接続が必要です）',5000);
+  }finally{
+    if(stage)stage.remove();if(restore)restore();
+    imgBusy=false;const b=$('#imgBtn');b.disabled=!plan();b.textContent='画像で書き出す';
+  }
+};
 const LIB_XLSX='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 async function saveFile(name,blob){
   const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
