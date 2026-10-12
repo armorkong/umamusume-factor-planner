@@ -13,7 +13,7 @@
   --font-display:"Dela Gothic One","Zen Kaku Gothic New",system-ui,sans-serif;
   --font-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;
   --font-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --card-w:212px; --gap:22px;
+  --card-w:300px; --gap:22px;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#111614; --surface:#19201d; --surface2:#1f2824; --ink:#e4ebe7; --muted:#95a39b; --line:#34403a;
@@ -115,9 +115,9 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .c-gc.sure{border-style:solid;background:color-mix(in srgb,var(--f-gene) 16%,transparent);font-weight:700}
 .c-tgt{border:1px dashed var(--warn);color:var(--warn)}
 .c-more{color:var(--muted)}
-.apts{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;font-size:11px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
-.apts span{background:var(--surface);text-align:center;padding:0 2px;white-space:nowrap;color:var(--muted)}
-.apts b{font-family:var(--font-num);font-weight:600;color:var(--ink);margin-left:2px}
+.apts{display:grid;grid-template-columns:repeat(10,1fr);gap:1px;font-size:10.5px;letter-spacing:-.02em;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.apts span{background:var(--surface);text-align:center;padding:1px 0;white-space:nowrap;color:var(--muted)}
+.apts b{font-family:var(--font-num);font-weight:600;color:var(--ink);margin-left:1px}
 .apts span.up{background:color-mix(in srgb,var(--f-red) 12%,var(--surface));color:var(--f-red)}
 .apts span.up b{color:var(--f-red)}
 .apts span.g{outline:1.5px solid var(--f-red);outline-offset:-1.5px}
@@ -164,6 +164,7 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
   .ctog{display:inline-block}
   .apts{grid-template-columns:repeat(10,1fr)}
   .tabs .mob{display:block;flex:none;font-weight:500;font-size:12px}
+  .tabs button{white-space:nowrap;padding:9px 4px;font-size:12.5px}
   .top .row{width:100%}
   #planSel{flex:1;max-width:none}
 }
@@ -188,10 +189,29 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .agrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
 .agrid label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:1px}
 .agrid select{padding:3px 4px;font-size:13px;color:var(--ink)}
-.redq{display:flex;gap:3px}
+.fq{display:flex;flex-direction:column;gap:3px}
+.freeq{flex:none;margin-left:auto;font-size:10.5px;padding:1px 6px;border-radius:999px;border:1px dashed var(--line);background:transparent;color:var(--muted);white-space:nowrap}
+.freeq.on{border:1px solid var(--warn);color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent);font-weight:700}
+.c-warn{border:1px solid var(--warn);color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent)}
+.fq-row{display:flex;gap:6px;justify-content:flex-start}
+.fq-genes{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.bq,.gq{display:flex;gap:2px;min-width:0}
+.bq select,.gq select{font-size:11.5px;padding:1px 3px;border-radius:4px;background:transparent;color:var(--muted);min-width:0}
+.bq select{border:1px dashed color-mix(in srgb,var(--f-blue) 45%,var(--line))}
+.gq select{border:1px dashed color-mix(in srgb,var(--f-gene) 45%,var(--line))}
+.bq .bq-t,.gq .gq-t{flex:1}
+.bq .bq-s,.gq .gq-s{flex:none;width:3.6em}
+.bq.on select{border-style:solid;background:color-mix(in srgb,var(--f-blue) 12%,transparent);color:var(--f-blue);font-weight:600}
+.gq.on select{border-style:solid;background:color-mix(in srgb,var(--f-gene) 12%,transparent);color:var(--f-gene);font-weight:600}
+.bq select:disabled,.gq select:disabled{opacity:.45}
+.redq{display:flex;gap:2px;min-width:0}
+.fq select{-webkit-appearance:none;appearance:none;text-align:center;text-align-last:center;padding:2px 2px!important;cursor:pointer;line-height:1.3}
+.fq .rq-s,.fq .bq-s,.fq .gq-s{width:2.7em!important}
+.fq .rq-t,.fq .bq-t{flex:none!important;width:5.4em}
+.fq-row .redq,.fq-row .bq{flex:none}
 .redq select{font-size:11.5px;padding:1px 4px;border-radius:4px;border:1px dashed color-mix(in srgb,var(--f-red) 45%,var(--line));background:transparent;color:var(--muted);min-width:0}
 .redq .rq-t{flex:1}
-.redq .rq-s{flex:none;width:4.2em}
+.redq .rq-s{flex:none;width:3.6em}
 .redq.on select{border-style:solid;background:color-mix(in srgb,var(--f-red) 12%,transparent);color:var(--f-red);font-weight:600}
 .redq.on.goal select{background:var(--f-red);color:var(--on-red);border-color:var(--f-red)}
 .redq select:disabled{opacity:.45}
@@ -267,7 +287,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <div class="row">
     <select id="planSel" aria-label="計画を選択"></select>
     <button class="btn" id="planNew">＋ 新しい計画</button>
-    <button class="btn" id="planMenuBtn" aria-expanded="false">計画の設定</button>
+    <button class="btn" id="planMenuBtn" aria-expanded="false">計画の名前変更・削除</button>
   </div>
   <div class="row">
     <button class="btn" id="openRoster">保有キャラ</button>
@@ -276,9 +296,13 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
     <span class="status" id="saveStatus"><i></i><span>読み込み中…</span></span>
   </div>
 </header>
+<div class="planmenu" id="planNewPanel" hidden>
+  <label class="fld" style="flex:1;min-width:200px">新しい計画の名前<input type="text" id="newPlanName"></label>
+  <button class="btn primary" id="newPlanOk">作成</button>
+  <button class="btn" id="newPlanCancel">やめる</button>
+</div>
 <div class="planmenu" id="planMenu" hidden>
   <label class="fld" style="flex:1;min-width:200px">計画名<input type="text" id="planTitle"></label>
-  <button class="btn" id="planDup">複製</button>
   <button class="btn danger" id="planDel">この計画を削除</button>
   <span id="planDelConfirm" hidden class="row"><span style="font-size:13px">本当に削除しますか？</span><button class="btn danger" id="planDelYes">削除する</button><button class="btn" id="planDelNo">やめる</button></span>
 </div>
@@ -289,7 +313,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 </section>
 <div class="banner" id="sampleBanner" hidden>
   <span>これは操作を試すための<b>サンプル計画</b>です（キャラ・因子は例です）。</span>
-  <button class="btn sm" id="sampleDrop">サンプルを消して新しい計画を作る</button>
+  <button class="btn sm" id="sampleDrop">サンプルを削除</button>
 </div>
 
 <main class="layout">
@@ -301,10 +325,12 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
     <div class="tabs" role="tablist">
       <button role="tab" id="tabEdit" aria-selected="true">編集</button>
       <button role="tab" id="tabSum" aria-selected="false">受け継ぐ因子</button>
+      <button role="tab" id="tabGive" aria-selected="false">継承させる因子</button>
       <button type="button" id="backTree" class="mob" aria-label="系統樹に戻る">↑ 系統樹</button>
     </div>
     <div class="pane" id="editor"></div>
     <div class="pane" id="summary" hidden></div>
+    <div class="pane" id="give" hidden></div>
   </aside>
 </main>
 
@@ -327,7 +353,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
     <h3>読み込み</h3>
     <input type="file" id="dFile" accept=".json,application/json">
     <textarea id="dPaste" placeholder="またはJSONをここに貼り付け"></textarea>
-    <div class="row"><button class="btn danger" id="dImport">読み込んで現在のデータを置き換える</button>
+    <div class="row"><button class="btn primary" id="dAdd">新しい計画として追加</button><button class="btn danger" id="dImport">すべて置き換える</button>
       <span id="dImpConfirm" hidden class="row"><span style="font-size:13px">現在のデータはすべて置き換わります。</span><button class="btn danger" id="dImpYes">置き換える</button><button class="btn" id="dImpNo">やめる</button></span></div>
   </div>
 </div></div>
@@ -352,7 +378,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const rid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
 const clone=o=>JSON.parse(JSON.stringify(o));
 
-function blank(){return{id:rid(),card:0,name:'',memo:'',status:'',blue:{t:'',s:0},red:{t:'',s:0},green:{n:'',s:0},genes:[],whites:[],targets:[],parents:[]}}
+function blank(){return{id:rid(),card:0,free:false,name:'',memo:'',status:'',blue:{t:'',s:0},red:{t:'',s:0},green:{n:'',s:0},genes:[],whites:[],targets:[],parents:[]}}
 function mk(o){const n=Object.assign(blank(),o);n.blue=Object.assign({t:'',s:0},o.blue);n.red=Object.assign({t:'',s:0},o.red);n.green=Object.assign({n:'',s:0},o.green);return n}
 function tree(depth){const n=blank();if(depth>0)n.parents=[tree(depth-1),tree(depth-1)];return n}
 function isEmpty(n){return !n.name&&!n.red.t&&!n.blue.t&&!n.green.n&&!n.whites.length&&!n.genes.length&&!n.status}
@@ -410,27 +436,29 @@ let curId=null, selId=null, tab='edit', sampleOnly=false;
 let UI={onlyUseful:false,cur:null,collapsed:[]};
 try{UI=Object.assign(UI,JSON.parse(localStorage.getItem(UKEY)||'{}'))}catch(e){}
 function saveUI(){try{localStorage.setItem(UKEY,JSON.stringify(UI))}catch(e){}}
-try{const raw=localStorage.getItem(LKEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.plans)&&d.plans.length)S=normalize(d)}}catch(e){}
+let hadData=false;try{const raw=localStorage.getItem(LKEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.plans)){hadData=true;S=normalize(d)}}}catch(e){}
 function migrateSample(){let ch=false;S.plans=S.plans.map(p=>{if(p.sample&&p.title==='サンプル：ダート・マイル計画'){const np=samplePlan();np.id=p.id;ch=true;return np}return p});return ch}
 let sampleMigrated=migrateSample();if(sampleMigrated){try{saveLocal()}catch(e){}}
-if(!S.plans.length){S.plans=[samplePlan()];sampleOnly=true}
-curId=(UI.cur&&S.plans.find(p=>p.id===UI.cur))?UI.cur:S.plans[0].id;
+if(!S.plans.length&&!hadData){S.plans=[samplePlan()];sampleOnly=true}
+curId=(UI.cur&&S.plans.find(p=>p.id===UI.cur))?UI.cur:(S.plans[0]?S.plans[0].id:null);
 
 function normalize(d){
-  const fix=n=>{const m=mk(n||{});m.card=CARD_BY.has(+m.card)?+m.card:0;if(m.card&&UNIQ_OLD[m.card]&&m.green.n===UNIQ_OLD[m.card])m.green.n=CARD_BY.get(m.card).uniq;m.whites=(m.whites||[]).filter(w=>w&&w.n!==undefined).map(w=>({n:String(w.n),s:+w.s||1}));m.genes=(m.genes||[]).map(g=>({t:g.t||'',s:+g.s||1}));m.targets=(m.targets||[]).map(String);m.parents=(m.parents||[]).slice(0,2).map(fix);if(!m.id)m.id=rid();return m};
+  const fix=n=>{const m=mk(n||{});m.free=!!m.free;m.card=CARD_BY.has(+m.card)?+m.card:0;if(m.card&&UNIQ_OLD[m.card]&&m.green.n===UNIQ_OLD[m.card])m.green.n=CARD_BY.get(m.card).uniq;m.whites=(m.whites||[]).filter(w=>w&&w.n!==undefined).map(w=>({n:String(w.n),s:+w.s||1}));m.genes=(m.genes||[]).map(g=>({t:g.t||'',s:+g.s||1}));m.targets=(m.targets||[]).map(String);m.parents=(m.parents||[]).slice(0,2).map(fix);if(!m.id)m.id=rid();return m};
   return{plans:(d.plans||[]).map(p=>({id:p.id||rid(),title:p.title||'無題の計画',goals:Array.isArray(p.goals)?p.goals:[],root:fix(p.root),sample:!!p.sample,updated:p.updated||Date.now()})),
     settings:{useful:Array.isArray(d.settings?.useful)?d.settings.useful.map(u=>({n:String(u.n),p:u.p==2?2:1})):defaultUseful(),threshold:+d.settings?.threshold||4,costumeNick:(d.settings&&typeof d.settings.costumeNick==='object'&&d.settings.costumeNick)||{},charApt:(d.settings&&typeof d.settings.charApt==='object'&&d.settings.charApt)||{}},
     roster:Array.isArray(d.roster)?d.roster.map(fix):[]};
 }
 const plan=()=>S.plans.find(p=>p.id===curId);
 function walk(n,f,d=0,child=null){f(n,d,child);n.parents.forEach(p=>walk(p,f,d+1,n))}
-function findNode(id){let r=null;walk(plan().root,(n,d,c)=>{if(n.id===id)r={n,d,child:c}});return r}
+function findNode(id){const pl=plan();if(!pl)return null;let r=null;walk(pl.root,(n,d,c)=>{if(n.id===id)r={n,d,child:c}});return r}
 function maxDepth(n){return n.parents.length?1+Math.max(...n.parents.map(maxDepth)):0}
 const U=()=>new Map(S.settings.useful.map(u=>[u.n,u.p]));
 
 /* ---------- aggregation ---------- */
-function agg(node){
-  const src=[...node.parents.map(n=>({n,r:1})),...node.parents.flatMap(p=>p.parents.map(n=>({n,r:2})))];
+function agg(node){return aggSrc([...node.parents.map(n=>({n,r:1})),...node.parents.flatMap(p=>p.parents.map(n=>({n,r:2})))])}
+/* 継承させる因子：自身(r=1)＋親2人(r=2) */
+function giveAgg(node){return aggSrc([{n:node,r:1},...node.parents.map(n=>({n,r:2}))])}
+function aggSrc(src){
   const apt={},gene={},blue={},white={},planned={};
   for(const {n,r} of src){
     if(n.red.t&&n.red.s){(apt[n.red.t]??=[0,0])[r-1]+=n.red.s}
@@ -470,7 +498,7 @@ let col=null, cloud='pending', dirty=new Set(), timer=null, writing=false;
 function saveLocal(){try{localStorage.setItem(LKEY,JSON.stringify(S))}catch(e){}}
 function touch(kind){
   sampleOnly=false;
-  if(kind==='plan'){const p=plan();p.updated=Date.now();dirty.add('plan:'+p.id)}else dirty.add(kind);
+  if(kind==='plan'){const p=plan();if(p){p.updated=Date.now();dirty.add('plan:'+p.id)}}else dirty.add(kind);
   saveLocal();clearTimeout(timer);timer=setTimeout(flush,800);setStatus();
 }
 function markAll(){dirty.add('settings');dirty.add('roster');S.plans.forEach(p=>dirty.add('plan:'+p.id))}
@@ -521,13 +549,20 @@ function setStatus(){
 function starTxt(s){return s?'★'+s:''}
 /* 赤因子は育成開始時の適性がA以上の適性だけ選べる（基本適性が不明なら制限しない） */
 function redAllow(n){const sa=startApt(n);const m={};for(const a of APTS){const v=sa&&sa[a];m[a]=v?{ok:v.start==='A'||v.start==='S',r:v.start}:{ok:true,r:''}}return m}
-function redOpts(n,blank){const m=redAllow(n);return `<option value="">${blank}</option>`+APTS.filter(a=>m[a].ok||n.red.t===a).map(a=>{const x=m[a],sel=n.red.t===a;return `<option value="${a}"${sel?' selected':''}>${a}${!x.ok?`（${x.r}・付きません）`:''}</option>`}).join('')}
-function redBad(n){if(!n.red.t)return false;const x=redAllow(n)[n.red.t];return x&&!x.ok}
+function redOpts(n,blank,annot=true){const m=redAllow(n);return `<option value="">${blank}</option>`+APTS.filter(a=>n.free||m[a].ok||n.red.t===a).map(a=>{const x=m[a],sel=n.red.t===a;return `<option value="${a}"${sel?' selected':''}>${a}${annot&&!x.ok?(n.free?`（開始時${x.r}）`:`（${x.r}・付きません）`):''}</option>`}).join('')}
+function redWarn(n){if(!n.free||!n.red.t)return null;const x=redAllow(n)[n.red.t];return x&&!x.ok?x.r:null}
+function redBad(n){if(!n.red.t||n.free)return false;const x=redAllow(n)[n.red.t];return x&&!x.ok}
 function redQ(n){const g=new Set();
-  return `<div class="redq${n.red.t?' on':''}${redBad(n)?' bad':''}${n.red.t&&g.has(n.red.t)?' goal':''}"><select class="rq-t" data-qred="${n.id}" aria-label="赤因子"${redBad(n)?' title="開始時の適性がA未満のため、この赤因子は付きません"':''}>${redOpts(n,'赤因子')}</select><select class="rq-s" data-qrs="${n.id}" aria-label="赤因子の星"${n.red.t?'':' disabled'}>${[1,2,3].map(v=>`<option value="${v}"${(n.red.s||1)===v?' selected':''}>★${v}</option>`).join('')}</select></div>`}
+  return `<div class="redq${n.red.t?' on':''}${redBad(n)?' bad':''}${n.red.t&&g.has(n.red.t)?' goal':''}"><select class="rq-t" data-qred="${n.id}" aria-label="赤因子"${redBad(n)?' title="開始時の適性がA未満のため、この赤因子は付きません"':''}>${redOpts(n,'赤因子',false)}</select><select class="rq-s" data-qrs="${n.id}" aria-label="赤因子の星"${n.red.t?'':' disabled'}>${[1,2,3].map(v=>`<option value="${v}"${(n.red.s||1)===v?' selected':''}>★${v}</option>`).join('')}</select></div>`}
+function factorQ(n){
+  const blue=`<div class="bq${n.blue.t?' on':''}"><select class="bq-t" data-qblue="${n.id}" aria-label="青因子"><option value="">青因子</option>${STATS.map(a=>`<option value="${a}"${n.blue.t===a?' selected':''}>${a}</option>`).join('')}</select><select class="bq-s" data-qbs="${n.id}" aria-label="青因子の星"${n.blue.t?'':' disabled'}>${[1,2,3].map(v=>`<option value="${v}"${(n.blue.s||1)===v?' selected':''}>★${v}</option>`).join('')}</select></div>`;
+  let g='';for(let i=0;i<3;i++){const x=n.genes[i]||{t:'',s:0};
+    g+=`<div class="gq${x.t?' on':''}"><select class="gq-t" data-qgene="${n.id}" data-i="${i}" aria-label="遺伝子${i+1}"><option value="">遺伝子</option>${APTS.map(a=>`<option value="${a}"${x.t===a?' selected':''}>${a}</option>`).join('')}</select><select class="gq-s" data-qgs="${n.id}" data-i="${i}" aria-label="遺伝子${i+1}の星"${x.t?'':' disabled'}>${[1,2,3].map(v=>`<option value="${v}"${(x.s||1)===v?' selected':''}>★${v}</option>`).join('')}</select></div>`}
+  const w=redWarn(n);return `<div class="fq"><div class="fq-row">${redQ(n)}${blue}<button type="button" class="freeq${n.free?' on':''}" data-free="${n.id}" aria-pressed="${!!n.free}" title="オンにすると、開始時の適性に関係なく赤因子を選べます">制限なし</button></div>${w?`<div class="chips"><span class="chip c-warn" title="開始時の計算ではAに届かない赤因子です（継承イベントなどで到達した個体）">⚠ ${esc(n.red.t)}は開始時${esc(w)}</span></div>`:''}</div>`;
+}
 function cardHTML(n,d){
   const p=plan(),goals=new Set();
-  if(isEmpty(n))return `<div class="card empty${n.id===selId?' sel':''}" data-id="${n.id}" tabindex="0" role="button"><div class="gtag">${GEN(d)}</div><div class="chd"><b>未設定</b></div><div class="memo">クリックして入力</div>${redQ(n)}</div>`;
+  if(isEmpty(n))return `<div class="card empty${n.id===selId?' sel':''}" data-id="${n.id}" tabindex="0" role="button"><div class="gtag">${GEN(d)}</div><div class="chd"><b>未設定</b></div><div class="memo">クリックして入力</div>${factorQ(n)}</div>`;
   const ws=n.whites.filter(w=>w.n.trim());
   let h=`<div class="card${n.id===selId?' sel':''}${n.status==='plan'?' plan':''}" data-id="${n.id}" tabindex="0" role="button">`;
   const tog=n.parents.length?`<button type="button" class="ctog" data-tog="${n.id}" aria-expanded="${!(UI.collapsed||[]).includes(n.id)}">${(UI.collapsed||[]).includes(n.id)?'▸ 継承元':'▾ 継承元'}</button>`:'';
@@ -536,9 +571,7 @@ function cardHTML(n,d){
   if(cdc)h+=`<div class="costume" title="${esc(cdc.name)}（${esc(labOf(cdc))}）［${esc(cdc.title)}］"><b class="nick">${esc(labOf(cdc))}</b>［${esc(cdc.title)}］</div>`;
   if(n.memo)h+=`<div class="memo">${esc(n.memo)}</div>`;
   let f='';
-  if(n.blue.t)f+=`<span class="chip c-blue">${STAT_S[n.blue.t]||esc(n.blue.t)}<span class="s">${starTxt(n.blue.s)}</span></span>`;
-  for(const g of n.genes)if(g.t)f+=`<span class="chip c-gene${goals.has(g.t)?' goal':''}">${APT_S[g.t]||esc(g.t)}遺伝子<span class="s">${starTxt(g.s)}</span></span>`;
-  h+=redQ(n);
+  h+=factorQ(n);
   if(f)h+=`<div class="chips">${f}</div>`;
   const sa=startApt(n);
   if(sa){let t='';for(const x of APTS){const v=sa[x];t+=`<span class="${v&&v.start!==v.base?'up':''}${goals.has(x)?' g':''}" title="${x}：${v?`基本${v.base}→開始時${v.start}（赤因子★${v.pts}）`:'未入力'}">${APT_S[x]}<b>${v?v.start:'-'}</b></span>`}
@@ -546,6 +579,7 @@ function cardHTML(n,d){
   {const gc=geneCand(n);if(gc.length)h+=`<div class="chips" title="親・祖父母の赤因子★合計から見た、この枠に付く遺伝子">${gc.map(g=>`<span class="chip c-gc${g.sure?' sure':''}">${APT_S[g.t]}遺伝子 ${g.sure?'確定':'可能性'}<span class="s">★${g.p}</span></span>`).join('')}</div>`}
   if(n.green.n)h+=`<div class="chips"><span class="chip c-green" title="${esc(n.green.n)}">${esc(n.green.n)}<span class="s">${starTxt(n.green.s)}</span></span></div>`;
   let w='';
+  for(const x of n.genes)if(x.t)w+=`<span class="chip c-w1">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
   if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種・★${ws.reduce((t,x)=>t+(+x.s||0),0)}</span>`}
   else for(const x of ws)w+=`<span class="chip c-w1">${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`;
   if(n.status==='plan')for(const t of n.targets)w+=`<span class="chip c-tgt">狙 ${esc(t)}</span>`;
@@ -569,7 +603,7 @@ function branchHTML(n,d){
   }
   return h+'</div>';
 }
-function renderTree(){
+function renderTree(){if(!plan())return;
   const p=plan(),md=maxDepth(p.root)+(1);
   let gh='';for(let i=0;i<md;i++)gh+=`<div>${GEN(i)}</div>`;
   $('#genHead').innerHTML=gh;
@@ -577,7 +611,13 @@ function renderTree(){
 }
 
 /* ---------- render: header ---------- */
-function renderHeader(){
+function renderEmpty(){
+  $('#planSel').innerHTML='<option value="">（計画がありません）</option>';$('#planSel').disabled=true;
+  $('#planMenuBtn').disabled=true;$('#pdfBtn').disabled=true;$('#planMenu').hidden=true;$('#sampleBanner').hidden=true;
+  $('#genHead').innerHTML='';$('#tree').innerHTML=`<div class="empty-note" style="max-width:420px">計画がありません。<br><button class="btn primary" data-newplan style="margin-top:8px">＋ 新しい計画を作る</button></div>`;
+  $('#editor').innerHTML=`<p class="empty-note">計画を作ると、ここで因子を編集できます。</p>`;$('#summary').innerHTML='';
+}
+function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#pdfBtn').disabled=false;
   $('#planSel').innerHTML=S.plans.map(p=>`<option value="${p.id}"${p.id===curId?' selected':''}>${esc(p.title)}</option>`).join('');
   $('#onlyUseful').setAttribute('aria-pressed',UI.onlyUseful);
   $('#planTitle').value=plan().title;
@@ -592,7 +632,7 @@ function renderHeader(){
 /* ---------- render: editor ---------- */
 function starsHTML(key,val){let h=`<span class="stars" role="group" aria-label="星の数">`;for(let i=1;i<=3;i++)h+=`<button type="button" class="${i<=val?'on':''}" data-star="${key}" data-v="${i}" aria-label="★${i}">★</button>`;return h+'</span>'}
 function optList(arr,cur,blankLbl){return `<option value="">${blankLbl}</option>`+arr.map(a=>`<option${a===cur?' selected':''}>${a}</option>`).join('')}
-function renderEditor(){$('#editor').innerHTML=editorHTML()}
+function renderEditor(){if(!plan())return;$('#editor').innerHTML=editorHTML()}
 function refreshAptSec(){const cur=$('#ed-apt-sec');if(!cur)return;const t=document.createElement('div');t.innerHTML=editorHTML();const nw=t.querySelector('#ed-apt-sec');if(nw)cur.replaceWith(nw)}
 function editorHTML(){
   const f=selId&&findNode(selId);
@@ -603,27 +643,13 @@ function editorHTML(){
    h+=`<div class="fld"><label for="ed-name">キャラ（名前・呼び名・衣装名・固有スキルで絞り込み）</label><div class="combo"><input type="text" id="ed-name" data-f="name" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-clist" value="${esc(n.name)}" placeholder="例：ステイゴールド、嫁カフェ、水着"><div class="clist" id="ed-clist" role="listbox" hidden></div></div>${cd?`<div class="cur">衣装：<input type="text" id="ed-nick" class="nick-in" value="${esc(labOf(cd))}" aria-label="衣装の呼び名" title="呼び名を変更できます（空にすると自動の呼び名に戻ります）"><span class="t">［${esc(cd.title)}］</span><button type="button" class="x" id="cardClear" aria-label="衣装の選択を解除">×</button></div>`:''}</div>`;}
   h+=`<label class="fld">メモ<input type="text" id="ed-memo" data-f="memo" value="${esc(n.memo)}"></label>`;
   h+=`<div class="frow"><span class="fld" style="flex:none">状態</span><span class="seg">${[['have','自前'],['rent','レンタル'],['plan','予定']].map(([v,l])=>`<button type="button" data-status="${v}" aria-pressed="${n.status===v}">${l}</button>`).join('')}</span></div>`;
-  {const k=aptKey(n.name),b=k?(S.settings.charApt[k]||{}):null,sa=startApt(n),info=baseInfo(n);
-   h+=`<div class="sec" id="ed-apt-sec"><h3>基本適性（キャラ固有）</h3>`;
-   if(info&&info.src!=='manual'){
-     const cd=n.card&&CARD_BY.get(n.card);
-     h+=`<p class="hint">${info.src==='card'?`GameTora掲載の［${esc(cd.title)}］の適性を自動表示しています。`:`名前「${esc(k)}」から推定（このキャラは全衣装で同じ適性）。衣装を選ぶと確定します。`}下段は<b>育成開始時</b>の適性です。</p><div class="agrid">`;
-     for(const x of APTS){const v=sa&&sa[x];h+=`<label>${x}<span class="ro">${esc(info.apt[x]||'-')}</span><span class="num" style="color:${v&&v.start!==v.base?'var(--f-red)':'var(--muted)'}">${v?`→${v.start}`:'&nbsp;'}</span></label>`}
-     h+=`</div>`;if(!n.parents.length)h+=`<p class="hint">親がいないため、開始時の補正は計算されません。</p>`;
-   }
-   else if(!k)h+=`<p class="hint">名前を入力すると、そのキャラの基本適性を登録できます。</p>`;
-   else{h+=`<p class="hint">「${esc(k)}」として全計画で共有されます（括弧内は無視）。下段は親・祖父母の赤因子による<b>育成開始時</b>の適性です。</p><div class="agrid">`;
-     for(const x of APTS){const v=sa&&sa[x];h+=`<label>${x}<select data-apt="${x}" id="ed-apt-${x}"><option value="">-</option>${RANKS.slice().reverse().map(r=>`<option${b[x]===r?' selected':''}>${r}</option>`).join('')}</select><span class="num" style="color:${v&&v.start!==v.base?'var(--f-red)':'var(--muted)'}">${v?`→${v.start}`:'&nbsp;'}</span></label>`}
-     h+=`</div>`;
-     if(!n.parents.length)h+=`<p class="hint">親がいないため、開始時の補正は計算されません。</p>`}
-   h+=`</div>`}
   h+=`<div class="sec"><h3>青因子（ステータス）</h3><div class="frow"><select id="ed-blue" data-f="blue.t">${optList(STATS,n.blue.t,'なし')}</select>${starsHTML('blue',n.blue.s)}</div>`;
-  h+=`<h3>赤因子（適性）</h3><div class="frow"><select id="ed-red" data-f="red.t">${redOpts(n,'なし')}</select>${starsHTML('red',n.red.s)}</div>${redBad(n)?`<p class="hint" style="color:var(--bad)">${esc(n.red.t)}は育成開始時の適性が${esc(redAllow(n)[n.red.t].r)}のため、この赤因子は付きません（A以上が必要）。</p>`:''}<p class="hint">選択肢に出るのは、育成開始時の適性がA以上の適性だけです。</p>`;
+  h+=`<h3>赤因子（適性）</h3><div class="frow"><select id="ed-red" data-f="red.t">${redOpts(n,'なし')}</select>${starsHTML('red',n.red.s)}</div><label class="frow" style="font-size:12.5px;color:var(--muted);gap:6px"><input type="checkbox" id="ed-free"${n.free?' checked':''}> 制限なし（開始時の適性に関係なく赤因子を選べる）</label>${redWarn(n)?`<p class="hint" style="color:var(--warn)">⚠ ${esc(n.red.t)}は開始時の計算では${esc(redWarn(n))}です（継承イベントなどで到達した個体として扱います）。</p>`:''}${redBad(n)?`<p class="hint" style="color:var(--bad)">${esc(n.red.t)}は育成開始時の適性が${esc(redAllow(n)[n.red.t].r)}のため、この赤因子は付きません（A以上が必要）。</p>`:''}<p class="hint">選択肢に出るのは、育成開始時の適性がA以上の適性だけです（制限なしにすると全適性）。</p>`;
   h+=`<h3>緑因子（固有）</h3><div class="frow"><input type="text" id="ed-green" data-f="green.n" value="${esc(n.green.n)}" placeholder="固有スキル名">${starsHTML('green',n.green.s)}</div></div>`;
   h+=`<div class="sec"><h3>遺伝子因子</h3>`;
   {const gc=geneCand(n);if(gc.length)h+=`<p class="hint">継承元の赤因子から：${gc.map(g=>`<b>${g.t}</b> ${g.sure?'確定':'可能性あり'}（★${g.p}）`).join('、')}</p>`}
   n.genes.forEach((g,i)=>{h+=`<div class="wrow"><select id="ed-g${i}" data-f="genes.${i}.t" style="flex:1">${optList(APTS,g.t,'適性を選択')}</select><span style="font-size:12px;color:var(--muted)">の遺伝子</span>${starsHTML('genes.'+i,g.s)}<button class="x" data-delgene="${i}" aria-label="削除">×</button></div>`});
-  h+=`<div><button class="btn sm" id="addGene">＋ 遺伝子を追加</button></div></div>`;
+  h+=n.genes.length<3?`<div><button class="btn sm" id="addGene">＋ 遺伝子を追加</button></div></div>`:`<p class="hint">遺伝子は3つまでです。</p></div>`;
   h+=`<div class="sec"><h3>白因子</h3>`;
   h+=`<div class="combo"><input type="text" id="ed-wq" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-wlist" placeholder="白因子を検索して追加（例：呼吸、コーナー、有馬）"><div class="clist" id="ed-wlist" role="listbox" hidden></div></div>`;
   n.whites.forEach((w,i)=>{h+=`<div class="wrow"><input type="text" id="ed-w${i}" data-f="whites.${i}.n" value="${esc(w.n)}"${WHITE_SET.has(w.n.trim())?'':' class="unk" title="一覧にない名前です"'}>${starsHTML('whites.'+i,w.s)}<button class="x" data-delw="${i}" aria-label="削除">×</button></div>`});
@@ -645,7 +671,24 @@ function editorHTML(){
 }
 
 /* ---------- render: summary ---------- */
-function renderSummary(){const f=(selId&&findNode(selId))||{n:plan().root,d:0,child:null};$('#summary').innerHTML=summaryHTML(f)}
+function renderGive(){if(!plan())return;const f=(selId&&findNode(selId))||{n:plan().root,d:0,child:null};$('#give').innerHTML=giveHTML(f)}
+function giveHTML(f){
+  const n=f.n,a=giveAgg(n);
+  let h=`<div><div class="gen">${GEN(f.d)}</div><h2>${esc(n.name||'未設定')} が継承させる因子</h2></div>`;
+  const filled=a.src.filter(s=>!isEmpty(s.n)).length;
+  h+=`<div><button class="btn sm" id="xlsxGive" data-xid="${n.id}">Excelで書き出す</button></div>`;
+  h+=`<p class="hint">このキャラを親にしたときに渡る因子：自身＋親${n.parents.length}人（入力済み ${filled}人）。入力している因子だけを表示します。因子カードを選ぶと、そのカードの集計に切り替わります。</p>`;
+  const tbl=(title,keys,map,label)=>{if(!keys.length)return'';return `<div class="sec"><h3>${title}</h3><div class="tw"><table class="t"><thead><tr><th>${label}</th><th>自身</th><th>親</th><th>計</th></tr></thead><tbody>${keys.map(k=>{const r=map[k];return `<tr><td>${esc(k)}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}).join('')}</tbody></table></div></div>`};
+  const gm={};for(const {n:s,r} of a.src){if(s.green.n&&s.green.s){(gm[s.green.n]??=[0,0])[r-1]+=s.green.s}}
+  const gmap={};for(const x of APTS)if(sum(a.gene[x]))gmap[x+'の遺伝子']=a.gene[x];
+  let body=tbl('赤因子（★合計）',APTS.filter(x=>sum(a.apt[x])),a.apt,'適性')
+    +tbl('遺伝子（★合計）',Object.keys(gmap),gmap,'遺伝子')
+    +tbl('青因子（★合計）',STATS.filter(x=>sum(a.blue[x])),a.blue,'ステータス')
+    +tbl('緑因子（★合計）',Object.keys(gm),gm,'固有スキル')
+    +tbl(`白因子（${Object.keys(a.white).length}種・★合計）`,Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])||x.localeCompare(y,'ja')),a.white,'白因子');
+  return h+(body||`<p class="empty-note">このキャラと親にまだ因子が入力されていません。</p>`);
+}
+function renderSummary(){if(!plan())return;if(tab==='give')renderGive();const f=(selId&&findNode(selId))||{n:plan().root,d:0,child:null};$('#summary').innerHTML=summaryHTML(f)}
 function summaryHTML(f){
   const {n}=f,p=plan(),goals=new Set();
   let h=`<div><div class="gen">${GEN(f.d)}</div><h2>${esc(n.name||'未設定')} が受け継ぐ因子</h2></div>`;
@@ -653,7 +696,7 @@ function summaryHTML(f){
   if(!n.parents.length)return h+`<p class="empty-note">この枠にはまだ親がいません。親2人・祖父母4人を入力すると、この枠が受け継ぐ因子を集計します。</p>`;
   const a=agg(n),filled=a.src.filter(s=>!isEmpty(s.n)).length;
   const np=n.parents.length,ng=a.src.length-np;
-  h+=`<p class="hint">集計対象：親${np}人・祖父母${ng}人（入力済み ${filled}人）。獲得している因子だけを表示します。系統樹のカードを選ぶと、その枠の集計に切り替わります。</p>`;
+  h+=`<p class="hint">集計対象：親${np}人・祖父母${ng}人（入力済み ${filled}人）。入力している因子だけを表示します。因子カードを選ぶと、そのカードの集計に切り替わります。</p>`;
   const sa=startApt(n,a);
   const rows=APTS.filter(x=>sum(a.apt[x]));
   let any=false;
@@ -679,9 +722,9 @@ function summaryHTML(f){
 }
 
 const isMobile=()=>window.matchMedia('(max-width: 700px)').matches;
-function renderAll(){renderHeader();renderTree();renderEditor();renderSummary();setTab(tab)}
-function setTab(t){tab=t;$('#tabEdit').setAttribute('aria-selected',t==='edit');$('#tabSum').setAttribute('aria-selected',t==='sum');$('#editor').hidden=t!=='edit';$('#summary').hidden=t!=='sum'}
-function soft(){renderTree();renderSummary()}
+function renderAll(){if(!plan()){renderEmpty();return}renderHeader();renderTree();renderEditor();renderSummary();setTab(tab)}
+function setTab(t){tab=t;$('#tabEdit').setAttribute('aria-selected',t==='edit');$('#tabSum').setAttribute('aria-selected',t==='sum');$('#tabGive').setAttribute('aria-selected',t==='give');$('#editor').hidden=t!=='edit';$('#summary').hidden=t!=='sum';$('#give').hidden=t!=='give';if(t==='give')renderGive()}
+function soft(){renderTree();renderSummary();if(tab==='give')renderGive()}
 let toastT;function toast(m,ms){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms||2200)}
 
 /* ---------- path helpers ---------- */
@@ -689,7 +732,9 @@ function getObj(n,path){const k=path.split('.');let o=n;for(let i=0;i<k.length-1
 
 /* ---------- events: tree ---------- */
 $('#tree').addEventListener('click',e=>{
-  if(e.target.closest('.redq'))return;
+  const fb=e.target.closest('[data-free]');
+  if(fb){const f=findNode(fb.dataset.free);if(f){f.n.free=!f.n.free;touch('plan');renderTree();renderSummary();if(selId===f.n.id)renderEditor()}return}
+  if(e.target.closest('.fq'))return;
   const add=e.target.closest('[data-add]');
   if(add){const f=findNode(add.dataset.add);if(f&&f.n.parents.length<2){const nn=blank();f.n.parents.push(nn);selId=nn.id;touch('plan');setTab('edit');renderAll()}return}
   const tg=e.target.closest('[data-tog]');
@@ -699,10 +744,14 @@ $('#tree').addEventListener('click',e=>{
   selId=c.dataset.id;renderTree();renderEditor();renderSummary();
 });
 $('#tree').addEventListener('change',e=>{
-  const t=e.target,id=t.dataset.qred||t.dataset.qrs;if(!id)return;const f=findNode(id);if(!f)return;const n=f.n;
-  if(t.dataset.qred){n.red.t=t.value;n.red.s=t.value?(n.red.s||1):0}else{n.red.s=+t.value}
+  const t=e.target,id=t.dataset.qred||t.dataset.qrs||t.dataset.qblue||t.dataset.qbs||t.dataset.qgene||t.dataset.qgs;if(!id)return;const f=findNode(id);if(!f)return;const n=f.n;
+  if(t.dataset.qred){n.red.t=t.value;n.red.s=t.value?(n.red.s||1):0}
+  else if(t.dataset.qrs){n.red.s=+t.value}
+  else if(t.dataset.qblue){n.blue.t=t.value;n.blue.s=t.value?(n.blue.s||1):0}
+  else if(t.dataset.qbs){n.blue.s=+t.value}
+  else{const i=+t.dataset.i;if(t.dataset.qgene){if(t.value){if(n.genes[i])n.genes[i].t=t.value;else n.genes.push({t:t.value,s:1})}else if(n.genes[i])n.genes.splice(i,1)}else if(n.genes[i])n.genes[i].s=+t.value}
   touch('plan');renderTree();renderSummary();if(selId===id)renderEditor();
-  const nt=document.querySelector(`[${t.dataset.qred?'data-qred':'data-qrs'}="${id}"]`);if(nt)nt.focus();
+
 });
 $('#tree').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('card')){e.preventDefault();e.target.click()}});
 
@@ -726,7 +775,7 @@ ed.addEventListener('input',e=>{
   touch('plan');soft();
   if(e.target.tagName==='SELECT'||fld.startsWith('whites.'))refreshStars(f.n);
 });
-ed.addEventListener('change',e=>{const f=e.target.dataset.f;if(f&&f.startsWith('whites.')){renderHeader();const t=document.createElement('div');t.innerHTML=editorHTML();ed.querySelectorAll('.wrow .pm').forEach((el,i)=>{const nw=t.querySelectorAll('.wrow .pm')[i];if(nw)el.replaceWith(nw)})}});
+ed.addEventListener('change',e=>{if(e.target.id==='ed-free'){const f0=findNode(selId);if(f0){f0.n.free=e.target.checked;touch('plan');renderTree();renderEditor();renderSummary()}return}const f=e.target.dataset.f;if(f&&f.startsWith('whites.')){renderHeader();const t=document.createElement('div');t.innerHTML=editorHTML();ed.querySelectorAll('.wrow .pm').forEach((el,i)=>{const nw=t.querySelectorAll('.wrow .pm')[i];if(nw)el.replaceWith(nw)})}});
 let cIdx=0,cRes=[],nameT=null;
 function renderCList(q){
   const box=$('#ed-clist'),inp=$('#ed-name');if(!box)return;
@@ -869,6 +918,17 @@ $('#dExport').onclick=async()=>{
 function showText(){const t=$('#dText');t.value=exportJSON();t.hidden=false;t.select();try{navigator.clipboard.writeText(t.value).then(()=>toast('クリップボードにコピーしました'),()=>{})}catch(e){}}
 $('#dShow').onclick=showText;
 $('#dFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('#dPaste').value=r.result};r.readAsText(f)});
+$('#dAdd').onclick=()=>{
+  let d;try{d=JSON.parse($('#dPaste').value);if(!d.plans||!d.plans.length)throw 0}catch(e){toast('JSONを読み取れませんでした。書き出したファイルを選んでください');return}
+  const n=normalize(d),titles=new Set(S.plans.map(p=>p.title));let first=null;
+  for(const pl of n.plans){pl.id=rid();reid(pl.root);pl.sample=false;pl.created=Date.now();
+    let t=pl.title,k=2;while(titles.has(t)){t=pl.title+'（'+fw(k)+'）';k++}pl.title=t;titles.add(t);S.plans.push(pl);dirty.add('plan:'+pl.id);if(!first)first=pl}
+  for(const r of n.roster){if(!S.roster.some(x=>x.name===r.name&&x.memo===r.memo)){r.id=rid();S.roster.push(r)}}
+  S.settings.costumeNick=Object.assign({},n.settings.costumeNick||{},S.settings.costumeNick||{});
+  S.settings.charApt=Object.assign({},n.settings.charApt||{},S.settings.charApt||{});
+  curId=first.id;UI.cur=curId;saveUI();selId=first.root.id;dirty.add('roster');touch('settings');closeOv();renderAll();
+  toast(n.plans.length+'件の計画を追加しました',3000);
+};
 $('#dImport').onclick=()=>{try{const d=JSON.parse($('#dPaste').value);if(!d.plans||!d.plans.length)throw 0;$('#dImpConfirm').hidden=false}catch(e){toast('JSONを読み取れませんでした。書き出したファイルを選んでください')}};
 $('#dImpNo').onclick=()=>$('#dImpConfirm').hidden=true;
 $('#dImpYes').onclick=()=>{const d=JSON.parse($('#dPaste').value);const old=S.plans.map(p=>p.id);S=normalize(d);
@@ -876,20 +936,28 @@ $('#dImpYes').onclick=()=>{const d=JSON.parse($('#dPaste').value);const old=S.pl
 
 /* ---------- plans ---------- */
 $('#planSel').addEventListener('change',e=>{curId=e.target.value;UI.cur=curId;saveUI();selId=null;renderAll()});
-function newPlan(){const p={id:rid(),title:'新しい計画 '+(S.plans.length+1),goals:[],root:tree(3),created:Date.now(),updated:Date.now()};S.plans.push(p);curId=p.id;UI.cur=curId;saveUI();selId=p.root.id;touch('plan');renderAll();setTab('edit');return p}
-$('#planNew').onclick=()=>{newPlan();toast('曽祖父母までの枠を用意しました')};
-$('#planMenuBtn').onclick=()=>{const m=$('#planMenu');m.hidden=!m.hidden;$('#planMenuBtn').setAttribute('aria-expanded',!m.hidden);$('#planDelConfirm').hidden=true};
-$('#planTitle').addEventListener('input',e=>{plan().title=e.target.value||'無題の計画';touch('plan');const o=$('#planSel').selectedOptions[0];if(o)o.textContent=plan().title});
-$('#planDup').onclick=()=>{const c=clone(plan());c.id=rid();c.title=c.title+'（コピー）';c.sample=false;reid(c.root);c.created=Date.now();S.plans.push(c);curId=c.id;selId=null;touch('plan');renderAll();toast('複製しました')};
+const fw=k=>String(k).replace(/[0-9]/g,c=>String.fromCharCode(c.charCodeAt(0)+0xFEE0));
+function nextPlanName(){const t=new Set(S.plans.map(p=>p.title));let k=1;while(t.has('新しい計画'+fw(k)))k++;return '新しい計画'+fw(k)}
+function newPlan(title){const p={id:rid(),title:title||nextPlanName(),goals:[],root:tree(3),created:Date.now(),updated:Date.now()};S.plans.push(p);curId=p.id;UI.cur=curId;saveUI();selId=p.root.id;touch('plan');renderAll();setTab('edit');return p}
+function openNewPanel(){const pn=$('#planNewPanel');$('#planMenu').hidden=true;pn.hidden=false;const i=$('#newPlanName');i.value=nextPlanName();i.focus();i.select()}
+$('#planNew').onclick=()=>{const pn=$('#planNewPanel');if(!pn.hidden){pn.hidden=true;return}openNewPanel()};
+function createFromPanel(){const v=$('#newPlanName').value.trim();$('#planNewPanel').hidden=true;newPlan(v||nextPlanName());toast('「'+plan().title+'」を作りました（曽祖父母までの枠）')}
+$('#newPlanOk').onclick=createFromPanel;
+$('#newPlanCancel').onclick=()=>{$('#planNewPanel').hidden=true};
+$('#newPlanName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();createFromPanel()}else if(e.key==='Escape'){$('#planNewPanel').hidden=true}});
+$('#tree').addEventListener('click',e=>{if(e.target.closest('[data-newplan]'))openNewPanel()});
+$('#planMenuBtn').onclick=()=>{const m=$('#planMenu');m.hidden=!m.hidden;$('#planNewPanel').hidden=true;$('#planMenuBtn').setAttribute('aria-expanded',!m.hidden);$('#planDelConfirm').hidden=true};
+$('#planTitle').addEventListener('input',e=>{if(!plan())return;plan().title=e.target.value||'無題の計画';touch('plan');const o=$('#planSel').selectedOptions[0];if(o)o.textContent=plan().title});
 $('#planDel').onclick=()=>$('#planDelConfirm').hidden=false;
 $('#planDelNo').onclick=()=>$('#planDelConfirm').hidden=true;
 $('#planDelYes').onclick=()=>deletePlan(curId);
-function deletePlan(id){S.plans=S.plans.filter(p=>p.id!==id);dirty.add('plan:'+id);if(!S.plans.length){newPlan()}else{curId=S.plans[0].id;touch('settings')}selId=null;$('#planMenu').hidden=true;renderAll();toast('計画を削除しました')}
-$('#sampleDrop').onclick=()=>{const id=curId;newPlan();S.plans=S.plans.filter(p=>p.id!==id);dirty.add('plan:'+id);touch('plan');renderAll()};
+function deletePlan(id){S.plans=S.plans.filter(p=>p.id!==id);dirty.add('plan:'+id);curId=S.plans[0]?S.plans[0].id:null;UI.cur=curId;saveUI();touch('settings');selId=null;$('#planMenu').hidden=true;renderAll();toast('計画を削除しました')}
+$('#sampleDrop').onclick=()=>deletePlan(curId);
 $('#onlyUseful').onclick=()=>{UI.onlyUseful=!UI.onlyUseful;saveUI();renderHeader();renderTree()};
 $('#tabEdit').onclick=()=>setTab('edit');
 $('#backTree').onclick=()=>{const c=selId&&document.querySelector(`.card[data-id="${selId}"]`);(c||$('#treewrap')).scrollIntoView({behavior:'smooth',block:'center'})};
 $('#tabSum').onclick=()=>{setTab('sum');renderSummary()};
+$('#tabGive').onclick=()=>setTab('give');
 
 /* ---------- PDF export ---------- */
 const LIB_H2I='https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js';
@@ -920,6 +988,12 @@ function sheetsHTML(){
   return `<div class="pdf-sheet pdf-tree"><div class="pdf-frame">${head('血統表')}${treeHTML}</div></div>`;
 }
 function cleanSheets(el){el.querySelectorAll('.addp').forEach(b=>b.remove());
+  el.querySelectorAll('.freeq').forEach(b=>b.remove());
+  el.querySelectorAll('.fq').forEach(q=>{const parts=[];const rt=q.querySelector('.rq-t').value,rs=q.querySelector('.rq-s').value,bt=q.querySelector('.bq-t').value,bs=q.querySelector('.bq-s').value;
+    if(rt)parts.push(`<span class="chip c-red">${esc(rt)}<span class="s">★${esc(rs)}</span></span>`);
+    if(bt)parts.push(`<span class="chip c-blue">${esc(STAT_S[bt]||bt)}<span class="s">★${esc(bs)}</span></span>`);
+    q.querySelectorAll('.gq').forEach(g=>{const gt=g.querySelector('.gq-t').value,gs=g.querySelector('.gq-s').value;if(gt)parts.push(`<span class="chip c-gene">${esc(APT_S[gt])}遺伝子<span class="s">★${esc(gs)}</span></span>`)});
+    if(!parts.length){q.remove();return}const sp=document.createElement('div');sp.className='chips';sp.innerHTML=parts.join('');q.replaceWith(sp)});
   el.querySelectorAll('.redq').forEach(q=>{const t=q.querySelector('.rq-t').value,st=q.querySelector('.rq-s').value;if(!t){q.remove();return}const sp=document.createElement('div');sp.className='chips';sp.innerHTML=`<span class="chip c-red${q.classList.contains('goal')?' goal':''}">${esc(t)}<span class="s">★${esc(st)}</span></span>`;q.replaceWith(sp)});el.querySelectorAll('details').forEach(d=>d.open=true)}
 const rootEl=document.documentElement;
 function forceLight(){const prev=rootEl.getAttribute('data-theme');rootEl.setAttribute('data-theme','light');return()=>{if(prev===null)rootEl.removeAttribute('data-theme');else rootEl.setAttribute('data-theme',prev)}}
@@ -987,9 +1061,9 @@ async function saveFile(name,blob){
   const dl=window.claude&&typeof window.claude.use==='function'?await withTimeout(window.claude.use('downloads'),5000):null;
   if(!dl)throw{code:'unavailable'};await dl.save({filename:name,data:blob});return 'saved';
 }
-function xlsxBook(f){
-  const n=f.n,a=agg(n),sa=startApt(n,a),X=window.XLSX,wb=X.utils.book_new();
-  const rows=[['区分','因子','親★','祖父母★','計★','開始時の適性']];const fr=[];
+function xlsxBook(f,mode){
+  const give=mode==='give',n=f.n,a=give?giveAgg(n):agg(n),sa=give?null:startApt(n,a),X=window.XLSX,wb=X.utils.book_new();
+  const rows=[give?['区分','因子','自身★','親★','計★','備考']:['区分','因子','親★','祖父母★','計★','開始時の適性']];const fr=[];
   const push=(k,name,r,extra)=>{rows.push([k,name,r[0]||0,r[1]||0,null,extra||''])};
   for(const x of APTS)if(sum(a.apt[x]))push('赤因子',x,a.apt[x],sa&&sa[x]?(sa[x].start!==sa[x].base?sa[x].base+'→'+sa[x].start:sa[x].base):'');
   for(const x of APTS)if(sum(a.gene[x]))push('遺伝子',x+'の遺伝子',a.gene[x]);
@@ -997,32 +1071,33 @@ function xlsxBook(f){
   const gm={};for(const {n:s,r} of a.src){if(s.green.n&&s.green.s){(gm[s.green.n]??=[0,0])[r-1]+=s.green.s}}
   for(const k of Object.keys(gm))push('緑因子',k,gm[k]);
   for(const k of Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])))push('白因子',k,a.white[k],a.planned[k]?'狙い中：'+a.planned[k].join('、'):'');
-  const head=[[`${plan().title}`],[`${n.name||'未設定'} が受け継ぐ因子（親${n.parents.length}人・祖父母${a.src.length-n.parents.length}人）`],[]];
+  const head=[[`${plan().title}`],[give?`${n.name||'未設定'} が継承させる因子（自身＋親${n.parents.length}人）`:`${n.name||'未設定'} が受け継ぐ因子（親${n.parents.length}人・祖父母${a.src.length-n.parents.length}人）`],[]];
   const ws=X.utils.aoa_to_sheet(head.concat(rows));
   for(let i=1;i<rows.length;i++){const r=head.length+i+1;ws['E'+r]={t:'n',f:`C${r}+D${r}`}}
   ws['!cols']=[{wch:8},{wch:28},{wch:7},{wch:9},{wch:7},{wch:20}];
   ws['!autofilter']={ref:`A${head.length+1}:F${head.length+rows.length}`};
-  X.utils.book_append_sheet(wb,ws,'受け継ぐ因子');
+  X.utils.book_append_sheet(wb,ws,give?'継承させる因子':'受け継ぐ因子');
   const g=[['続柄','名前','衣装','状態','青因子','★','赤因子','★','緑因子','★','遺伝子','白因子（★）']];
   const lab={have:'自前',rent:'レンタル',plan:'予定'};
   for(const {n:s,r} of a.src){const c=s.card&&CARD_BY.get(s.card);
-    g.push([r===1?'親':'祖父母',s.name||'未設定',c?labOf(c)+'［'+c.title+'］':'',lab[s.status]||'',s.blue.t,s.blue.t?s.blue.s:'',s.red.t,s.red.t?s.red.s:'',s.green.n,s.green.n?s.green.s:'',s.genes.filter(x=>x.t).map(x=>x.t+'★'+x.s).join('、'),s.whites.filter(w=>w.n.trim()).map(w=>w.n+'★'+w.s).join('、')])}
+    g.push([give?(r===1?'自身':'親'):(r===1?'親':'祖父母'),s.name||'未設定',c?labOf(c)+'［'+c.title+'］':'',lab[s.status]||'',s.blue.t,s.blue.t?s.blue.s:'',s.red.t,s.red.t?s.red.s:'',s.green.n,s.green.n?s.green.s:'',s.genes.filter(x=>x.t).map(x=>x.t+'★'+x.s).join('、'),s.whites.filter(w=>w.n.trim()).map(w=>w.n+'★'+w.s).join('、')])}
   const ws2=X.utils.aoa_to_sheet(g);ws2['!cols']=[{wch:7},{wch:18},{wch:26},{wch:7},{wch:8},{wch:4},{wch:8},{wch:4},{wch:24},{wch:4},{wch:16},{wch:60}];
-  X.utils.book_append_sheet(wb,ws2,'継承元の一覧');
+  X.utils.book_append_sheet(wb,ws2,give?'因子の一覧':'継承元の一覧');
   return wb;
 }
-$('#summary').addEventListener('click',async e=>{
-  const b=e.target.closest('#xlsxBtn');if(!b)return;const f=findNode(b.dataset.xid)||{n:plan().root,d:0};
+async function onXlsx(e){
+  const b=e.target.closest('#xlsxBtn,#xlsxGive');if(!b)return;const f=findNode(b.dataset.xid)||{n:plan().root,d:0};const mode=b.id==='xlsxGive'?'give':'recv';
   b.disabled=true;const t0=b.textContent;b.textContent='作成中…';
   try{if(!window.XLSX)await loadScript(LIB_XLSX);
-    const out=window.XLSX.write(xlsxBook(f),{bookType:'xlsx',type:'array'});
-    const name=((plan().title||'無題の計画')+'_'+(f.n.name||'未設定')+'_受け継ぐ因子').replace(/[\\/:*?"<>|]/g,'_')+'.xlsx';
+    const out=window.XLSX.write(xlsxBook(f,mode),{bookType:'xlsx',type:'array'});
+    const name=((plan().title||'無題の計画')+'_'+(f.n.name||'未設定')+(mode==='give'?'_継承させる因子':'_受け継ぐ因子')).replace(/[\\/:*?"<>|]/g,'_')+'.xlsx';
     await saveFile(name,new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));toast('Excelファイルを書き出しました',3000)}
   catch(err){const c=err&&err.code;if(c==='declined'){}else if(c==='unavailable'||c==='not_granted')toast('この表示ではファイルを保存できません',4000);else toast('Excelファイルを作成できませんでした'+(err&&err.message?'：'+err.message:'')+'（ネット接続が必要です）',5000)}
   finally{b.disabled=false;b.textContent=t0}
-});
+}
+$('#summary').addEventListener('click',onXlsx);$('#give').addEventListener('click',onXlsx);
 
-selId=plan().root.id;
+if(plan())selId=plan().root.id;
 renderAll();setStatus();
 })();
 </script>
