@@ -1,2 +1,2 @@
 # umamusume-factor-planner
-因子血統プランナー
+ウマ娘因子血統プランナー
