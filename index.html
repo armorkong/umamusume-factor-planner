@@ -1,5 +1,22 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>ウマ娘血統プランナー</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ウマ娘血統プランナー｜因子・継承の血統表と相性計算ツール</title>
+<meta name="description" content="ウマ娘の因子設計を血統表で計画できるツール。赤因子★から育成開始時の適性、遺伝子獲得の可能性、相性値（◎○△）、受け継ぐ因子の★合計を自動計算。ログイン不要・スマホ対応。">
+<link rel="canonical" href="https://armorkong.github.io/umamusume-factor-planner/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ウマ娘血統プランナー">
+<meta property="og:title" content="ウマ娘血統プランナー｜因子・継承の血統表と相性計算ツール">
+<meta property="og:description" content="ウマ娘の因子設計を血統表で計画できるツール。赤因子★から育成開始時の適性、遺伝子獲得の可能性、相性値（◎○△）、受け継ぐ因子の★合計を自動計算。ログイン不要・スマホ対応。">
+<meta property="og:url" content="https://armorkong.github.io/umamusume-factor-planner/">
+<meta property="og:image" content="https://armorkong.github.io/umamusume-factor-planner/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ウマ娘血統プランナー｜因子・継承の血統表と相性計算ツール">
+<meta name="twitter:description" content="ウマ娘の因子設計を血統表で計画できるツール。赤因子★から育成開始時の適性、遺伝子獲得の可能性、相性値（◎○△）、受け継ぐ因子の★合計を自動計算。ログイン不要・スマホ対応。">
+<meta name="twitter:image" content="https://armorkong.github.io/umamusume-factor-planner/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ウマ娘血統プランナー","url":"https://armorkong.github.io/umamusume-factor-planner/","applicationCategory":"GameApplication","operatingSystem":"Any","inLanguage":"ja","isAccessibleForFree":true,"description":"ウマ娘の因子設計を血統表で計画できるツール。赤因子★から育成開始時の適性、遺伝子獲得の可能性、相性値（◎○△）、受け継ぐ因子の★合計を自動計算。ログイン不要・スマホ対応。","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"}}</script>
+</head><body><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
@@ -176,6 +193,12 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
   #planSel{flex:1 1 100%;max-width:none}
 }
 .measure{position:absolute;left:-100000px;top:0}
+.about{max-width:760px;margin:28px auto 0;padding:14px 18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);line-height:1.7}
+.about h2{font-size:13.5px;margin:0 0 6px;color:var(--ink);font-weight:700}
+.about p{margin:0 0 6px}.about ul{margin:0 0 6px;padding-left:1.3em}
+.about .note{font-size:11.5px}
+body.compact .about{display:none}
+@media print{.about{display:none}}
 /* 相性 */
 .aff{flex:none;font-size:10px;font-weight:700;border-radius:4px;padding:0 3px;letter-spacing:-.02em;border:1px solid var(--line);font-family:var(--font-num);white-space:nowrap}
 .aff.s2{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
@@ -411,6 +434,18 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 
 <datalist id="dl-whites"></datalist>
 <datalist id="dl-names"></datalist>
+<section class="about" aria-labelledby="aboutH">
+  <h2 id="aboutH">ウマ娘血統プランナーについて</h2>
+  <p>ウマ娘プリティーダービーの因子設計を、血統表の形で計画するためのツールです。親・祖父母・曽祖父母に置くキャラと、赤因子・青因子・緑因子・遺伝子・白因子を入力すると、次の値を自動で計算します。</p>
+  <ul>
+    <li>赤因子の★合計から見た、育成開始時の適性（芝・ダート・距離・脚質）</li>
+    <li>遺伝子が付く可能性（★6以上で可能性、★12以上で確定）</li>
+    <li>育成ウマ娘・親・祖父母の相性値（◎○△）</li>
+    <li>受け継ぐ因子・継承させる因子の★合計（Excelで書き出し可）</li>
+  </ul>
+  <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
+  <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
+</section>
 <p class="credit" id="appUpdated">最終更新：2026年10月14日</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
