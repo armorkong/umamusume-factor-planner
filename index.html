@@ -665,7 +665,7 @@ async function flush(){
 function setStatus(){
   const el=$('#saveStatus'),t=el.querySelector('span');el.className='status';
   if(cloud==='pending'){t.textContent='接続中…';return}
-  if(cloud==='off'){t.textContent='このブラウザに保存';el.title='クラウド保存が使えないため、このブラウザ内に保存しています。書き出しでバックアップできます。';return}
+  if(cloud==='off'){t.textContent='このブラウザに保存';el.title='入力内容はこのブラウザの中に自動で保存されます。別の端末で使うときやバックアップには「書き出し・読み込み」を使ってください。';return}
   if(cloud==='quota'){el.classList.add('err');t.textContent='保存容量の上限に達しました';return}
   if(cloud==='err'){el.classList.add('err');t.textContent='保存に失敗（再試行中）';return}
   if(dirty.size||writing){el.classList.add('saving');t.textContent='保存中…';return}
@@ -1061,7 +1061,8 @@ function scMatch(text,kind){const n=scNorm(text);if(!n)return{c:null,s:0};let b=
 function scLoadImage(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('画像を読み込めませんでした'))};im.src=u})}
 /* 黄色い★を見つけて、因子の枠（★の位置・数・背景色）を割り出す */
 function scFindTiles(img){
-  const W=img.naturalWidth,H=img.naturalHeight,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0);
+  /* 小さい画像（PC版のウインドウを小さく撮ったスクショなど）は、拡大してから読む */
+  const k=img.naturalWidth<900?Math.min(4,1200/img.naturalWidth):1,W=Math.round(img.naturalWidth*k),H=Math.round(img.naturalHeight*k),cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d',{willReadFrequently:true});g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';g.drawImage(img,0,0,W,H);
   const d=g.getImageData(0,0,W,H).data,mask=new Uint8Array(W*H);
   for(let i=0,p=0;p<W*H;p++,i+=4){const r=d[i],gg=d[i+1],b=d[i+2];if(r>225&&gg>190&&b<140&&r-b>110)mask[p]=1}
   const seen=new Uint8Array(W*H),blobs=[],st=new Int32Array(W*H);
@@ -1090,15 +1091,21 @@ function scFindTiles(img){
   for(const t of tiles){t.parent=t.ys>sepY;const cx=t.x0+P;
     const bx0=Math.max(0,Math.floor(cx-hw+med*2)),by0=Math.max(0,Math.floor(t.ys-1.55*P)),bx1=Math.min(W,Math.floor(cx+hw-med*0.5)),by1=Math.min(H,Math.floor(t.ys-0.35*P));
     t.box=[bx0,by0,bx1,by1];t.cut=t.ys-1.55*P<0;
-    let s=[0,0,0],n=0;for(let y=by0;y<by1;y+=2)for(let x=bx0;x<bx1;x+=2){const i=(y*W+x)*4;s[0]+=d[i];s[1]+=d[i+1];s[2]+=d[i+2];n++}
+    /* 枠の色は右半分で判定（左端にスキルのアイコンが入る画面があるため） */
+    let s=[0,0,0],n=0;for(let y=by0;y<by1;y+=2)for(let x=Math.max(bx0,Math.floor(cx));x<bx1;x+=2){const i=(y*W+x)*4;s[0]+=d[i];s[1]+=d[i+1];s[2]+=d[i+2];n++}
     const m=s.map(v=>v/n),sat=Math.max(...m)-Math.min(...m);
     t.kind=sat<25?'gray':(m[2]>m[0]?'blue':(m[0]>m[1]+60?'pink':'green'))}
-  return{tiles,W,H,g,d}}
+  return{tiles,W,H,g,d,k,med,small:med/k<15}}
 function scCrop(info,t,th){const[x0,y0,x1,y1]=t.box,w=x1-x0,h=y1-y0;if(w<4||h<4)return null;const{W,d}=info,S=2,pad=30;
   const cv=document.createElement('canvas');cv.width=w*S+pad*2;cv.height=h*S+pad*2;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);
   const sm=document.createElement('canvas');sm.width=w;sm.height=h;const sg=sm.getContext('2d'),id=sg.createImageData(w,h);
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=((y0+y)*W+x0+x)*4,o=(y*w+x)*4,r=d[i],gg=d[i+1],b=d[i+2];
-    const ink=t.kind==='gray'?((r+gg+b)/3<th):(Math.min(r,gg,b)>(th>=120?230:200));const v=ink?0:255;id.data[o]=id.data[o+1]=id.data[o+2]=v;id.data[o+3]=255}
+    /* 灰色の枠の文字は茶色（赤みがある）。灰色の「？」アイコンなどを文字と見なさない */
+    const ink=t.kind==='gray'?((r+gg+b)/3<th&&r-b>25):(Math.min(r,gg,b)>(th>=120?230:200));const v=ink?0:255;id.data[o]=id.data[o+1]=id.data[o+2]=v;id.data[o+3]=255}
+  /* 左端にアイコンの一部がかかっていたら、その後の空白までを消す */
+  {const col=new Int32Array(w);for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(!id.data[(y*w+x)*4])col[x]++;
+   if(col[0]||col[1]||col[2]){let run=0,cut=-1;const gapW=Math.max(3,Math.round((info.med||30)*0.12));for(let x=0;x<w*0.4;x++){if(col[x]===0){if(++run>=gapW){cut=x;break}}else run=0}
+     if(cut>0)for(let y=0;y<h;y++)for(let x=0;x<cut;x++){const o=(y*w+x)*4;id.data[o]=id.data[o+1]=id.data[o+2]=255}}}
   sg.putImageData(id,0,0);g.imageSmoothingEnabled=true;g.drawImage(sm,pad,pad,w*S,h*S);return cv}
 async function scWorker(onp){if(tessWorker)return tessWorker;if(!window.Tesseract)await loadScript(LIB_TESS);
   tessWorker=await window.Tesseract.createWorker('jpn',1,{langPath:TESS_LANG,gzip:true,logger:m=>{if(onp&&m&&m.status&&/load|download|init/i.test(m.status))onp(m)}});
@@ -1117,7 +1124,7 @@ async function scanFiles(files){
       if(lastKind!==t.kind){await w.setParameters({tessedit_char_whitelist:scSets()[t.kind].chars});lastKind=t.kind}
       /* 2つのしきい値で読み、候補が1つに絞れた（同点の別候補がない）結果を優先する。最後まで同点なら「要確認」にする */
       let best={c:null,s:0,tie:true},raw='';const eff=m=>m.c?m.s-(m.tie?0.15:0):-1,better=(m,b)=>eff(m)>eff(b);
-      const tryRead=async()=>{for(const th of [120,90]){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);if(better(m,best)){best=m;raw=tx}if(best.s>=0.99&&!best.tie)break}};
+      const tryRead=async()=>{for(const th of (info.k>1?[150,120,90]:[120,90])){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);if(better(m,best)){best=m;raw=tx}if(best.s>=0.99&&!best.tie)break}};
       await tryRead();
       /* 文字の候補を絞ると、かえって崩れることがある（例：天皇賞（春））。決め手に欠けるときは、候補を絞らずにもう一度読む */
       if(!best.c||best.s<0.8||best.tie){await w.setParameters({tessedit_char_whitelist:''});lastKind=null;await tryRead()}
@@ -1131,7 +1138,7 @@ async function scanFiles(files){
     scanRes=[...found.values()].sort((a,b)=>ko(a)-ko(b));
     {const gr=scanRes.find(r=>r.kind==='green'&&!r.parent);const c=gr&&CARDS.find(x=>x.uniq===gr.name);scanCard=c?c.id:0;scanPrep()}
     const pc=scanRes.filter(x=>x.parent).length;
-    st.textContent=`${scanRes.length}件を読み取りました`+(unread?`（読み取れなかった枠：${unread}件。画面の端で切れた枠などです）`:'')+(pc?`。「継承元」より下の${pc}件は、親の因子としてチェックを外しています`:'')+'。内容を確認して「このカードに追加」を押してください。';
+    st.textContent=`${scanRes.length}件を読み取りました`+(unread?`（読み取れなかった枠：${unread}件。画面の端で切れた枠などです）`:'')+(pc?`。「継承元」より下の${pc}件は、親の因子としてチェックを外しています`:'')+'。内容を確認して「このカードに追加」を押してください。'+(infos.some(x=>x.small)?'画像が小さいため、読み間違いや読み落としが増えます。PC版はウインドウを大きくして撮ると精度が上がります。':'');
   }catch(e){st.textContent='読み取りに失敗しました'+(e&&e.message?'：'+e.message:'')+'（ネット接続が必要です）'}
   finally{scanBusy=false;renderScan()}}
 const SC_KIND={gray:'白因子',blue:'青因子',pink:'赤因子',green:'緑因子'};
