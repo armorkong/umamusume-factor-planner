@@ -1124,14 +1124,21 @@ async function scanFiles(files){
       if(lastKind!==t.kind){await w.setParameters({tessedit_char_whitelist:scSets()[t.kind].chars});lastKind=t.kind}
       /* 2つのしきい値で読み、候補が1つに絞れた（同点の別候補がない）結果を優先する。最後まで同点なら「要確認」にする */
       let best={c:null,s:0,tie:true},raw='';const eff=m=>m.c?m.s-(m.tie?0.15:0):-1,better=(m,b)=>eff(m)>eff(b);
-      const tryRead=async()=>{for(const th of (info.k>1?[150,120,90]:[120,90])){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);if(better(m,best)){best=m;raw=tx}if(best.s>=0.99&&!best.tie)break}};
+      /* 読み方を変えて何度か読み、候補ごとに点数を合計する（多数決）。同点で決めきれない読みと、一致度が低い読み（0.5未満）は数えない */
+      const votes=new Map();
+      const tryRead=async()=>{for(const th of (info.k>1?[150,120,90]:[120,90])){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);
+        if(m.c&&!m.tie&&m.s>=0.5){const v=votes.get(m.c)||{sum:0,s:0,raw:''};v.sum+=m.s;if(m.s>v.s){v.s=m.s;v.raw=tx}votes.set(m.c,v)}
+        if(better(m,best)){best=m;raw=tx}if(best.s>=0.99&&!best.tie)break}};
       await tryRead();
       /* 文字の候補を絞ると、かえって崩れることがある（例：天皇賞（春））。決め手に欠けるときは、候補を絞らずにもう一度読む */
       if(!best.c||best.s<0.8||best.tie){await w.setParameters({tessedit_char_whitelist:''});lastKind=null;await tryRead()}
+      if(votes.size&&!(best.s>=0.99&&!best.tie)){let top=null;for(const [c,v] of votes)if(!top||v.sum>top[1].sum)top=[c,v];best={c:top[0],s:top[1].s,tie:false};raw=top[1].raw;
+        const n2=[...votes.values()].filter(v=>v!==top[1]&&v.sum>=top[1].sum*0.8).length;if(n2)best.s=Math.min(best.s,0.79)}
       if(!best.c||best.s<0.5){unread++;continue}
       if(best.tie)best={...best,s:Math.min(best.s,0.79)};
-      const key=t.kind+'|'+best.c,ex=found.get(key);
-      if(ex){ex.stars=Math.max(ex.stars,t.stars);ex.parent=ex.parent&&t.parent;ex.score=Math.max(ex.score,best.s)}
+      /* 自身と継承元（親）の因子は別々に集計する（同じ因子名でも★を混ぜない） */
+      const key=(t.parent?'p|':'s|')+t.kind+'|'+best.c,ex=found.get(key);
+      if(ex){ex.stars=Math.max(ex.stars,t.stars);ex.score=Math.max(ex.score,best.s)}
       else found.set(key,{kind:t.kind,name:best.c,stars:t.stars,score:best.s,parent:t.parent,raw,on:!t.parent})}}
     /* 並びはゲームの因子一覧と同じ：青→赤→緑→レース→スキル→シナリオ→遺伝子→隠し因子（スクショの順番や枚数に関係なく） */
     const ko=r=>{if(r.kind==='blue')return-3;if(r.kind==='pink')return-2;if(r.kind==='green')return-1;const g=r.name.match(/^(.+)の遺伝子$/);if(g&&APTS.includes(g[1]))return 35000+APTS.indexOf(g[1]);return WHITE_ORD.get(r.name)??90000};
