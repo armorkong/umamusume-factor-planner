@@ -774,11 +774,14 @@ function branchHTML(n,d){
   }
   return h+'</div>';
 }
+/* 2人のうち1人だけの組では、「＋ 親を追加」の場所を残っているカードと同じ高さにして、消した後も周りのカードが動かないようにする */
+function padAdds(){if(isMobile())return;for(const ps of document.querySelectorAll('#tree .parents')){const k=[...ps.children];if(k.length!==2)continue;
+  const a=k.find(x=>x.querySelector(':scope>.addp')),c=k.find(x=>x.querySelector(':scope>.card'));if(a&&c)a.style.minHeight=c.querySelector(':scope>.card').offsetHeight+'px'}}
 function renderTree(){if(!plan())return;
   const p=plan(),md=maxDepth(p.root)+(1);
   let gh='';for(let i=0;i<md;i++)gh+=`<div>${GEN(i)}</div>`;
   $('#genHead').innerHTML=gh;
-  calcTri();$('#tree').innerHTML=branchHTML(p.root,0);
+  calcTri();$('#tree').innerHTML=branchHTML(p.root,0);padAdds();
   if(UI.compact&&!isMobile())fitZoom();
 }
 
@@ -1110,7 +1113,7 @@ function scCrop(info,t,th){const[x0,y0,x1,y1]=t.box,w=x1-x0,h=y1-y0;if(w<4||h<4)
   const cv=document.createElement('canvas');cv.width=w*S+pad*2;cv.height=h*S+pad*2;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);
   const sm=document.createElement('canvas');sm.width=w;sm.height=h;const sg=sm.getContext('2d'),id=sg.createImageData(w,h);
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=((y0+y)*W+x0+x)*4,o=(y*w+x)*4,r=d[i],gg=d[i+1],b=d[i+2];
-    const ink=t.kind==='gray'?((r+gg+b)/3<th):(Math.min(r,gg,b)>230);const v=ink?0:255;id.data[o]=id.data[o+1]=id.data[o+2]=v;id.data[o+3]=255}
+    const ink=t.kind==='gray'?((r+gg+b)/3<th):(Math.min(r,gg,b)>(th>=120?230:200));const v=ink?0:255;id.data[o]=id.data[o+1]=id.data[o+2]=v;id.data[o+3]=255}
   sg.putImageData(id,0,0);g.imageSmoothingEnabled=true;g.drawImage(sm,pad,pad,w*S,h*S);return cv}
 async function scWorker(onp){if(tessWorker)return tessWorker;if(!window.Tesseract)await loadScript(LIB_TESS);
   tessWorker=await window.Tesseract.createWorker('jpn',1,{langPath:TESS_LANG,gzip:true,logger:m=>{if(onp&&m&&m.status&&/load|download|init/i.test(m.status))onp(m)}});
@@ -1129,13 +1132,14 @@ async function scanFiles(files){
       if(lastKind!==t.kind){await w.setParameters({tessedit_char_whitelist:scSets()[t.kind].chars});lastKind=t.kind}
       /* 2つのしきい値で読み、候補が1つに絞れた（同点の別候補がない）結果を優先する。最後まで同点なら「要確認」にする */
       let best={c:null,s:0,tie:true},raw='';const better=(m,b)=>!m.c?false:!b.c?true:(b.tie&&!m.tie)?true:(m.tie&&!b.tie)?false:m.s>b.s;
-      for(const th of [120,90]){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);if(better(m,best)){best=m;raw=tx}if((best.s>=0.99&&!best.tie)||t.kind!=='gray')break}
+      for(const th of [120,90]){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);if(better(m,best)){best=m;raw=tx}if(best.s>=0.99&&!best.tie)break}
       if(!best.c||best.s<0.5){unread++;continue}
       if(best.tie)best={...best,s:Math.min(best.s,0.79)};
       const key=t.kind+'|'+best.c,ex=found.get(key);
       if(ex){ex.stars=Math.max(ex.stars,t.stars);ex.parent=ex.parent&&t.parent;ex.score=Math.max(ex.score,best.s)}
       else found.set(key,{kind:t.kind,name:best.c,stars:t.stars,score:best.s,parent:t.parent,raw,on:!t.parent})}}
-    const ko=r=>r.kind==='blue'?0:r.kind==='pink'?1:r.kind==='green'?2:/の遺伝子$/.test(r.name)?4:3;
+    /* 並びはゲームの因子一覧と同じ：青→赤→緑→レース→スキル→シナリオ→遺伝子→隠し因子（スクショの順番や枚数に関係なく） */
+    const ko=r=>{if(r.kind==='blue')return-3;if(r.kind==='pink')return-2;if(r.kind==='green')return-1;const g=r.name.match(/^(.+)の遺伝子$/);if(g&&APTS.includes(g[1]))return 35000+APTS.indexOf(g[1]);return WHITE_ORD.get(r.name)??90000};
     scanRes=[...found.values()].sort((a,b)=>ko(a)-ko(b));
     {const gr=scanRes.find(r=>r.kind==='green'&&!r.parent);const c=gr&&CARDS.find(x=>x.uniq===gr.name);scanCard=c?c.id:0;scanPrep()}
     const pc=scanRes.filter(x=>x.parent).length;
