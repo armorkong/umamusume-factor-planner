@@ -126,6 +126,7 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .c-gene.goal{background:color-mix(in srgb,var(--f-gene) 18%,transparent)}
 .c-w2{background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--ink);border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
 .c-w1{background:color-mix(in srgb,var(--silver) 13%,transparent);color:var(--ink);border-color:color-mix(in srgb,var(--silver) 40%,transparent)}
+.c-w1.tri,.c-tri{background:color-mix(in srgb,#f2b81c 24%,transparent);color:var(--ink);border-color:#d49a00;box-shadow:inset 0 0 0 1px #d49a00;font-weight:600}
 .c-w0{color:var(--muted);border-color:var(--line)}
 .c-gc{border:1px dashed var(--f-gene);color:var(--f-gene)}
 .c-gc.sure{border-style:solid;background:color-mix(in srgb,var(--f-gene) 16%,transparent);font-weight:700}
@@ -213,6 +214,34 @@ body.compact .about{display:none}
 .treewrap.panning{cursor:grabbing;user-select:none;-webkit-user-select:none}
 .treewrap.panning,.treewrap.panning *{cursor:grabbing!important}
 .zoomctl input:disabled{opacity:.45}
+table.t.scan td,table.t.scan th{text-align:left;vertical-align:middle;font-family:var(--font-body)}
+table.scan td:first-child{width:28px}
+table.scan .sc-name{width:100%;min-width:9em;font-size:13px;padding:3px 6px}
+table.scan tr.off{opacity:.45}
+table.scan tr.warn .sc-name{border-color:var(--warn)}
+table.scan select{font-size:13px}
+table.scan .sub{font-size:11px;color:var(--muted)}
+.scanbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px dashed color-mix(in srgb,var(--accent) 55%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.scanbar .sub{font-size:11.5px;color:var(--muted)}
+.scanbar.over,.dropzone.over{border-style:solid;border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--surface))}
+.dropzone{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:18px 12px;border:2px dashed color-mix(in srgb,var(--accent) 55%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--accent) 5%,var(--surface));font-size:13px}
+.dropzone .sub{font-size:11.5px;color:var(--muted)}
+.scan-char{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:8px}
+.scan-char input[type=text]{width:100%;font-size:13px;padding:4px 8px}
+.scan-char .warnline{color:var(--warn);font-size:12.5px;font-weight:700}
+.scan-char .sub,.scan-extra .sub{font-size:11.5px;color:var(--muted)}
+.scan-extra{display:flex;flex-direction:column;gap:4px;font-size:12.5px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+td.diff{font-size:11.5px;white-space:nowrap}
+td.diff .new{color:var(--accent);font-weight:700}
+td.diff .chg{color:var(--warn);font-weight:700}
+td.diff .same{color:var(--muted)}
+.pick{display:flex;flex-direction:column;gap:3px}
+.pick button{font-size:11.5px;border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:2px 6px;text-align:left;white-space:nowrap;cursor:pointer}
+.pick button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+table.scan tr.conf td{background:color-mix(in srgb,var(--warn) 12%,transparent)}
+table.scan tr.conf.done td{background:transparent}
+.scan-conf{border:1.5px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--surface));border-radius:8px;padding:8px 10px;font-size:12.5px;margin-bottom:8px}
+.scan-conf.pending b{color:var(--warn)}
 /* 簡易表示 */
 body.compact{--gap:14px}
 body.compact .card{padding:4px 7px;gap:2px}
@@ -446,9 +475,20 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年10月14日</p>
+<p class="credit" id="appUpdated">最終更新：2026年10月15日</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
+<div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
+  <header><h2 id="hScan">スクショから因子を読み取る</h2><button class="btn" data-close>閉じる</button></header>
+  <p class="hint" id="scanTarget"></p>
+  <p class="hint">「ウマ娘詳細」→「継承」タブのスクショを選ぶと、キャラ（緑因子から判定）と、青・赤・緑・白因子、遺伝子の★の数を読み取ります。画像はこの端末の中だけで処理し、外部には送りません。初回は文字認識の辞書データ（約16MB）を読み込むため、ネット接続が必要です。</p>
+  <div class="dropzone" id="scanDrop"><div><b>ここにスクショをドラッグ＆ドロップ</b></div><div class="sub">複数枚まとめてOK。パソコンではコピーした画像を貼り付け（⌘V / Ctrl+V）もできます</div><label class="btn primary" for="scanFile">画像を選ぶ</label><input type="file" id="scanFile" accept="image/*" multiple hidden></div>
+  <p class="hint" id="scanStatus" role="status"></p>
+  <div id="scanChar"></div>
+  <div id="scanList" class="tw"></div>
+  <div id="scanExtra"></div>
+  <div class="row"><button class="btn primary" id="scanApply" disabled>このカードに追加</button><span class="sub">読み取り結果は必ずゲーム画面と見比べてください。</span></div>
+</div></div>
 <div class="ov" id="ovImg" hidden><div class="dlg" role="dialog" aria-labelledby="hImg" style="max-width:min(96vw,900px)">
   <header><h2 id="hImg">画像で書き出す</h2><button class="btn" data-close>閉じる</button></header>
   <p class="hint">画像を長押しして「"写真"に保存」を選ぶと、写真アプリに保存できます。</p>
@@ -486,7 +526,7 @@ const CARD_BY=new Map(CARDS.map(c=>[c.id,c]));
 const UNIQ_OLD={"100701": "波乱注意砲！", "100801": "アクセルX", "100901": "レッドエース", "101101": "精神一到", "101401": "熱血☆アミーゴ", "101801": "エンプレス・プライド", "102401": "勝利のキッス☆", "102701": "燃えろ筋肉！", "103201": "introduction：My body", "103501": "全力Vサインッ！", "104101": "学級委員長+速さ＝バクシン", "104501": "クリアハート", "105201": "ワクワクよーいドン", "105601": "来てください来てください！", "106001": "アタシもたまには、ね？", "106101": "Call me KING", "106201": "レディー、どんっ！", "106601": "エンジン点火！", "105401": "ペガサスフルパワー！", "106301": "打ち、鍛えて", "107301": "心、強し！", "110301": "アピール宣言！"};
 const aptObj=s=>Object.fromEntries(APTS.map((a,i)=>[a,s[i]]));
 const kana=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[\s・･☆★♪♡!?「」『』\[\]【】()、。,.\-ー〜~]/g,'');
-/* 衣装の呼び名：各キャラ最初の衣装＝通常、それ以外はGameWithのキャラ一覧の表記（花嫁→嫁）をユーザーが修正したもの。一覧にない新衣装は実装日から推定。ユーザーが個別に変更可 */
+/* 衣装の愛称：各キャラ最初の衣装＝通常、それ以外はGameWithのキャラ一覧の表記（花嫁→嫁）をユーザーが修正したもの。一覧にない新衣装は実装日から推定。ユーザーが個別に変更可 */
 const GW_LAB={"100102":"水着","100103":"総大将","100202":"水着","100302":"アニメ","100303":"秋衣装","100402":"水着","100403":"正月","100502":"ダンス衣装","100503":"応援団","100602":"クリスマス","100603":"シングレ","100702":"水着","100703":"凱旋門","100802":"クリスマス","100902":"クリスマス","101002":"夏","101003":"バレンタイン","101102":"ヒーラー","101103":"青","101202":"嫁","101302":"アニメ","101303":"水着","101402":"モンク","101502":"正月","101602":"餓狼","101702":"秋衣装","101703":"ハロウィン","101802":"嫁","101803":"ハロウィン","110802":"ハロウィン","101902":"ハロウィン","102002":"ダンス衣装","102003":"水着","102102":"秋衣装","102202":"嫁","102203":"ラーメン","102302":"クリスマス","102303":"メカ","102402":"嫁","102403":"ハロウィン","102502":"バレンタイン","102503":"嫁","102602":"バレンタイン","102702":"バレンタイン","102802":"ハロウィン","102902":"バレンタイン","103002":"ハロウィン","103003":"大豊食祭","103102":"バレンタイン","103103":"無人島","103202":"水着","103203":"モノクル","103302":"クリスマス","103402":"秋衣装","103502":"スチームパンク","103503":"UAF","103602":"ハロウィン","103702":"バレンタイン","103703":"水着","103802":"嫁","103902":"秋衣装","104002":"秋衣装","104003":"無人島","104102":"ドッジ","104103":"ダンス衣装","104202":"ハロウィン","104302":"秋衣装","104402":"嫁","104502":"ハロウィン","104503":"忍者","104602":"黄","104603":"パレード","104702":"秋衣装","104802":"夏衣装","104803":"ハロウィン","104902":"クリスマス","105002":"スチームパンク","105003":"メカ","105102":"嫁","105202":"正月","105302":"夏衣装","105502":"ハロウィン","105602":"フルアーマー","105702":"正月","105802":"ハロウィン","105902":"夏衣装","106002":"応援団","106003":"正月","106102":"応援団","106103":"嫁","106202":"ドッジ","106302":"正月","106402":"クリスマス","106502":"ダンス衣装","106702":"正月","106703":"凱旋門","106802":"正月","106803":"アニメ","106902":"ダンス衣装","107002":"レジェンズ","107102":"ダンス衣装","107202":"ゲーミング","107402":"クリスマス","107403":"水着","107602":"正月","107702":"クリスマス","107703":"ラーメン","107802":"バレンタイン","108002":"温泉","108202":"ダンス衣装","108302":"ハロウィン","108402":"ダンス衣装","108502":"ダンス衣装","108602":"嫁","108702":"バレンタイン","108802":"水着","108902":"水着","109102":"水着","109302":"秋衣装","109402":"応援団","109802":"パレード","109902":"水着","110002":"温泉","110202":"バレンタイン","110402":"正月","110502":"秋衣装","110602":"秋衣装","110702":"ダンス衣装","110902":"配布","111002":"嫁","111302":"水着","111602":"嫁","111902":"クリスマス","112402":"正月","112702":"秋衣装","113202":"BC"};
 function seasonOf(rel){const m=+rel.slice(5,7),d=+rel.slice(8,10),md=m*100+d;
   if(md>=525&&md<=608)return'嫁';if(md>=628&&md<=820)return'水着';if(md>=925&&md<=1012)return'ハロウィン';
@@ -510,11 +550,15 @@ function affBadge(n){const r=affinity(n);if(!r)return'';
   if(r.dup)return `<span class="aff dup">重複</span>`;
   return `<span class="aff s${r.lv}">${r.sym}${r.total}</span>`}
 const labOf=c=>(S&&S.settings&&S.settings.costumeNick&&S.settings.costumeNick[c.id])||c.autoLab;
-CARDS.forEach(c=>{c.qn=kana(c.name);c.q=kana(c.name+'|'+c.title+'|'+c.uniq)});
+/* 検索用の別名（衣装ごと・キャラごと） */
+const ALIAS_CARD={"100102": ["水スペ"], "100103": ["冬スペ"], "100202": ["水スズカ"], "100302": ["赤テイオー"], "100303": ["秋テイオー", "白テイオー"], "100402": ["水マル", "水丸"], "100403": ["巫女マル", "巫女丸"], "100602": ["クリオグリ"], "100603": ["シンオグリ"], "100702": ["水ゴル"], "100802": ["クリウオッカ"], "100901": ["ダスカ"], "100902": ["クリダスカ"], "101003": ["バレタイキ"], "101102": ["ウマネストグラス"], "101103": ["和服グラス"], "101302": ["白マック"], "101303": ["水マック"], "101402": ["ウマネストエル"], "101502": ["正月オペ"], "101601": ["ナリブ"], "101602": ["ナリブ"], "101702": ["秋ルドルフ"], "101703": ["黒ルドルフ"], "101801": ["たわけ"], "101802": ["嫁たわけ"], "101803": ["黒エアグルーヴ", "黒たわけ"], "101902": ["キョンデジ"], "102002": ["ダンスウンス"], "102003": ["水ウンス"], "102102": ["秋タマ"], "102201": ["殿下"], "102202": ["殿下", "嫁殿下"], "102203": ["殿下", "ラーメン殿下"], "102302": ["クリハヤヒデ"], "102303": ["メカハヤヒデ"], "102403": ["猫マヤ"], "102502": ["バレカフェ"], "102602": ["チョコボン"], "102702": ["バレライアン"], "102801": ["ボーノ"], "102802": ["ボーノ", "ハロボノ"], "102902": ["バレユキノ"], "103002": ["ハロライス"], "103003": ["野菜ライス", "おにぎり"], "103102": ["バレネス"], "103103": ["島ネス"], "103202": ["水タキ"], "103203": ["謎タキ"], "103301": ["アヤベ"], "103302": ["クリアヤベ"], "103402": ["秋イナリ"], "103602": ["ハロシャカ"], "103702": ["バレフラッシュ"], "103703": ["水フラ"], "103902": ["秋カワカミ"], "104002": ["秋シチー"], "104003": ["島シチー"], "104202": ["ハロザパ"], "104302": ["秋ウインディ"], "104502": ["ハロクリーク"], "104603": ["白ファル"], "104702": ["秋ロブロイ", "私服ロブロイ"], "104803": ["ハロジョーダン"], "104902": ["クリナカヤマ"], "105003": ["メカタイシン"], "105502": ["ハロマーベラス"], "105802": ["ハロドトウ"], "105902": ["夏ドーベル"], "106002": ["チアネイチャ"], "106102": ["応援キング"], "106402": ["クリパーマー"], "106502": ["ダンスヘリオス"], "106801": ["黒キタ"], "106802": ["白キタ"], "106803": ["赤キタ"], "106902": ["ダンスチヨ"], "107102": ["ダンスアルダン"], "107402": ["クリブライト"], "107403": ["水ブライト"], "107701": ["トプロ"], "107702": ["クリトプロ"], "107703": ["ラーメントプロ"], "107802": ["バレゼファー"], "108202": ["ダンスフライト"], "108302": ["ハロクリスエス"], "108402": ["ダンスギム"], "108502": ["青ルビー", "ダンスルビー"], "108702": ["バレマーチャン"], "108802": ["水クラ"], "108902": ["水シュヴァル"], "109102": ["水ヴィブロス"], "109401": ["ポッケ"], "109402": ["ポッケ", "団長"], "109802": ["太鼓", "タイコ"], "109902": ["水タルマエ"], "110202": ["バレアース"], "110502": ["私服ユニ"], "110702": ["ダンスタップ"], "110802": ["ハロドゥラ"], "110902": ["ドレスクラフト"], "111302": ["水パン", "水フサ"], "111902": ["クリジャーニー", "白ジャーニー"], "112702": ["私服メノ"], "113201": ["ドレスラヴズ"], "100502": ["ダンスフジ"], "104103": ["ダンスバクシン"], "109302": ["秋ケイエス"], "110602": ["秋ヒシミラクル"], "104802": ["夏ジョーダン"], "105302": ["夏バンブー"], "100503": ["応援フジ"]};
+const ALIAS_CHAR={"ゴールドシップ": ["ゴルシ"], "スマートファルコン": ["ファル子"], "シンボリルドルフ": ["会長"], "ウイニングチケット": ["チケゾー"], "マチカネタンホイザ": ["マチタン"]};
+CARDS.forEach(c=>{c.qn=kana(c.name);c.qa=(ALIAS_CHAR[c.name]||[]).map(kana);c.al=[...(ALIAS_CARD[c.id]||[]),...(ALIAS_CHAR[c.name]||[])];c.q=kana([c.name,c.title,c.uniq,...c.al].join('|'))});
 function cardMatch(c,qq){if(!qq)return true;const lab=kana(labOf(c));
   if(c.q.includes(qq)||lab.includes(qq))return true;
-  if(lab&&qq.startsWith(lab)&&c.qn.includes(qq.slice(lab.length)))return true;
-  if(lab&&qq.endsWith(lab)&&c.qn.includes(qq.slice(0,qq.length-lab.length)))return true;
+  const inName=r=>!!r&&(c.qn.includes(r)||c.qa.some(a=>a.includes(r)));
+  if(lab&&qq.startsWith(lab)&&inName(qq.slice(lab.length)))return true;
+  if(lab&&qq.endsWith(lab)&&inName(qq.slice(0,qq.length-lab.length)))return true;
   return false}
 const NAME_APT=new Map();{const g=new Map();for(const c of CARDS){if(!g.has(c.name))g.set(c.name,new Set());g.get(c.name).add(c.apt)}g.forEach((st,nm)=>{if(st.size===1)NAME_APT.set(nm,[...st][0])})}
 const miniApt=a=>APTS.map((x,i)=>`${APT_S[x]}<i>${a[i]}</i>`).join(' ');
@@ -522,9 +566,9 @@ const WHITE_RAW=[["右回り○","s"],["左回り○","s"],["東京レース場�
 const WCAT={s:'スキル',r:'レース',c:'シナリオ',h:'隠し',o:'その他'};
 const WHITES=WHITE_RAW.map(([n,c])=>({n,c,q:kana(n)}));
 const WHITE_SET=new Set(WHITE_RAW.map(x=>x[0]));
-const SAMPLE_TITLE='使用例：チャンミ10月先行';
-const OLD_SAMPLE_TITLES=['サンプル：ダート・マイル計画','サンプル：マンハッタンカフェ計画','使用例：LOH11月差し'];
-const SAMPLE_ROOT={"card":112901,"free":false,"name":"アーモンドアイ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"Peerless Heroine","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":101803,"free":false,"name":"エアグルーヴ","memo":"","status":"have","blue":{"t":"パワー","s":3},"red":{"t":"先行","s":3},"green":{"n":"Shadow Ancestress","s":2},"genes":[{"t":"中距離","s":3},{"t":"先行","s":2}],"whites":[{"n":"直滑降","s":3},{"n":"存在感","s":2},{"n":"連綿","s":2},{"n":"レースの真髄・体","s":2}],"targets":[],"parents":[{"card":103202,"free":false,"name":"アグネスタキオン","memo":"","status":"have","blue":{"t":"賢さ","s":3},"red":{"t":"中距離","s":3},"green":{"n":"夏空ハレーション","s":3},"genes":[{"t":"先行","s":3}],"whites":[{"n":"秋ウマ娘○","s":2},{"n":"直滑降","s":1},{"n":"阿吽の呼吸","s":3},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":3},{"n":"秋の目覚め","s":1}],"targets":[],"parents":[{"card":101502,"free":false,"name":"テイエムオペラオー","memo":"","status":"have","blue":{"t":"","s":2},"red":{"t":"先行","s":3},"green":{"n":"恵福バルカローレ","s":3},"genes":[],"whites":[{"n":"直滑降","s":3},{"n":"阿吽の呼吸","s":2},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":2},{"n":"秋の目覚め","s":2}],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":101702,"free":false,"name":"シンボリルドルフ","memo":"","status":"rent","blue":{"t":"","s":3},"red":{"t":"先行","s":3},"green":{"n":"翳り退く、さざめきの矢","s":2},"genes":[],"whites":[{"n":"秋ウマ娘○","s":1},{"n":"阿吽の呼吸","s":2},{"n":"大立ち回り","s":1},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":2}],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":111301,"free":false,"name":"フサイチパンドラ","memo":"","status":"rent","blue":{"t":"根性","s":3},"red":{"t":"中距離","s":3},"green":{"n":"ホップステップ・ゲッチュ♡","s":3},"genes":[{"t":"中距離","s":3},{"t":"先行","s":2}],"whites":[{"n":"秋ウマ娘○","s":3},{"n":"差しためらい","s":2},{"n":"直滑降","s":2},{"n":"阿吽の呼吸","s":3},{"n":"存在感","s":2},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":2}],"targets":[],"parents":[{"card":114301,"free":false,"name":"ヴィクトワールピサ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":3},"green":{"n":"Ring-a-Link","s":3},"genes":[],"whites":[{"n":"阿吽の呼吸","s":2},{"n":"存在感","s":3},{"n":"連綿","s":2}],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"中距離","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":103402,"free":false,"name":"イナリワン","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"灯穂","s":0},"genes":[],"whites":[{"n":"秋ウマ娘○","s":3},{"n":"阿吽の呼吸","s":3},{"n":"存在感","s":3},{"n":"秋の目覚め","s":2}],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]}]},{"card":114101,"free":false,"name":"エピファネイア","memo":"","status":"have","blue":{"t":"パワー","s":3},"red":{"t":"中距離","s":3},"green":{"n":"光れ！弾けろ！超新星爆発！","s":2},"genes":[],"whites":[{"n":"秋ウマ娘○","s":1},{"n":"直滑降","s":2},{"n":"シンパシー","s":3},{"n":"阿吽の呼吸","s":3},{"n":"存在感","s":3},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":2},{"n":"レースの真髄・賢","s":3}],"targets":[],"parents":[{"card":101502,"free":false,"name":"テイエムオペラオー","memo":"","status":"have","blue":{"t":"スピード","s":2},"red":{"t":"先行","s":3},"green":{"n":"恵福バルカローレ","s":3},"genes":[{"t":"先行","s":3}],"whites":[{"n":"シンパシー","s":2},{"n":"アグレッシブ","s":3},{"n":"阿吽の呼吸","s":2},{"n":"レースの真髄・体","s":2}],"targets":[],"parents":[{"card":101401,"free":false,"name":"エルコンドルパサー","memo":"","status":"have","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"プランチャ☆ガナドール","s":0},"genes":[],"whites":[{"n":"秋ウマ娘○","s":2},{"n":"阿吽の呼吸","s":2},{"n":"連綿","s":2}],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":108602,"free":false,"name":"メジロラモーヌ","memo":"","status":"rent","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"解けぬ結い目","s":0},"genes":[],"whites":[{"n":"秋ウマ娘○","s":3},{"n":"アグレッシブ","s":3},{"n":"阿吽の呼吸","s":3},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":3},{"n":"レースの真髄・賢","s":2}],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":107702,"free":false,"name":"ナリタトップロード","memo":"","status":"rent","blue":{"t":"スタミナ","s":3},"red":{"t":"中距離","s":3},"green":{"n":"Joy to the World","s":3},"genes":[],"whites":[{"n":"秋ウマ娘○","s":2},{"n":"直滑降","s":2},{"n":"阿吽の呼吸","s":2},{"n":"存在感","s":2},{"n":"連綿","s":2},{"n":"レースの真髄・賢","s":2}],"targets":[],"parents":[{"card":101901,"free":false,"name":"アグネスデジタル","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"尊み☆ﾗｽﾄｽﾊﾟ—(ﾟ∀ﾟ)—ﾄ!","s":0},"genes":[],"whites":[{"n":"存在感","s":2},{"n":"連綿","s":2},{"n":"レースの真髄・体","s":3}],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"長距離","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"長距離","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":102303,"free":true,"name":"ビワハヤヒデ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":3},"green":{"n":"勝利ヘ至ル累積","s":0},"genes":[],"whites":[{"n":"阿吽の呼吸","s":1},{"n":"レースの真髄・体","s":1},{"n":"レースの真髄・賢","s":2},{"n":"秋の目覚め","s":3}],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]}]}]};
+const SAMPLE_TITLE='使用例：10月チャンミ（先行）';
+const OLD_SAMPLE_TITLES=['サンプル：ダート・マイル計画','サンプル：マンハッタンカフェ計画','使用例：LOH11月差し','使用例：チャンミ10月先行'];
+const SAMPLE_ROOT={"card":112901,"free":false,"name":"アーモンドアイ","memo":"","status":"plan","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"Peerless Heroine","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":101803,"free":false,"name":"エアグルーヴ","memo":"","status":"have","blue":{"t":"パワー","s":3},"red":{"t":"先行","s":3},"green":{"n":"Shadow Ancestress","s":2},"genes":[{"t":"中距離","s":3},{"t":"先行","s":2}],"whites":[{"n":"大阪杯","s":2},{"n":"朝日杯FS","s":3},{"n":"マイルCS南部杯","s":3},{"n":"BC・サンタアニタパーク","s":2},{"n":"コーナー巧者○","s":3},{"n":"直線巧者","s":2},{"n":"食い下がり","s":3},{"n":"中距離コーナー○","s":1},{"n":"直滑降","s":3},{"n":"イグニッション","s":2},{"n":"勝利に向かって","s":2},{"n":"飛躍の予感","s":3},{"n":"憧れを越えて","s":3},{"n":"比類なき","s":3},{"n":"意地っ張り","s":3},{"n":"存在感","s":2},{"n":"連綿","s":2},{"n":"レースの真髄・体","s":2},{"n":"陽の加護","s":1},{"n":"恩返し、召し上がれ","s":3},{"n":"Dreamsシナリオ","s":1},{"n":"東の雄","s":2},{"n":"叩き良化型","s":1}],"targets":[],"parents":[{"card":103202,"free":false,"name":"アグネスタキオン","memo":"","status":"have","blue":{"t":"賢さ","s":3},"red":{"t":"中距離","s":3},"green":{"n":"夏空ハレーション","s":3},"genes":[{"t":"先行","s":3}],"whites":[{"n":"探求心","s":2},{"n":"勝利に向かって","s":3},{"n":"素直な一歩","s":2},{"n":"正面突破","s":3},{"n":"光差す方へ","s":2},{"n":"華麗な足取り","s":2},{"n":"灯を胸に","s":2},{"n":"淀みなし","s":2},{"n":"阿吽の呼吸","s":3},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":3},{"n":"スピードの目覚め","s":2},{"n":"パワーの目覚め","s":1},{"n":"右回りの目覚め","s":2},{"n":"秋の目覚め","s":1},{"n":"連戦連勝","s":3},{"n":"反骨精神","s":2},{"n":"宝塚記念","s":1},{"n":"帝王賞","s":3},{"n":"秋ウマ娘○","s":2},{"n":"直線巧者","s":1},{"n":"末脚","s":3},{"n":"抜け出し準備","s":2},{"n":"軽やかステップ","s":3},{"n":"直滑降","s":1},{"n":"尻尾上がり","s":2},{"n":"ありったけ","s":2},{"n":"確かな足取り","s":2}],"targets":[],"parents":[{"card":101502,"free":false,"name":"テイエムオペラオー","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"恵福バルカローレ","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":101702,"free":false,"name":"シンボリルドルフ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"翳り退く、さざめきの矢","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":111301,"free":false,"name":"フサイチパンドラ","memo":"","status":"rent","blue":{"t":"根性","s":3},"red":{"t":"中距離","s":3},"green":{"n":"ホップステップ・ゲッチュ♡","s":3},"genes":[{"t":"中距離","s":3},{"t":"先行","s":2}],"whites":[{"n":"大阪杯","s":2},{"n":"ホープフルS","s":3},{"n":"東京大賞典","s":3},{"n":"差しためらい","s":2},{"n":"直滑降","s":2},{"n":"下り坂巧者","s":2},{"n":"探求心","s":2},{"n":"品行方正","s":1},{"n":"素直な一歩","s":3},{"n":"正面突破","s":3},{"n":"決定打","s":2},{"n":"阿吽の呼吸","s":3},{"n":"存在感","s":2},{"n":"連綿","s":3},{"n":"突き抜ける走り","s":2},{"n":"レースの真髄・体","s":2},{"n":"恩返し、召し上がれ","s":2},{"n":"冬の目覚め","s":3},{"n":"旅人","s":1},{"n":"お嬢様","s":1},{"n":"叩き良化型","s":2},{"n":"秋ウマ娘○","s":3},{"n":"温泉郷シナリオ","s":3}],"targets":[],"parents":[{"card":114301,"free":false,"name":"ヴィクトワールピサ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"Ring-a-Link","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":103402,"free":false,"name":"イナリワン","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"灯穂","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":114101,"free":false,"name":"エピファネイア","memo":"","status":"have","blue":{"t":"パワー","s":3},"red":{"t":"中距離","s":3},"green":{"n":"光れ！弾けろ！超新星爆発！","s":2},"genes":[],"whites":[{"n":"フェブラリーS","s":1},{"n":"大阪杯","s":3},{"n":"日本ダービー","s":2},{"n":"安田記念","s":2},{"n":"チャンピオンズC","s":2},{"n":"JDダービー","s":2},{"n":"川崎記念","s":2},{"n":"BC・サンタアニタパーク","s":3},{"n":"右回り○","s":2},{"n":"秋ウマ娘○","s":1},{"n":"コーナー巧者○","s":2},{"n":"直滑降","s":2},{"n":"ウマ好み","s":2},{"n":"シンパシー","s":3},{"n":"勝利に向かって","s":3},{"n":"飛躍の予感","s":3},{"n":"さらなる高みへ","s":2},{"n":"憧れを越えて","s":3},{"n":"比類なき","s":3},{"n":"気持ちを乗せて","s":2},{"n":"余勢を駆って","s":2},{"n":"阿吽の呼吸","s":3},{"n":"流れに任せて","s":3},{"n":"存在感","s":3},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":2},{"n":"レースの真髄・賢","s":3},{"n":"連戦連勝","s":3}],"targets":[],"parents":[{"card":101502,"free":false,"name":"テイエムオペラオー","memo":"","status":"have","blue":{"t":"スピード","s":2},"red":{"t":"先行","s":3},"green":{"n":"恵福バルカローレ","s":3},"genes":[{"t":"マイル","s":3},{"t":"先行","s":3}],"whites":[{"n":"宝塚記念","s":1},{"n":"天皇賞（秋）","s":1},{"n":"JDダービー","s":2},{"n":"川崎記念","s":2},{"n":"BC・サンタアニタパーク","s":3},{"n":"コーナー巧者○","s":2},{"n":"直線巧者","s":2},{"n":"食い下がり","s":3},{"n":"尻尾上がり","s":3},{"n":"シンパシー","s":2},{"n":"探求心","s":2},{"n":"飛躍の予感","s":1},{"n":"アグレッシブ","s":3},{"n":"躍動","s":1},{"n":"阿吽の呼吸","s":2},{"n":"ただその先へ","s":2},{"n":"レースの真髄・体","s":2},{"n":"アメリカンドリーム","s":2},{"n":"Dreamsシナリオ","s":2},{"n":"スピードの目覚め","s":2},{"n":"連戦連勝","s":2},{"n":"西の雄","s":3},{"n":"叩き良化型","s":2}],"targets":[],"parents":[{"card":101401,"free":false,"name":"エルコンドルパサー","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"プランチャ☆ガナドール","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":108602,"free":false,"name":"メジロラモーヌ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"解けぬ結い目","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":107702,"free":false,"name":"ナリタトップロード","memo":"","status":"rent","blue":{"t":"スタミナ","s":3},"red":{"t":"中距離","s":3},"green":{"n":"Joy to the World","s":3},"genes":[],"whites":[{"n":"大阪杯","s":2},{"n":"天皇賞（秋）","s":2},{"n":"ホープフルS","s":2},{"n":"JDダービー","s":2},{"n":"マイルCS南部杯","s":2},{"n":"春ウマ娘○","s":2},{"n":"秋ウマ娘○","s":2},{"n":"食い下がり","s":2},{"n":"先行直線○","s":2},{"n":"直滑降","s":2},{"n":"地固め","s":2},{"n":"スリップストリーム","s":3},{"n":"真っ向勝負","s":2},{"n":"食らいつき","s":3},{"n":"会心の一歩","s":2},{"n":"品行方正","s":2},{"n":"活路を拓く！","s":1},{"n":"意地っ張り","s":3},{"n":"淀みなし","s":2},{"n":"阿吽の呼吸","s":2},{"n":"存在感","s":2},{"n":"連綿","s":2},{"n":"アオハル点火・賢","s":2},{"n":"レースの真髄・賢","s":2},{"n":"陽の加護","s":3},{"n":"地の加護","s":3},{"n":"トレセン軒シナリオ","s":3},{"n":"右回りの目覚め","s":2},{"n":"春の目覚め","s":2},{"n":"連戦連勝","s":3},{"n":"旅人","s":3},{"n":"叩き良化型","s":2},{"n":"無人島シナリオ","s":3},{"n":"温泉郷シナリオ","s":3}],"targets":[],"parents":[{"card":101901,"free":false,"name":"アグネスデジタル","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"尊み☆ﾗｽﾄｽﾊﾟ—(ﾟ∀ﾟ)—ﾄ!","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":102303,"free":false,"name":"ビワハヤヒデ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"勝利ヘ至ル累積","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]}]};
 function samplePlan(){
   const pl=normalize({plans:[{title:SAMPLE_TITLE,root:JSON.parse(JSON.stringify(SAMPLE_ROOT))}]}).plans[0];
   reid(pl.root);return{id:rid(),title:SAMPLE_TITLE,goals:[],root:pl.root,sample:true,created:0,updated:Date.now()};
@@ -551,6 +595,10 @@ function normalize(d){
 }
 const plan=()=>S.plans.find(p=>p.id===curId);
 function walk(n,f,d=0,child=null){f(n,d,child);n.parents.forEach(p=>walk(p,f,d+1,n))}
+/* 自身と両親の3人が共通して持つ白因子（3人組ごとに判定） */
+function trioOf(n){if(n.parents.length<2||isEmpty(n)||n.parents.some(isEmpty))return null;const st=x=>new Set(x.whites.map(w=>w.n.trim()).filter(Boolean)),a=st(n),b=st(n.parents[0]),c=st(n.parents[1]);return [...a].filter(k=>b.has(k)&&c.has(k))}
+let TRI=new Map();
+function calcTri(){TRI=new Map();const p=plan();if(!p)return;walk(p.root,x=>{for(const k of trioOf(x)||[])for(const y of [x,...x.parents]){if(!TRI.has(y.id))TRI.set(y.id,new Set());TRI.get(y.id).add(k)}})}
 function findNode(id){const pl=plan();if(!pl)return null;let r=null;walk(pl.root,(n,d,c)=>{if(n.id===id)r={n,d,child:c}});return r}
 function maxDepth(n){return n.parents.length?1+Math.max(...n.parents.map(maxDepth)):0}
 const U=()=>new Map(S.settings.useful.map(u=>[u.n,u.p]));
@@ -664,13 +712,13 @@ function factorQ(n){
 function cardHTML(n,d){
   const p=plan(),goals=new Set();
   if(isEmpty(n))return `<div class="card empty g${Math.min(d,4)}${n.id===selId?' sel':''}" data-id="${n.id}" tabindex="0" role="button"><div class="gtag">${GEN(d)}</div><div class="chd"><b>未設定</b></div>${UI.compact?compactBody(n,null,[]):`<div class="memo">クリックして入力</div>${factorQ(n)}`}</div>`;
-  const ws=n.whites.filter(w=>w.n.trim());
+  const ws=n.whites.filter(w=>w.n.trim()),tri=TRI.get(n.id);
   let h=`<div class="card g${Math.min(d,4)}${n.id===selId?' sel':''}${n.status==='plan'?' plan':''}" data-id="${n.id}" tabindex="0" role="button">`;
   const tog=n.parents.length?`<button type="button" class="ctog" data-tog="${n.id}" aria-expanded="${!(UI.collapsed||[]).includes(n.id)}">${(UI.collapsed||[]).includes(n.id)?'▸ 親を表示':'▾ 親を閉じる'}</button>`:'';
   const pill=n.status==='have'?'<span class="pill have">自前</span>':n.status==='rent'?'<span class="pill rent">レンタル</span>':n.status==='plan'?'<span class="pill plan">予定</span>':'';
   h+=UI.compact?`<div class="gtag">${GEN(d)}</div><div class="chd"><b>${esc(n.name||'（名前なし）')}</b>${affBadge(n)}</div>`:`<div class="gtag">${GEN(d)}</div><div class="chd"><b>${esc(n.name||'（名前なし）')}</b>${affBadge(n)}${tog}${pill}</div>`;
   const cdc=n.card&&CARD_BY.get(n.card);
-  if(UI.compact)return h+compactBody(n,cdc,ws,pill+tog)+'</div>';
+  if(UI.compact)return h+compactBody(n,cdc,ws,pill+tog,tri)+'</div>';
   if(cdc)h+=`<div class="costume" title="${esc(cdc.name)}（${esc(labOf(cdc))}）［${esc(cdc.title)}］"><b class="nick">${esc(labOf(cdc))}</b>［${esc(cdc.title)}］</div>`;
   if(n.memo)h+=`<div class="memo">${esc(n.memo)}</div>`;
   let f='';
@@ -683,8 +731,8 @@ function cardHTML(n,d){
   if(n.green.n)h+=`<div class="chips"><span class="chip c-green" title="${esc(n.green.n)}">${esc(n.green.n)}<span class="s">${starTxt(n.green.s)}</span></span></div>`;
   let w='';
   for(const x of n.genes)if(x.t)w+=`<span class="chip c-w1">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
-  if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種・★${ws.reduce((t,x)=>t+(+x.s||0),0)}</span>`}
-  else for(const x of ws)w+=`<span class="chip c-w1">${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`;
+  if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種・★${ws.reduce((t,x)=>t+(+x.s||0),0)}</span>`;if(tri&&tri.size)w+=`<span class="chip c-tri" title="${esc([...tri].join('、'))}">3人共通 ${tri.size}</span>`}
+  else for(const x of ws){const t=tri&&tri.has(x.n.trim());w+=`<span class="chip c-w1${t?' tri':''}"${t?' title="自身と両親の3人に共通する白因子"':''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`}
   if(n.status==='plan')for(const t of n.targets)w+=`<span class="chip c-tgt">狙 ${esc(t)}</span>`;
   if(w)h+=`<div class="chips">${w}</div>`;
   if(false){
@@ -694,7 +742,7 @@ function cardHTML(n,d){
   }
   return h+'</div>';
 }
-function compactBody(n,cdc,ws,extra){
+function compactBody(n,cdc,ws,extra,tri){
   let h='';if(cdc||extra)h+=`<div class="crow">${cdc?`<span class="costume" title="${esc(cdc.name)}（${esc(labOf(cdc))}）［${esc(cdc.title)}］"><b class="nick">${esc(labOf(cdc))}</b></span>`:'<span></span>'}${extra?`<span class="cact">${extra}</span>`:''}</div>`;
   let c='';
   if(n.red.t)c+=`<span class="chip c-red${redBad(n)?' bad':''}">${esc(APT_S[n.red.t]||n.red.t)}<span class="s">★${n.red.s||1}</span></span>`;
@@ -702,6 +750,7 @@ function compactBody(n,cdc,ws,extra){
   for(const x of n.genes)if(x.t)c+=`<span class="chip c-gene">${esc(APT_S[x.t]||x.t)}遺<span class="s">★${x.s||1}</span></span>`;
   for(const g of geneCand(n))c+=`<span class="chip c-gc${g.sure?' sure':''}" title="${esc(g.t)}の遺伝子 ${g.sure?'確定':'可能性'}（赤★${g.p}）">${esc(APT_S[g.t])}遺${g.sure?'確':'?'}</span>`;
   if(ws.length)c+=`<span class="chip c-more" title="${esc(ws.map(w=>w.n+'★'+w.s).join('、'))}">白${ws.length}</span>`;
+  if(tri&&tri.size)c+=`<span class="chip c-tri" title="自身と両親の3人に共通：${esc([...tri].join('、'))}">共通${tri.size}</span>`;
   if(c)h+=`<div class="chips">${c}</div>`;else if(isEmpty(n))h+=`<div class="memo">クリックして入力</div>`;
   return h}
 function addParent(n){const nn=blank();if(n.parents.length===1&&n.parents[0].slot===1){delete n.parents[0].slot;n.parents.unshift(nn)}else{if(n.parents[0])delete n.parents[0].slot;n.parents.push(nn)}return nn}
@@ -724,7 +773,7 @@ function renderTree(){if(!plan())return;
   const p=plan(),md=maxDepth(p.root)+(1);
   let gh='';for(let i=0;i<md;i++)gh+=`<div>${GEN(i)}</div>`;
   $('#genHead').innerHTML=gh;
-  $('#tree').innerHTML=branchHTML(p.root,0);
+  calcTri();$('#tree').innerHTML=branchHTML(p.root,0);
   if(UI.compact&&!isMobile())fitZoom();
 }
 
@@ -757,8 +806,9 @@ function editorHTML(){
   if(!f)return `<p class="empty-note">系統樹のカードをクリックすると、ここで因子を編集できます。</p>`;
   const {n,d,child}=f;
   let h=`<div><div class="gen">${GEN(d)}${child?` ／ ${esc(child.name||'未設定')} の継承元`:''}</div><h2>${esc(n.name||'未設定')}</h2></div>`;
+  h+=`<div class="scanbar"><button class="btn primary sm" id="openScan">スクショから読み取る</button><span class="sub">ゲームの継承画面のスクショから、キャラと因子をまとめて入力（ここにドラッグ＆ドロップも可）</span></div>`;
   {const cd=n.card&&CARD_BY.get(n.card);
-   h+=`<div class="fld"><label for="ed-name">キャラ（名前・呼び名・衣装名・固有スキルで絞り込み）</label><div class="combo"><input type="text" id="ed-name" data-f="name" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-clist" value="${esc(n.name)}" placeholder="例：ステイゴールド、嫁カフェ、水着"><div class="clist" id="ed-clist" role="listbox" hidden></div></div>${cd?`<div class="cur">衣装：<input type="text" id="ed-nick" class="nick-in" value="${esc(labOf(cd))}" aria-label="衣装の呼び名" title="呼び名を変更できます（空にすると自動の呼び名に戻ります）"><span class="t">［${esc(cd.title)}］</span><button type="button" class="x" id="cardClear" aria-label="衣装の選択を解除">×</button></div>`:''}</div>`;}
+   h+=`<div class="fld"><label for="ed-name">キャラ（名前・愛称・衣装名・固有スキルで絞り込み）</label><div class="combo"><input type="text" id="ed-name" data-f="name" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-clist" value="${esc(n.name)}" placeholder="例：ステイゴールド、嫁カフェ、水着"><div class="clist" id="ed-clist" role="listbox" hidden></div></div>${cd?`<div class="cur">衣装：<input type="text" id="ed-nick" class="nick-in" value="${esc(labOf(cd))}" aria-label="衣装の呼び名" title="呼び名を変更できます（空にすると自動の呼び名に戻ります）"><span class="t">［${esc(cd.title)}］</span><button type="button" class="x" id="cardClear" aria-label="衣装の選択を解除">×</button></div>`:''}</div>`;}
   h+=`<label class="fld">メモ<input type="text" id="ed-memo" data-f="memo" value="${esc(n.memo)}"></label>`;
   h+=`<div class="frow"><span class="fld" style="flex:none">状態</span><span class="seg">${[['have','自前'],['rent','レンタル'],['plan','予定']].map(([v,l])=>`<button type="button" data-status="${v}" aria-pressed="${n.status===v}">${l}</button>`).join('')}</span></div>`;
   h+=`<div class="sec"><h3>青因子（ステータス）</h3><div class="frow"><select id="ed-blue" data-f="blue.t">${optList(STATS,n.blue.t,'なし')}</select>${starsHTML('blue',n.blue.s)}</div>`;
@@ -814,6 +864,8 @@ function summaryHTML(f){
   const a=agg(n),filled=a.src.filter(s=>!isEmpty(s.n)).length;
   const np=n.parents.length,ng=a.src.length-np;
   h+=`<p class="hint">集計対象：親${np}人・祖父母${ng}人（入力済み ${filled}人）。入力している因子だけを表示します。因子カードを選ぶと、そのカードの集計に切り替わります。</p>`;
+  {const nm=x=>esc((x&&x.name)||'未設定'),rs=[n,...n.parents].map(x=>({x,t:trioOf(x)})).filter(o=>o.t);
+   if(rs.length){h+=`<div class="sec"><h3>親子3人で共通の白因子</h3><div class="tw"><table class="t"><thead><tr><th>3人の組</th><th>共通の白因子</th></tr></thead><tbody>${rs.map(({x,t})=>`<tr><td>${nm(x)}<br><small>＋ ${nm(x.parents[0])}・${nm(x.parents[1])}</small></td><td>${t.length?t.map(k=>`<span class="chip c-tri">${esc(k)}</span>`).join(' '):'<span style="color:var(--muted)">なし</span>'}</td></tr>`).join('')}</tbody></table></div><p class="hint">自身と両親の3人がそろって持つ白因子です。3人組ごとに判定し、血統表では金色の枠で表示します。</p></div>`}}
   {const r=affinity(n);if(r){const P=n.parents,nm=x=>esc((x&&x.name)||'未設定'),g=(p,i)=>p&&p.parents[i];
     h+=`<div class="sec"><h3>相性 <span class="aff s${r.dup?'':r.lv}${r.dup?' dup':''}">${r.dup?'重複あり':r.sym+' '+r.total}</span></h3>`;
     const rows=[[`${nm(n)} × ${nm(P[0])}`,r.mp1],[`${nm(n)} × ${nm(P[1])}`,r.mp2],[`${nm(P[0])} × ${nm(P[1])}（親同士）`,r.pp],[`${nm(n)} × ${nm(P[0])} × ${nm(g(P[0],0))}`,r.g11],[`${nm(n)} × ${nm(P[0])} × ${nm(g(P[0],1))}`,r.g12],[`${nm(n)} × ${nm(P[1])} × ${nm(g(P[1],0))}`,r.g21],[`${nm(n)} × ${nm(P[1])} × ${nm(g(P[1],1))}`,r.g22]];
@@ -880,9 +932,9 @@ $('#tree').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.t
 /* ---------- events: editor ---------- */
 const ed=$('#editor');
 ed.addEventListener('input',e=>{
-  if(e.target.id==='ed-name'){cIdx=0;renderCList(e.target.value);const f0=findNode(selId);
+  if(e.target.id==='ed-name'){cIdx=-1;renderCList(e.target.value);const f0=findNode(selId);
     if(f0&&f0.n.card){const c0=CARD_BY.get(f0.n.card);if(c0&&e.target.value!==c0.name){f0.n.card=0;ed.querySelector('.cur')?.remove()}}}
-  if(e.target.id==='ed-wq'||e.target.id==='ed-tq'){wIdx=0;renderWList(e.target.id==='ed-wq'?'w':'t',e.target.value);return}
+  if(e.target.id==='ed-wq'||e.target.id==='ed-tq'){wIdx=-1;renderWList(e.target.id==='ed-wq'?'w':'t',e.target.value);return}
   if(e.target.id==='ed-nick'){const f1=findNode(selId);if(!f1||!f1.n.card)return;const c1=CARD_BY.get(f1.n.card),v=e.target.value.trim();
     S.settings.costumeNick=S.settings.costumeNick||{};if(!v||v===c1.autoLab)delete S.settings.costumeNick[c1.id];else S.settings.costumeNick[c1.id]=v;
     touch('settings');renderTree();return}
@@ -898,23 +950,23 @@ ed.addEventListener('input',e=>{
   if(e.target.tagName==='SELECT'||fld.startsWith('whites.'))refreshStars(f.n);
 });
 ed.addEventListener('change',e=>{if(e.target.id==='ed-free'){const f0=findNode(selId);if(f0){f0.n.free=e.target.checked;touch('plan');renderTree();renderEditor();renderSummary()}return}const f=e.target.dataset.f;if(f&&f.startsWith('whites.')){renderHeader();const t=document.createElement('div');t.innerHTML=editorHTML();ed.querySelectorAll('.wrow .pm').forEach((el,i)=>{const nw=t.querySelectorAll('.wrow .pm')[i];if(nw)el.replaceWith(nw)})}});
-let cIdx=0,cRes=[],nameT=null;
+let cIdx=-1,cRes=[],nameT=null;
 function renderCList(q){
   const box=$('#ed-clist'),inp=$('#ed-name');if(!box)return;
   const toks=String(q||'').split(/[\s　]+/).map(t=>kana(t).replace('はなよめ','嫁').replace('花嫁','嫁')).filter(Boolean);cRes=CARDS.filter(c=>toks.every(t=>cardMatch(c,t))).slice(0,80);
-  if(cIdx>=cRes.length)cIdx=0;
+  if(cIdx>=cRes.length)cIdx=-1;
   box.innerHTML=cRes.length?cRes.map((c,i)=>`<div class="citem${i===cIdx?' act':''}" role="option" data-card="${c.id}" aria-selected="${i===cIdx}"><b>${esc(c.name)}<span class="nick">（${esc(labOf(c))}）</span></b><span class="t">［${esc(c.title)}］${esc(c.rel.slice(0,7).replace('-','.'))}</span><span class="ap">${miniApt(c.apt)}</span></div>`).join(''):`<div class="cempty">一覧にありません。この名前のまま使う場合は、下の基本適性を手動で登録できます。</div>`;
   box.hidden=false;inp.setAttribute('aria-expanded','true');
   box.querySelector('.act')?.scrollIntoView({block:'nearest'});
 }
 function hideCList(){const b=$('#ed-clist');if(b){b.hidden=true;$('#ed-name')?.setAttribute('aria-expanded','false')}}
-let wIdx=0,wRes=[],wMode='w';
+let wIdx=-1,wRes=[],wMode='w';
 function renderWList(kind,q){
   const box=$(kind==='w'?'#ed-wlist':'#ed-tlist'),inp=$(kind==='w'?'#ed-wq':'#ed-tq');if(!box)return;wMode=kind;
   const toks=String(q||'').split(/[\s　]+/).map(kana).filter(Boolean);
   if(!toks.length){box.hidden=true;return}
   wRes=WHITES.filter(x=>toks.every(t=>x.q.includes(t))).slice(0,60);
-  if(wIdx>=wRes.length)wIdx=0;
+  if(wIdx>=wRes.length)wIdx=-1;
   const raw=String(q||'').trim();
   let h=wRes.map((x,i)=>`<div class="citem${i===wIdx?' act':''}" role="option" data-white="${esc(x.n)}" aria-selected="${i===wIdx}"><b>${esc(x.n)}</b><span class="t">${WCAT[x.c]}</span></div>`).join('');
   if(raw&&!WHITE_SET.has(raw))h+=`<div class="citem" role="option" data-white="${esc(raw)}"><span class="t">「${esc(raw)}」をそのまま追加</span></div>`;
@@ -940,15 +992,20 @@ ed.addEventListener('focusin',e=>{if(e.target.id==='ed-name')renderCList(e.targe
 ed.addEventListener('focusout',e=>{if(e.target.id==='ed-name')setTimeout(hideCList,150);if(e.target.id==='ed-wq'||e.target.id==='ed-tq')setTimeout(hideWList,150)});
 ed.addEventListener('mousedown',e=>{const wi=e.target.closest('[data-white]');if(wi){e.preventDefault();pickWhite(wi.dataset.white);return}const it=e.target.closest('[data-card]');if(it){e.preventDefault();selectCard(+it.dataset.card)}});
 function refreshStars(n){ed.querySelectorAll('[data-star]').forEach(b=>{const key=b.dataset.star;let o=key.includes('.')?getObj(n,key+'.x')[0]:n[key];b.classList.toggle('on',+b.dataset.v<=(o?o.s:0))})}
+const stepIdx=(i,len,down)=>i<0?(down?0:len-1):(i+(down?1:-1)+len)%len;
 ed.addEventListener('keydown',e=>{
+  if(e.isComposing||e.keyCode===229)return; /* 日本語入力の変換確定のEnterでは選ばない */
   if(e.target.id==='ed-wq'||e.target.id==='ed-tq'){const k=e.target.id==='ed-wq'?'w':'t';
-    if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!wRes.length)return;wIdx=(wIdx+(e.key==='ArrowDown'?1:-1)+wRes.length)%wRes.length;renderWList(k,e.target.value);return}
-    if(e.key==='Enter'){e.preventDefault();wMode=k;const v=e.target.value.trim();if(wRes[wIdx])pickWhite(wRes[wIdx].n);else if(v)pickWhite(v);return}
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!wRes.length)return;wIdx=stepIdx(wIdx,wRes.length,e.key==='ArrowDown');renderWList(k,e.target.value);return}
+    if(e.key==='Enter'){e.preventDefault();wMode=k;const v=e.target.value.trim();
+      if(wRes[wIdx])pickWhite(wRes[wIdx].n);
+      else{const ex=wRes.find(x=>x.n===v);if(ex)pickWhite(ex.n);else if(wRes.length===1)pickWhite(wRes[0].n);else if(!wRes.length&&v)pickWhite(v);else toast('↑↓キーで候補を選んでEnter、または候補をクリックしてください')}
+      return}
     if(e.key==='Escape'){e.stopPropagation();hideWList();return}
   }
   if(e.target.id==='ed-name'){
-    if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!cRes.length)return;cIdx=(cIdx+(e.key==='ArrowDown'?1:-1)+cRes.length)%cRes.length;renderCList(e.target.value);return}
-    if(e.key==='Enter'){e.preventDefault();if(cRes[cIdx])selectCard(cRes[cIdx].id);return}
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!cRes.length)return;cIdx=stepIdx(cIdx,cRes.length,e.key==='ArrowDown');renderCList(e.target.value);return}
+    if(e.key==='Enter'){e.preventDefault();if(cRes[cIdx])selectCard(cRes[cIdx].id);else if(cRes.length===1)selectCard(cRes[0].id);else if(cRes.length)toast('↑↓キーで候補を選んでEnter、または候補をクリックしてください');return}
     if(e.key==='Escape'){e.stopPropagation();hideCList();return}
   }
 });
@@ -970,6 +1027,7 @@ ed.addEventListener('click',e=>{
       touch('plan');renderHeader();renderEditor();soft();ed.querySelector('#ed-bulk')?.focus();toast(items.length+'件の白因子を追加しました');break}
     case 'edAddP':{const nn=addParent(n);selId=nn.id;touch('plan');renderAll();break}
     case 'edReg':registerRoster(n);break;
+    case 'openScan':openScan();break;
     case 'edPlace':openOv('#ovRoster');break;
     case 'edClear':{const keep={id:n.id,parents:n.parents};Object.assign(n,blank(),keep);touch('plan');renderAll();break}
     case 'edDel':$('#edDelConfirm').hidden=false;if($('#edRmConfirm'))$('#edRmConfirm').hidden=true;break;
@@ -992,6 +1050,168 @@ function parseBulk(v){
     out.push({n:name,s:Math.min(3,Math.max(1,st))})}
   return out;
 }
+
+/* ---------- スクショから因子を読み取る（ブラウザ内で処理・画像は外部に送らない） ---------- */
+const LIB_TESS='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+const TESS_LANG='https://cdn.jsdelivr.net/npm/@tesseract.js-data/jpn@1.0.0/4.0.0';
+let tessWorker=null,scanRes=[],scanBusy=false,scanCard=0,scanUseCard=true,scanDelExtra=false;
+const cardLabel=c=>c?`${c.name}［${c.title}］`:'';
+const SC_NORM_MAP={'力':'か','口':'ろ','工':'え','二':'に','夕':'た','卜':'と','八':'は','〇':'○'};
+const scNorm=s=>(s||'').normalize('NFKC').replace(/[\s・\.\-ー一_、。,'"`:;|!！/／]/g,'').replace(/[ァ-ン]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[力口工二夕卜八〇]/g,c=>SC_NORM_MAP[c]);
+function scLev(a,b){const m=a.length,n=b.length;if(!m||!n)return Math.max(m,n);let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const q=[i];for(let j=1;j<=n;j++)q[j]=Math.min(p[j]+1,q[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=q}return p[n]}
+let SC_SETS=null;
+function scSets(){if(SC_SETS)return SC_SETS;
+  const mk=list=>{const arr=[...new Set(list)].map(c=>({c,n:scNorm(c)}));return{arr,chars:[...new Set(list.join(''))].join('')}};
+  SC_SETS={gray:mk([...WHITE_RAW.map(x=>x[0]),...APTS.map(a=>a+'の遺伝子')]),blue:mk(STATS),pink:mk(APTS),green:mk(CARDS.map(c=>c.uniq).filter(Boolean))};return SC_SETS}
+function scMatch(text,kind){const n=scNorm(text);if(!n)return{c:null,s:0};let b={c:null,s:0};for(const x of scSets()[kind].arr){const s=1-scLev(n,x.n)/Math.max(n.length,x.n.length);if(s>b.s)b={c:x.c,s}}return b}
+function scLoadImage(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('画像を読み込めませんでした'))};im.src=u})}
+/* 黄色い★を見つけて、因子の枠（★の位置・数・背景色）を割り出す */
+function scFindTiles(img){
+  const W=img.naturalWidth,H=img.naturalHeight,cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0);
+  const d=g.getImageData(0,0,W,H).data,mask=new Uint8Array(W*H);
+  for(let i=0,p=0;p<W*H;p++,i+=4){const r=d[i],gg=d[i+1],b=d[i+2];if(r>225&&gg>190&&b<140&&r-b>110)mask[p]=1}
+  const seen=new Uint8Array(W*H),blobs=[],st=new Int32Array(W*H);
+  for(let p=0;p<W*H;p++){if(!mask[p]||seen[p])continue;let top=0;st[top++]=p;seen[p]=1;let n=0,x0=W,x1=0,y0=H,y1=0;
+    while(top){const q=st[--top];n++;const x=q%W,y=(q-x)/W;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      if(x>0&&mask[q-1]&&!seen[q-1]){seen[q-1]=1;st[top++]=q-1}if(x<W-1&&mask[q+1]&&!seen[q+1]){seen[q+1]=1;st[top++]=q+1}
+      if(y>0&&mask[q-W]&&!seen[q-W]){seen[q-W]=1;st[top++]=q-W}if(y<H-1&&mask[q+W]&&!seen[q+W]){seen[q+W]=1;st[top++]=q+W}}
+    const w=x1-x0+1,h=y1-y0+1;if(w>=10&&h>=10&&w/h>0.75&&w/h<1.35&&n/(w*h)>0.35&&n/(w*h)<0.62)blobs.push({x:(x0+x1)/2,y:(y0+y1)/2,w})}
+  if(!blobs.length)return{tiles:[],W,H,g,d};
+  const ws=blobs.map(b=>b.w).sort((a,b)=>a-b),med=ws[ws.length>>1],P=med*1.3;
+  const sb=blobs.filter(b=>Math.abs(b.w-med)<med*0.2).sort((a,b)=>a.y-b.y||a.x-b.x),rows=[];
+  for(const b of sb){const r=rows[rows.length-1];if(r&&Math.abs(r[0].y-b.y)<med*0.5)r.push(b);else rows.push([b])}
+  const tiles=[];
+  for(const r of rows){r.sort((a,b)=>a.x-b.x);let grp=[r[0]];const flush=()=>tiles.push({x0:grp[0].x,ys:grp[0].y,stars:Math.min(3,grp.length)});
+    for(const b of r.slice(1)){if(b.x-grp[grp.length-1].x<P*1.4)grp.push(b);else{flush();grp=[b]}}flush()}
+  /* 「継承元」の区切り線（横一直線の細い線）より下は、継承元（親）の因子として扱う */
+  let sepY=Infinity;const xa=Math.floor(W*0.2),xb=Math.floor(W*0.93);
+  const rowStat=y=>{let s=0,s2=0,n=0;for(let x=xa;x<xb;x+=3){const i=(y*W+x)*4,v=(d[i]+d[i+1]+d[i+2])/3;s+=v;s2+=v*v;n++}const m=s/n;return{m,sd:Math.sqrt(Math.max(0,s2/n-m*m))}};
+  const firstY=tiles.length?tiles[0].ys:0;
+  for(let y=Math.floor(firstY);y<H-6;y++){const a=rowStat(y);if(a.sd<2&&a.m<236){const u=rowStat(y-5),l=rowStat(y+5);if(u.sd<2&&l.sd<2&&u.m-a.m>8&&l.m-a.m>8){sepY=y;break}}}
+  for(const t of tiles){t.parent=t.ys>sepY;
+    const bx0=Math.max(0,Math.floor(t.x0-3.25*P)),by0=Math.max(0,Math.floor(t.ys-1.55*P)),bx1=Math.min(W,Math.floor(t.x0+6.4*P)),by1=Math.min(H,Math.floor(t.ys-0.35*P));
+    t.box=[bx0,by0,bx1,by1];t.cut=t.ys-1.55*P<0;
+    let s=[0,0,0],n=0;for(let y=by0;y<by1;y+=2)for(let x=bx0;x<bx1;x+=2){const i=(y*W+x)*4;s[0]+=d[i];s[1]+=d[i+1];s[2]+=d[i+2];n++}
+    const m=s.map(v=>v/n),sat=Math.max(...m)-Math.min(...m);
+    t.kind=sat<25?'gray':(m[2]>m[0]?'blue':(m[0]>m[1]+60?'pink':'green'))}
+  return{tiles,W,H,g,d}}
+function scCrop(info,t,th){const[x0,y0,x1,y1]=t.box,w=x1-x0,h=y1-y0;if(w<4||h<4)return null;const{W,d}=info,S=2,pad=30;
+  const cv=document.createElement('canvas');cv.width=w*S+pad*2;cv.height=h*S+pad*2;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);
+  const sm=document.createElement('canvas');sm.width=w;sm.height=h;const sg=sm.getContext('2d'),id=sg.createImageData(w,h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=((y0+y)*W+x0+x)*4,o=(y*w+x)*4,r=d[i],gg=d[i+1],b=d[i+2];
+    const ink=t.kind==='gray'?((r+gg+b)/3<th):(Math.min(r,gg,b)>230);const v=ink?0:255;id.data[o]=id.data[o+1]=id.data[o+2]=v;id.data[o+3]=255}
+  sg.putImageData(id,0,0);g.imageSmoothingEnabled=true;g.drawImage(sm,pad,pad,w*S,h*S);return cv}
+async function scWorker(onp){if(tessWorker)return tessWorker;if(!window.Tesseract)await loadScript(LIB_TESS);
+  tessWorker=await window.Tesseract.createWorker('jpn',1,{langPath:TESS_LANG,gzip:true,logger:m=>{if(onp&&m&&m.status&&/load|download|init/i.test(m.status))onp(m)}});
+  await tessWorker.setParameters({tessedit_pageseg_mode:'7'});return tessWorker}
+async function scanFiles(files){
+  if(scanBusy)return;scanBusy=true;const st=$('#scanStatus');scanRes=[];renderScan();
+  try{
+    st.textContent='文字認識の準備中…（初回は辞書データ約16MBを読み込みます）';
+    const w=await scWorker(m=>{st.textContent='文字認識の準備中… '+(m.progress?Math.round(m.progress*100)+'%':'')});
+    const found=new Map();let total=0,done=0,unread=0;const infos=[];
+    for(const f of files){const img=await scLoadImage(f);const info=scFindTiles(img);infos.push(info);total+=info.tiles.length}
+    if(!total){st.textContent='因子が見つかりませんでした。ゲームの「ウマ娘詳細」→「継承」タブのスクショを選んでください。';return}
+    let lastKind=null;
+    for(const info of infos){for(const t of info.tiles){done++;st.textContent=`読み取り中… ${done}/${total}`;
+      if(t.cut){unread++;continue}
+      if(lastKind!==t.kind){await w.setParameters({tessedit_char_whitelist:scSets()[t.kind].chars});lastKind=t.kind}
+      let best={c:null,s:0},raw='';
+      for(const th of [120,90]){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);if(m.s>best.s){best=m;raw=tx}if(best.s>=0.99||t.kind!=='gray')break}
+      if(!best.c||best.s<0.5){unread++;continue}
+      const key=t.kind+'|'+best.c,ex=found.get(key);
+      if(ex){ex.stars=Math.max(ex.stars,t.stars);ex.parent=ex.parent&&t.parent;ex.score=Math.max(ex.score,best.s)}
+      else found.set(key,{kind:t.kind,name:best.c,stars:t.stars,score:best.s,parent:t.parent,raw,on:!t.parent})}}
+    const ko=r=>r.kind==='blue'?0:r.kind==='pink'?1:r.kind==='green'?2:/の遺伝子$/.test(r.name)?4:3;
+    scanRes=[...found.values()].sort((a,b)=>ko(a)-ko(b));
+    {const gr=scanRes.find(r=>r.kind==='green'&&!r.parent);const c=gr&&CARDS.find(x=>x.uniq===gr.name);scanCard=c?c.id:0;scanPrep()}
+    const pc=scanRes.filter(x=>x.parent).length;
+    st.textContent=`${scanRes.length}件を読み取りました`+(unread?`（読み取れなかった枠：${unread}件。画面の端で切れた枠などです）`:'')+(pc?`。「継承元」より下の${pc}件は、親の因子としてチェックを外しています`:'')+'。内容を確認して「このカードに追加」を押してください。';
+  }catch(e){st.textContent='読み取りに失敗しました'+(e&&e.message?'：'+e.message:'')+'（ネット接続が必要です）'}
+  finally{scanBusy=false;renderScan()}}
+const SC_KIND={gray:'白因子',blue:'青因子',pink:'赤因子',green:'緑因子'};
+/* 今のカードとの比較 */
+function scanCtx(){const f=findNode(selId);const n=f&&f.n;const cur=n&&n.card&&CARD_BY.get(n.card);const nc=scanCard&&CARD_BY.get(scanCard);
+  const diffChar=!!(n&&nc&&!isEmpty(n)&&(!cur||cur.name!==nc.name)&&(n.name||'').trim()!==''&&(n.name||'').trim()!==nc.name);
+  return{f,n,cur,nc,diffChar,replace:!!(scanUseCard&&nc&&diffChar)}}
+function scanPrep(){scanUseCard=!!scanCtx().nc;scanDelExtra=false}
+function scanCmp(r,ctx){const n=ctx.n;if(!n||ctx.replace)return{t:'new'};const s=r.stars,fmt=(t,v)=>`${t}★${v}`;
+  const one=(curT,curS)=>!curT?{t:'new'}:(curT===r.name&&+curS===s?{t:'same'}:{t:'conf',cur:fmt(curT,curS)});
+  if(r.kind==='blue')return one(n.blue.t,n.blue.s);
+  if(r.kind==='pink')return one(n.red.t,n.red.s);
+  if(r.kind==='green')return(!n.green.n||!n.green.s)?{t:'new'}:one(n.green.n,n.green.s);
+  const gm=r.name.match(/^(.+)の遺伝子$/);
+  if(gm&&APTS.includes(gm[1])){const ex=n.genes.find(x=>x.t===gm[1]);return !ex?{t:'new'}:(+ex.s===s?{t:'same'}:{t:'conf',cur:fmt(r.name,ex.s)})}
+  const ex=n.whites.find(x=>x.n.trim()===r.name);return !ex?{t:'new'}:(+ex.s===s?{t:'same'}:{t:'conf',cur:fmt(r.name,ex.s)})}
+function scanDiff(r,ctx,i){const c=scanCmp(r,ctx);if(c.t==='new')return'<span class="new">追加</span>';if(c.t==='same')return'<span class="same">同じ</span>';
+  return `<div class="pick" role="group" aria-label="どちらを使うか"><button type="button" data-pick="${i}" data-v="cur" aria-pressed="${r.choice==='cur'}">今：${esc(c.cur)}</button><button type="button" data-pick="${i}" data-v="scan" aria-pressed="${r.choice==='scan'}">読取：${esc(r.name)}★${r.stars}</button></div>`}
+function scanPending(ctx){return scanRes.filter(r=>r.on&&scanCmp(r,ctx).t==='conf'&&!r.choice).length}
+function scanExtras(ctx){const n=ctx.n;if(!n||ctx.replace)return[];const names=new Set(scanRes.filter(r=>r.kind==='gray').map(r=>r.name));
+  return [...n.whites.filter(w=>w.n.trim()&&!names.has(w.n.trim())).map(w=>`${w.n}★${w.s}`),...n.genes.filter(g=>g.t&&!names.has(g.t+'の遺伝子')).map(g=>`${g.t}の遺伝子★${g.s}`)]}
+function renderScan(){const el=$('#scanList'),ch=$('#scanChar'),exb=$('#scanExtra');
+  if(!scanRes.length){el.innerHTML='';ch.innerHTML='';exb.innerHTML='';$('#scanApply').disabled=true;return}
+  const ctx=scanCtx();$('#scanApply').textContent=ctx.replace?'置き換えて追加':'このカードに追加';
+  /* キャラ */
+  let c=`<div class="scan-char"><label class="frow" style="gap:6px;justify-content:flex-start"><input type="checkbox" style="flex:none;width:auto" id="scanUseCard"${scanUseCard?' checked':''}${ctx.nc?'':' disabled'}> <b>キャラを設定する</b></label>`;
+  c+=`<input type="text" id="scanCardIn" list="dl-scan-cards" value="${esc(cardLabel(ctx.nc))}" placeholder="キャラ［衣装］を選択（緑因子から自動判定）" autocomplete="off">`;
+  c+=`<div class="sub">今のカード：${ctx.cur?esc(cardLabel(ctx.cur)):esc(ctx.n&&ctx.n.name||'未設定')}${ctx.nc?'':'　／　緑因子が読み取れなかったため、キャラは自動判定できませんでした。必要なら上の欄で選んでください。'}</div>`;
+  if(ctx.diffChar)c+=`<div class="warnline">今のカードとは別のキャラです。${scanUseCard?'追加すると、このカードの内容（因子・状態・メモ）はすべて消え、読み取り結果で入力し直します（継承元は残ります）。':'キャラを設定しない場合、因子だけが今のカードに追加されます。'}</div>`;
+  ch.innerHTML=c+'</div>';
+  el.innerHTML=`<table class="t scan"><thead><tr><th></th><th>種類</th><th>因子</th><th>★</th><th>今との違い</th></tr></thead><tbody>${scanRes.map((r,i)=>{
+    const kind=r.kind==='gray'&&/の遺伝子$/.test(r.name)?'遺伝子':SC_KIND[r.kind];const warn=r.score<0.8;
+    const cf=scanCmp(r,ctx).t==='conf';
+    return `<tr class="${r.on?'':'off'}${warn?' warn':''}${cf?(r.choice?' conf done':' conf'):''}"><td><input type="checkbox" data-si="${i}" ${r.on?'checked':''} aria-label="${esc(r.name)}を追加"></td><td>${kind}${r.parent?'<br><span class="sub">継承元</span>':''}</td><td><input type="text" class="sc-name" data-sn="${i}" value="${esc(r.name)}" list="dl-scan-${r.kind}">${warn?`<div class="sub">要確認（読み取り：${esc(r.raw)}）${cf?'　読み取りが不確かです':''}</div>`:''}</td><td><select data-ss="${i}">${[1,2,3].map(v=>`<option value="${v}"${r.stars===v?' selected':''}>★${v}</option>`).join('')}</select></td><td class="diff">${scanDiff(r,ctx,i)}</td></tr>`}).join('')}</tbody></table>`;
+  {const conf=scanRes.filter(r=>r.on&&scanCmp(r,ctx).t==='conf'),pend=scanPending(ctx);
+   const box=conf.length?`<div class="scan-conf${pend?' pending':''}"><b>今の入力と食い違う項目が${conf.length}件あります。</b>手入力の間違いか、読み取りの間違いの可能性があります。ゲーム画面で確認して、各行で「今」か「読取」のどちらを使うか選んでください。${pend?`<br>未選択：${pend}件（選ぶまで追加できません）`:'<br>すべて選択済みです。'}<div class="row" style="margin-top:4px"><button type="button" class="btn sm" data-pickall="cur">すべて「今」にする</button><button type="button" class="btn sm" data-pickall="scan">すべて「読取」にする</button></div></div>`:'';
+   el.insertAdjacentHTML('afterbegin',box);$('#scanApply').disabled=pend>0;}
+  const ex=scanExtras(ctx);
+  exb.innerHTML=ex.length?`<div class="scan-extra"><div><b>読み取り結果にない因子</b>（今のカードにだけあるもの）：${ex.map(esc).join('、')}</div><label class="frow" style="gap:6px;justify-content:flex-start"><input type="checkbox" style="flex:none;width:auto" id="scanDelExtra"${scanDelExtra?' checked':''}> これらを削除する（スクショに因子がすべて写っている場合）</label><div class="sub">チェックしなければ、そのまま残します。</div></div>`:'';}
+function scanApply(){const ctx=scanCtx();if(!ctx.n){toast('先に血統表のカードを選んでください');return}const n=ctx.n;let cw=0,cg=0,co=0;
+  if(scanUseCard&&ctx.nc){
+    if(ctx.diffChar){const keep={id:n.id,parents:n.parents};Object.assign(n,blank(),keep)}
+    n.name=ctx.nc.name;n.card=ctx.nc.id;if(!n.green.n)n.green={n:ctx.nc.uniq,s:0}}
+  if(!ctx.replace&&scanDelExtra){const names=new Set(scanRes.filter(r=>r.kind==='gray'&&r.on).map(r=>r.name));n.whites=n.whites.filter(w=>!w.n.trim()||names.has(w.n.trim()));n.genes=n.genes.filter(g=>!g.t||names.has(g.t+'の遺伝子'))}
+  if(scanPending(ctx)){toast('食い違う項目で「今」か「読取」を選んでください');return}
+  const conf=new Set(scanRes.filter(r=>scanCmp(r,ctx).t==='conf'&&r.choice==='cur'));
+  for(const r of scanRes){if(!r.on||!r.name||conf.has(r))continue;const s=Math.min(3,Math.max(1,r.stars||1));
+    if(r.kind==='gray'){const gm=r.name.match(/^(.+)の遺伝子$/);
+      if(gm&&APTS.includes(gm[1])){const ex=n.genes.find(x=>x.t===gm[1]);if(ex)ex.s=s;else n.genes.push({t:gm[1],s});cg++}
+      else{const ex=n.whites.find(x=>x.n.trim()===r.name);if(ex)ex.s=s;else n.whites.push({n:r.name,s});cw++}}
+    else if(r.kind==='blue'&&STATS.includes(r.name)){n.blue={t:r.name,s};co++}
+    else if(r.kind==='pink'&&APTS.includes(r.name)){n.red={t:r.name,s};co++}
+    else if(r.kind==='green'){n.green={n:r.name,s};co++}}
+  touch('plan');closeOv();renderAll();toast(`${scanUseCard&&ctx.nc?cardLabel(ctx.nc)+'：':''}白因子${cw}件・遺伝子${cg}件・青/赤/緑${co}件を反映しました`,4000)}
+$('#scanFile').addEventListener('change',e=>{const fs=[...e.target.files];if(fs.length)scanFiles(fs);e.target.value=''});
+$('#scanList').addEventListener('change',e=>{const t=e.target;if(t.dataset.si!==undefined){scanRes[+t.dataset.si].on=t.checked;renderScan()}
+  else if(t.dataset.ss!==undefined){scanRes[+t.dataset.ss].stars=+t.value;scanRes[+t.dataset.ss].choice=undefined;renderScan()}
+  else if(t.dataset.sn!==undefined){scanRes[+t.dataset.sn].choice=undefined;renderScan()}});
+$('#scanList').addEventListener('click',e=>{const b=e.target.closest('[data-pick]');if(b){scanRes[+b.dataset.pick].choice=b.dataset.v;renderScan();return}
+  const a=e.target.closest('[data-pickall]');if(a){const ctx=scanCtx();scanRes.forEach(r=>{if(scanCmp(r,ctx).t==='conf')r.choice=a.dataset.pickall});renderScan()}});
+$('#scanList').addEventListener('input',e=>{const t=e.target;if(t.dataset.sn!==undefined)scanRes[+t.dataset.sn].name=t.value.trim()});
+$('#scanApply').onclick=scanApply;
+/* ドラッグ＆ドロップ・貼り付け */
+const imgFiles=list=>[...(list||[])].filter(f=>f&&/^image\//.test(f.type));
+function dndBind(el,onFiles){
+  el.addEventListener('dragover',e=>{if([...(e.dataTransfer?.types||[])].includes('Files')){e.preventDefault();e.dataTransfer.dropEffect='copy';el.classList.add('over')}});
+  el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.classList.remove('over')});
+  el.addEventListener('drop',e=>{e.preventDefault();el.classList.remove('over');const fs=imgFiles(e.dataTransfer?.files);if(fs.length)onFiles(fs);else toast('画像ファイルをドロップしてください')})}
+dndBind($('#ovScan .dlg'),fs=>scanFiles(fs));
+$('#ovScan .dlg').addEventListener('dragenter',()=>$('#scanDrop').classList.add('over'));
+$('#ovScan .dlg').addEventListener('drop',()=>$('#scanDrop').classList.remove('over'));
+$('#ovScan .dlg').addEventListener('dragleave',e=>{if(!$('#ovScan .dlg').contains(e.relatedTarget))$('#scanDrop').classList.remove('over')});
+ed.addEventListener('dragover',e=>{const b=e.target.closest('.scanbar');if(b&&[...(e.dataTransfer?.types||[])].includes('Files')){e.preventDefault();e.dataTransfer.dropEffect='copy';b.classList.add('over')}});
+ed.addEventListener('dragleave',e=>{const b=e.target.closest('.scanbar');if(b&&!b.contains(e.relatedTarget))b.classList.remove('over')});
+ed.addEventListener('drop',e=>{const b=e.target.closest('.scanbar');if(!b)return;e.preventDefault();b.classList.remove('over');const fs=imgFiles(e.dataTransfer?.files);if(!fs.length){toast('画像ファイルをドロップしてください');return}openScan();scanFiles(fs)});
+/* 画面のほかの場所に落としても、ブラウザが画像を開いてしまわないようにする */
+window.addEventListener('dragover',e=>{if([...(e.dataTransfer?.types||[])].includes('Files'))e.preventDefault()});
+window.addEventListener('drop',e=>{if([...(e.dataTransfer?.types||[])].includes('Files'))e.preventDefault()});
+document.addEventListener('paste',e=>{if($('#ovScan').hidden)return;const fs=imgFiles([...(e.clipboardData?.items||[])].filter(i=>i.kind==='file').map(i=>i.getAsFile()));if(fs.length){e.preventDefault();scanFiles(fs)}});
+$('#scanChar').addEventListener('change',e=>{const t=e.target;if(t.id==='scanUseCard'){scanUseCard=t.checked;renderScan()}
+  else if(t.id==='scanCardIn'){const v=t.value.trim();const c=CARDS.find(x=>cardLabel(x)===v)||CARDS.find(x=>x.name===v);if(c){scanCard=c.id;scanUseCard=true}else if(!v){scanCard=0;scanUseCard=false}renderScan()}});
+$('#scanExtra').addEventListener('change',e=>{if(e.target.id==='scanDelExtra')scanDelExtra=e.target.checked});
+function openScan(){const f=findNode(selId);$('#scanTarget').textContent=f?`「${f.n.name||'未設定'}」の枠に追加します`:'先に血統表のカードを選んでください';
+  const S=scSets();if(!$('#dl-scan-gray')){const mk=(id,arr)=>`<datalist id="${id}">${arr.map(x=>`<option value="${esc(x.c)}"></option>`).join('')}</datalist>`;document.body.insertAdjacentHTML('beforeend',`<datalist id="dl-scan-cards">${CARDS.map(c=>`<option value="${esc(cardLabel(c))}"></option>`).join('')}</datalist>`+mk('dl-scan-gray',S.gray.arr)+mk('dl-scan-blue',S.blue.arr)+mk('dl-scan-pink',S.pink.arr)+mk('dl-scan-green',S.green.arr))}
+  if(!scanBusy){scanRes=[];scanCard=0;renderScan();$('#scanStatus').textContent='ゲームの「ウマ娘詳細」→「継承」タブのスクショを選んでください（複数枚まとめて選べます）。'}openOv('#ovScan')}
 
 /* ---------- roster ---------- */
 function trimDepth(n,d){const c=clone(n);const cut=(x,k)=>{x.parents=k>=d?[]:x.parents.map(p=>cut(p,k+1));return x};return cut(c,0)}
