@@ -123,6 +123,7 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .c-red.goal{background:var(--f-red);color:var(--on-red)}
 .c-green{background:color-mix(in srgb,var(--f-green) 13%,transparent);color:var(--f-green);max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .c-gene{border-color:color-mix(in srgb,var(--f-gene) 55%,transparent);color:var(--f-gene)}
+.c-gw{background:color-mix(in srgb,var(--f-gene) 10%,transparent);font-weight:600}
 .c-gene.goal{background:color-mix(in srgb,var(--f-gene) 18%,transparent)}
 .c-w2{background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--ink);border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
 .c-w1{background:color-mix(in srgb,var(--silver) 13%,transparent);color:var(--ink);border-color:color-mix(in srgb,var(--silver) 40%,transparent)}
@@ -730,7 +731,7 @@ function cardHTML(n,d){
   {const gc=geneCand(n);if(gc.length)h+=`<div class="chips" title="親・祖父母の赤因子★合計から見た、この枠に付く遺伝子">${gc.map(g=>`<span class="chip c-gc${g.sure?' sure':''}">${APT_S[g.t]}遺伝子 ${g.sure?'確定':'可能性'}<span class="s">★${g.p}</span></span>`).join('')}</div>`}
   if(n.green.n)h+=`<div class="chips"><span class="chip c-green" title="${esc(n.green.n)}">${esc(n.green.n)}<span class="s">${starTxt(n.green.s)}</span></span></div>`;
   let w='';
-  for(const x of n.genes)if(x.t)w+=`<span class="chip c-w1">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
+  for(const x of n.genes)if(x.t)w+=`<span class="chip c-gene c-gw">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
   if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種・★${ws.reduce((t,x)=>t+(+x.s||0),0)}</span>`;if(tri&&tri.size)w+=`<span class="chip c-tri" title="${esc([...tri].join('、'))}">3人共通 ${tri.size}</span>`}
   else for(const x of ws){const t=tri&&tri.has(x.n.trim());w+=`<span class="chip c-w1${t?' tri':''}"${t?' title="自身と両親の3人に共通する白因子"':''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`}
   if(n.status==='plan')for(const t of n.targets)w+=`<span class="chip c-tgt">狙 ${esc(t)}</span>`;
@@ -845,10 +846,13 @@ function giveHTML(f){
   const filled=a.src.filter(s=>!isEmpty(s.n)).length;
   h+=`<div><button class="btn sm" id="xlsxGive" data-xid="${n.id}">Excelで書き出す</button></div>`;
   h+=`<p class="hint">このキャラを親にしたときに渡る因子：自身＋親${n.parents.length}人（入力済み ${filled}人）。入力している因子だけを表示します。因子カードを選ぶと、そのカードの集計に切り替わります。</p>`;
-  const tbl=(title,keys,map,label)=>{if(!keys.length)return'';return `<div class="sec"><h3>${title}</h3><div class="tw"><table class="t"><thead><tr><th>${label}</th><th>自身</th><th>親</th><th>計</th></tr></thead><tbody>${keys.map(k=>{const r=map[k];return `<tr><td>${esc(k)}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}).join('')}</tbody></table></div></div>`};
+  const tri=new Set(trioOf(n)||[]);
+  const tbl=(title,keys,map,label)=>{if(!keys.length)return'';return `<div class="sec"><h3>${title}</h3><div class="tw"><table class="t"><thead><tr><th>${label}</th><th>自身</th><th>親</th><th>計</th></tr></thead><tbody>${keys.map(k=>{const r=map[k];return `<tr><td>${label==='白因子'&&tri.has(k)?`<span class="chip c-tri" title="自身と両親の3人に共通">${esc(k)}</span>`:esc(k)}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}).join('')}</tbody></table></div></div>`};
   const gm={};for(const {n:s,r} of a.src){if(s.green.n&&s.green.s){(gm[s.green.n]??=[0,0])[r-1]+=s.green.s}}
   const gmap={};for(const x of APTS)if(sum(a.gene[x]))gmap[x+'の遺伝子']=a.gene[x];
-  let body=tbl('赤因子（★合計）',APTS.filter(x=>sum(a.apt[x])),a.apt,'適性')
+  let body='';
+  {const t=trioOf(n);if(t)body+=`<div class="sec"><h3>親子3人で共通の白因子</h3><div class="chips">${t.length?t.map(k=>`<span class="chip c-tri">${esc(k)}</span>`).join(''):'<span style="color:var(--muted)">なし</span>'}</div><p class="hint">${esc(n.name||'未設定')}と両親（${esc(n.parents[0].name||'未設定')}・${esc(n.parents[1].name||'未設定')}）の3人がそろって持つ白因子です。血統表と下の表では金色の枠で表示します。</p></div>`}
+  body+=tbl('赤因子（★合計）',APTS.filter(x=>sum(a.apt[x])),a.apt,'適性')
     +tbl('遺伝子（★合計）',Object.keys(gmap),gmap,'遺伝子')
     +tbl('青因子（★合計）',STATS.filter(x=>sum(a.blue[x])),a.blue,'ステータス')
     +tbl('緑因子（★合計）',Object.keys(gm),gm,'固有スキル')
@@ -864,8 +868,6 @@ function summaryHTML(f){
   const a=agg(n),filled=a.src.filter(s=>!isEmpty(s.n)).length;
   const np=n.parents.length,ng=a.src.length-np;
   h+=`<p class="hint">集計対象：親${np}人・祖父母${ng}人（入力済み ${filled}人）。入力している因子だけを表示します。因子カードを選ぶと、そのカードの集計に切り替わります。</p>`;
-  {const nm=x=>esc((x&&x.name)||'未設定'),rs=[n,...n.parents].map(x=>({x,t:trioOf(x)})).filter(o=>o.t);
-   if(rs.length){h+=`<div class="sec"><h3>親子3人で共通の白因子</h3><div class="tw"><table class="t"><thead><tr><th>3人の組</th><th>共通の白因子</th></tr></thead><tbody>${rs.map(({x,t})=>`<tr><td>${nm(x)}<br><small>＋ ${nm(x.parents[0])}・${nm(x.parents[1])}</small></td><td>${t.length?t.map(k=>`<span class="chip c-tri">${esc(k)}</span>`).join(' '):'<span style="color:var(--muted)">なし</span>'}</td></tr>`).join('')}</tbody></table></div><p class="hint">自身と両親の3人がそろって持つ白因子です。3人組ごとに判定し、血統表では金色の枠で表示します。</p></div>`}}
   {const r=affinity(n);if(r){const P=n.parents,nm=x=>esc((x&&x.name)||'未設定'),g=(p,i)=>p&&p.parents[i];
     h+=`<div class="sec"><h3>相性 <span class="aff s${r.dup?'':r.lv}${r.dup?' dup':''}">${r.dup?'重複あり':r.sym+' '+r.total}</span></h3>`;
     const rows=[[`${nm(n)} × ${nm(P[0])}`,r.mp1],[`${nm(n)} × ${nm(P[1])}`,r.mp2],[`${nm(P[0])} × ${nm(P[1])}（親同士）`,r.pp],[`${nm(n)} × ${nm(P[0])} × ${nm(g(P[0],0))}`,r.g11],[`${nm(n)} × ${nm(P[0])} × ${nm(g(P[0],1))}`,r.g12],[`${nm(n)} × ${nm(P[1])} × ${nm(g(P[1],0))}`,r.g21],[`${nm(n)} × ${nm(P[1])} × ${nm(g(P[1],1))}`,r.g22]];
