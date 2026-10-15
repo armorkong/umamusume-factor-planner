@@ -412,10 +412,10 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <span class="lbl">表示</span>
   <button class="tog plain" id="onlyUseful" aria-pressed="false">白因子を折りたたむ</button>
   <button class="tog plain" id="compactBtn" aria-pressed="false">簡易表示</button>
-  <label class="zoomctl">縮小<input type="range" id="zoomR" min="50" max="100" step="5" value="100" aria-label="系統樹の表示倍率"><span id="zoomV" class="num">100%</span></label>
+  <label class="zoomctl">縮小<input type="range" id="zoomR" min="50" max="100" step="5" value="100" aria-label="血統表の表示倍率"><span id="zoomV" class="num">100%</span></label>
 </section>
 <div class="banner" id="sampleBanner" hidden>
-  <span>これは<b>使用例</b>です。自由に触って試せます。閉じても上の「使用例」からいつでも再表示できます。</span>
+  <span>これは<b>使用例</b>です。自由に触って試せます（変更は保存されません）。閉じても上の「使用例」からいつでも再表示できます。</span>
   <button class="btn sm" id="sampleDrop">使用例を閉じる</button>
 </div>
 
@@ -443,14 +443,14 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 
 <div class="ov" id="ovRoster" hidden><div class="dlg" role="dialog" aria-labelledby="hR">
   <header><h2 id="hR">保有キャラ（因子カード）</h2><button class="btn" data-close>閉じる</button></header>
-  <p class="hint">編集パネルの「保有キャラに登録」で、そのキャラと継承元（2代分）をまとめて保存します。「配置」を押すと、系統樹で選択中の枠にコピーされます。</p>
+  <p class="hint">編集パネルの「保有キャラに登録」で、そのキャラと継承元（2代分）をまとめて保存します。「配置」を押すと、血統表で選択中の枠にコピーされます。</p>
   <input type="text" id="rFilter" placeholder="名前・メモで絞り込み">
   <div class="list" id="rList"></div>
 </div></div>
 
 <div class="ov" id="ovData" hidden><div class="dlg" role="dialog" aria-labelledby="hD">
   <header><h2 id="hD">書き出し・読み込み</h2><button class="btn" data-close>閉じる</button></header>
-  <p class="hint">全計画・有用白因子・保有キャラを1つのJSONファイルにまとめます。バックアップや別の端末への移行に使えます。</p>
+  <p class="hint">全計画・保有キャラ・衣装の愛称などの設定を1つのJSONファイルにまとめます。バックアップや別の端末への移行に使えます。</p>
   <div class="row"><button class="btn primary" id="dExport">JSONファイルに書き出す</button><button class="btn" id="dShow">テキストで表示</button></div>
   <textarea id="dText" hidden readonly></textarea>
   <div class="sec">
@@ -568,7 +568,6 @@ const WCAT={s:'スキル',r:'レース',c:'シナリオ',h:'隠し',o:'その他
 const WHITES=WHITE_RAW.map(([n,c])=>({n,c,q:kana(n)}));
 const WHITE_SET=new Set(WHITE_RAW.map(x=>x[0]));
 const SAMPLE_TITLE='使用例：10月チャンミ（先行）';
-const OLD_SAMPLE_TITLES=['サンプル：ダート・マイル計画','サンプル：マンハッタンカフェ計画','使用例：LOH11月差し','使用例：チャンミ10月先行'];
 const SAMPLE_ROOT={"card":112901,"free":false,"name":"アーモンドアイ","memo":"","status":"plan","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"Peerless Heroine","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":101803,"free":false,"name":"エアグルーヴ","memo":"","status":"have","blue":{"t":"パワー","s":3},"red":{"t":"先行","s":3},"green":{"n":"Shadow Ancestress","s":2},"genes":[{"t":"中距離","s":3},{"t":"先行","s":2}],"whites":[{"n":"大阪杯","s":2},{"n":"朝日杯FS","s":3},{"n":"マイルCS南部杯","s":3},{"n":"BC・サンタアニタパーク","s":2},{"n":"コーナー巧者○","s":3},{"n":"直線巧者","s":2},{"n":"食い下がり","s":3},{"n":"中距離コーナー○","s":1},{"n":"直滑降","s":3},{"n":"イグニッション","s":2},{"n":"勝利に向かって","s":2},{"n":"飛躍の予感","s":3},{"n":"憧れを越えて","s":3},{"n":"比類なき","s":3},{"n":"意地っ張り","s":3},{"n":"存在感","s":2},{"n":"連綿","s":2},{"n":"レースの真髄・体","s":2},{"n":"陽の加護","s":1},{"n":"恩返し、召し上がれ","s":3},{"n":"Dreamsシナリオ","s":1},{"n":"東の雄","s":2},{"n":"叩き良化型","s":1}],"targets":[],"parents":[{"card":103202,"free":false,"name":"アグネスタキオン","memo":"","status":"have","blue":{"t":"賢さ","s":3},"red":{"t":"中距離","s":3},"green":{"n":"夏空ハレーション","s":3},"genes":[{"t":"先行","s":3}],"whites":[{"n":"探求心","s":2},{"n":"勝利に向かって","s":3},{"n":"素直な一歩","s":2},{"n":"正面突破","s":3},{"n":"光差す方へ","s":2},{"n":"華麗な足取り","s":2},{"n":"灯を胸に","s":2},{"n":"淀みなし","s":2},{"n":"阿吽の呼吸","s":3},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":3},{"n":"スピードの目覚め","s":2},{"n":"パワーの目覚め","s":1},{"n":"右回りの目覚め","s":2},{"n":"秋の目覚め","s":1},{"n":"連戦連勝","s":3},{"n":"反骨精神","s":2},{"n":"宝塚記念","s":1},{"n":"帝王賞","s":3},{"n":"秋ウマ娘○","s":2},{"n":"直線巧者","s":1},{"n":"末脚","s":3},{"n":"抜け出し準備","s":2},{"n":"軽やかステップ","s":3},{"n":"直滑降","s":1},{"n":"尻尾上がり","s":2},{"n":"ありったけ","s":2},{"n":"確かな足取り","s":2}],"targets":[],"parents":[{"card":101502,"free":false,"name":"テイエムオペラオー","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"恵福バルカローレ","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":101702,"free":false,"name":"シンボリルドルフ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"翳り退く、さざめきの矢","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":111301,"free":false,"name":"フサイチパンドラ","memo":"","status":"rent","blue":{"t":"根性","s":3},"red":{"t":"中距離","s":3},"green":{"n":"ホップステップ・ゲッチュ♡","s":3},"genes":[{"t":"中距離","s":3},{"t":"先行","s":2}],"whites":[{"n":"大阪杯","s":2},{"n":"ホープフルS","s":3},{"n":"東京大賞典","s":3},{"n":"差しためらい","s":2},{"n":"直滑降","s":2},{"n":"下り坂巧者","s":2},{"n":"探求心","s":2},{"n":"品行方正","s":1},{"n":"素直な一歩","s":3},{"n":"正面突破","s":3},{"n":"決定打","s":2},{"n":"阿吽の呼吸","s":3},{"n":"存在感","s":2},{"n":"連綿","s":3},{"n":"突き抜ける走り","s":2},{"n":"レースの真髄・体","s":2},{"n":"恩返し、召し上がれ","s":2},{"n":"冬の目覚め","s":3},{"n":"旅人","s":1},{"n":"お嬢様","s":1},{"n":"叩き良化型","s":2},{"n":"秋ウマ娘○","s":3},{"n":"温泉郷シナリオ","s":3}],"targets":[],"parents":[{"card":114301,"free":false,"name":"ヴィクトワールピサ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"Ring-a-Link","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":103402,"free":false,"name":"イナリワン","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"灯穂","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":114101,"free":false,"name":"エピファネイア","memo":"","status":"have","blue":{"t":"パワー","s":3},"red":{"t":"中距離","s":3},"green":{"n":"光れ！弾けろ！超新星爆発！","s":2},"genes":[],"whites":[{"n":"フェブラリーS","s":1},{"n":"大阪杯","s":3},{"n":"日本ダービー","s":2},{"n":"安田記念","s":2},{"n":"チャンピオンズC","s":2},{"n":"JDダービー","s":2},{"n":"川崎記念","s":2},{"n":"BC・サンタアニタパーク","s":3},{"n":"右回り○","s":2},{"n":"秋ウマ娘○","s":1},{"n":"コーナー巧者○","s":2},{"n":"直滑降","s":2},{"n":"ウマ好み","s":2},{"n":"シンパシー","s":3},{"n":"勝利に向かって","s":3},{"n":"飛躍の予感","s":3},{"n":"さらなる高みへ","s":2},{"n":"憧れを越えて","s":3},{"n":"比類なき","s":3},{"n":"気持ちを乗せて","s":2},{"n":"余勢を駆って","s":2},{"n":"阿吽の呼吸","s":3},{"n":"流れに任せて","s":3},{"n":"存在感","s":3},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":2},{"n":"レースの真髄・賢","s":3},{"n":"連戦連勝","s":3}],"targets":[],"parents":[{"card":101502,"free":false,"name":"テイエムオペラオー","memo":"","status":"have","blue":{"t":"スピード","s":2},"red":{"t":"先行","s":3},"green":{"n":"恵福バルカローレ","s":3},"genes":[{"t":"マイル","s":3},{"t":"先行","s":3}],"whites":[{"n":"宝塚記念","s":1},{"n":"天皇賞（秋）","s":1},{"n":"JDダービー","s":2},{"n":"川崎記念","s":2},{"n":"BC・サンタアニタパーク","s":3},{"n":"コーナー巧者○","s":2},{"n":"直線巧者","s":2},{"n":"食い下がり","s":3},{"n":"尻尾上がり","s":3},{"n":"シンパシー","s":2},{"n":"探求心","s":2},{"n":"飛躍の予感","s":1},{"n":"アグレッシブ","s":3},{"n":"躍動","s":1},{"n":"阿吽の呼吸","s":2},{"n":"ただその先へ","s":2},{"n":"レースの真髄・体","s":2},{"n":"アメリカンドリーム","s":2},{"n":"Dreamsシナリオ","s":2},{"n":"スピードの目覚め","s":2},{"n":"連戦連勝","s":2},{"n":"西の雄","s":3},{"n":"叩き良化型","s":2}],"targets":[],"parents":[{"card":101401,"free":false,"name":"エルコンドルパサー","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"プランチャ☆ガナドール","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":108602,"free":false,"name":"メジロラモーヌ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"解けぬ結い目","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":107702,"free":false,"name":"ナリタトップロード","memo":"","status":"rent","blue":{"t":"スタミナ","s":3},"red":{"t":"中距離","s":3},"green":{"n":"Joy to the World","s":3},"genes":[],"whites":[{"n":"大阪杯","s":2},{"n":"天皇賞（秋）","s":2},{"n":"ホープフルS","s":2},{"n":"JDダービー","s":2},{"n":"マイルCS南部杯","s":2},{"n":"春ウマ娘○","s":2},{"n":"秋ウマ娘○","s":2},{"n":"食い下がり","s":2},{"n":"先行直線○","s":2},{"n":"直滑降","s":2},{"n":"地固め","s":2},{"n":"スリップストリーム","s":3},{"n":"真っ向勝負","s":2},{"n":"食らいつき","s":3},{"n":"会心の一歩","s":2},{"n":"品行方正","s":2},{"n":"活路を拓く！","s":1},{"n":"意地っ張り","s":3},{"n":"淀みなし","s":2},{"n":"阿吽の呼吸","s":2},{"n":"存在感","s":2},{"n":"連綿","s":2},{"n":"アオハル点火・賢","s":2},{"n":"レースの真髄・賢","s":2},{"n":"陽の加護","s":3},{"n":"地の加護","s":3},{"n":"トレセン軒シナリオ","s":3},{"n":"右回りの目覚め","s":2},{"n":"春の目覚め","s":2},{"n":"連戦連勝","s":3},{"n":"旅人","s":3},{"n":"叩き良化型","s":2},{"n":"無人島シナリオ","s":3},{"n":"温泉郷シナリオ","s":3}],"targets":[],"parents":[{"card":101901,"free":false,"name":"アグネスデジタル","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"尊み☆ﾗｽﾄｽﾊﾟ—(ﾟ∀ﾟ)—ﾄ!","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":102303,"free":false,"name":"ビワハヤヒデ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"勝利ヘ至ル累積","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]}]};
 function samplePlan(){
   const pl=normalize({plans:[{title:SAMPLE_TITLE,root:JSON.parse(JSON.stringify(SAMPLE_ROOT))}]}).plans[0];
@@ -583,9 +582,10 @@ let UI={onlyUseful:false,cur:null,collapsed:[],compact:false,zoom:100};
 try{UI=Object.assign(UI,JSON.parse(localStorage.getItem(UKEY)||'{}'))}catch(e){}
 function saveUI(){try{localStorage.setItem(UKEY,JSON.stringify(UI))}catch(e){}}
 let hadData=false;try{const raw=localStorage.getItem(LKEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.plans)){hadData=true;S=normalize(d)}}}catch(e){}
-function migrateSample(){let ch=false;S.plans=S.plans.map(p=>{if(p.sample&&OLD_SAMPLE_TITLES.includes(p.title)){const np=samplePlan();np.id=p.id;ch=true;return np}return p});return ch}
-let sampleMigrated=migrateSample();if(sampleMigrated){try{saveLocal()}catch(e){}}
-if(!S.plans.length&&!hadData){S.plans=[samplePlan()];sampleOnly=true}
+/* 使用例はいつでも「使用例」ボタンで出せるので保存しない（過去に保存されたものは取り除く） */
+const realPlans=()=>S.plans.filter(p=>!p.sample);
+if(S.plans.some(p=>p.sample)){S.plans=realPlans();try{saveLocal()}catch(e){}}
+if(!S.plans.length){S.plans=[samplePlan()];sampleOnly=true}
 curId=(UI.cur&&S.plans.find(p=>p.id===UI.cur))?UI.cur:(S.plans[0]?S.plans[0].id:null);
 
 function normalize(d){
@@ -645,17 +645,17 @@ function startApt(n,a){
 
 /* ---------- persistence ---------- */
 let col=null, cloud='pending', dirty=new Set(), timer=null, writing=false;
-function saveLocal(){try{localStorage.setItem(LKEY,JSON.stringify(S))}catch(e){}}
+function saveLocal(){try{localStorage.setItem(LKEY,JSON.stringify({...S,plans:realPlans()}))}catch(e){}}
 function touch(kind){
   sampleOnly=false;
-  if(kind==='plan'){const p=plan();if(p){p.updated=Date.now();dirty.add('plan:'+p.id)}}else dirty.add(kind);
+  if(kind==='plan'){const p=plan();if(p){p.updated=Date.now();if(!p.sample)dirty.add('plan:'+p.id)}}else dirty.add(kind);
   saveLocal();clearTimeout(timer);timer=setTimeout(flush,800);setStatus();
 }
-function markAll(){dirty.add('settings');dirty.add('roster');S.plans.forEach(p=>dirty.add('plan:'+p.id))}
+function markAll(){dirty.add('settings');dirty.add('roster');realPlans().forEach(p=>dirty.add('plan:'+p.id))}
 async function writeKey(k){
   if(k==='settings')return col.doc('settings').set({json:JSON.stringify(S.settings)});
   if(k==='roster')return col.doc('roster').set({json:JSON.stringify(S.roster)});
-  const id=k.slice(5),p=S.plans.find(x=>x.id===id),ref=col.doc('plan_'+id);
+  const id=k.slice(5),p=S.plans.find(x=>x.id===id&&!x.sample),ref=col.doc('plan_'+id);
   return p?ref.set({json:JSON.stringify(p),updated:p.updated}):ref.delete();
 }
 async function flush(){
@@ -688,7 +688,8 @@ function setStatus(){
       const d={plans:[],settings:null,roster:[]};
       for(const doc of snap.docs){let v;try{v=JSON.parse(doc.data().json)}catch(e){continue}
         if(doc.id==='settings')d.settings=v;else if(doc.id==='roster')d.roster=v;else if(doc.id.startsWith('plan_'))d.plans.push(v)}
-      if(d.plans.length){d.plans.sort((a,b)=>(a.created||0)-(b.created||0));S=normalize(d);sampleOnly=false;if(migrateSample())S.plans.filter(p=>p.sample).forEach(p=>dirty.add('plan:'+p.id));
+      d.plans.filter(p=>p&&p.sample).forEach(p=>dirty.add('plan:'+p.id));d.plans=d.plans.filter(p=>p&&!p.sample);
+      if(d.plans.length){d.plans.sort((a,b)=>(a.created||0)-(b.created||0));S=normalize(d);sampleOnly=false;
         if(!S.plans.find(p=>p.id===curId))curId=S.plans[0].id;selId=null;saveLocal();renderAll()}
     }
     cloud='on';setStatus();if(dirty.size)flush();
@@ -804,12 +805,12 @@ function renderEditor(){if(!plan())return;$('#editor').innerHTML=editorHTML()}
 function refreshAptSec(){const cur=$('#ed-apt-sec');if(!cur)return;const t=document.createElement('div');t.innerHTML=editorHTML();const nw=t.querySelector('#ed-apt-sec');if(nw)cur.replaceWith(nw)}
 function editorHTML(){
   const f=selId&&findNode(selId);
-  if(!f)return `<p class="empty-note">系統樹のカードをクリックすると、ここで因子を編集できます。</p>`;
+  if(!f)return `<p class="empty-note">血統表のカードをクリックすると、ここで因子を編集できます。</p>`;
   const {n,d,child}=f;
   let h=`<div><div class="gen">${GEN(d)}${child?` ／ ${esc(child.name||'未設定')} の継承元`:''}</div><h2>${esc(n.name||'未設定')}</h2></div>`;
   h+=`<div class="scanbar"><button class="btn primary sm" id="openScan">スクショから読み取る</button><span class="sub">ゲームの継承画面のスクショから、キャラと因子をまとめて入力（ここにドラッグ＆ドロップも可）</span></div>`;
   {const cd=n.card&&CARD_BY.get(n.card);
-   h+=`<div class="fld"><label for="ed-name">キャラ（名前・愛称・衣装名・固有スキルで絞り込み）</label><div class="combo"><input type="text" id="ed-name" data-f="name" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-clist" value="${esc(n.name)}" placeholder="例：ステイゴールド、嫁カフェ、水着"><div class="clist" id="ed-clist" role="listbox" hidden></div></div>${cd?`<div class="cur">衣装：<input type="text" id="ed-nick" class="nick-in" value="${esc(labOf(cd))}" aria-label="衣装の呼び名" title="呼び名を変更できます（空にすると自動の呼び名に戻ります）"><span class="t">［${esc(cd.title)}］</span><button type="button" class="x" id="cardClear" aria-label="衣装の選択を解除">×</button></div>`:''}</div>`;}
+   h+=`<div class="fld"><label for="ed-name">キャラ（名前・愛称・衣装名・固有スキルで絞り込み）</label><div class="combo"><input type="text" id="ed-name" data-f="name" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-clist" value="${esc(n.name)}" placeholder="例：ステイゴールド、嫁カフェ、水着"><div class="clist" id="ed-clist" role="listbox" hidden></div></div>${cd?`<div class="cur">衣装：<input type="text" id="ed-nick" class="nick-in" value="${esc(labOf(cd))}" aria-label="衣装の愛称" title="愛称を変更できます（空にすると自動の愛称に戻ります）"><span class="t">［${esc(cd.title)}］</span><button type="button" class="x" id="cardClear" aria-label="衣装の選択を解除">×</button></div>`:''}</div>`;}
   h+=`<label class="fld">メモ<input type="text" id="ed-memo" data-f="memo" value="${esc(n.memo)}"></label>`;
   h+=`<div class="frow"><span class="fld" style="flex:none">状態</span><span class="seg">${[['have','自前'],['rent','レンタル'],['plan','予定']].map(([v,l])=>`<button type="button" data-status="${v}" aria-pressed="${n.status===v}">${l}</button>`).join('')}</span></div>`;
   h+=`<div class="sec"><h3>青因子（ステータス）</h3><div class="frow"><select id="ed-blue" data-f="blue.t">${optList(STATS,n.blue.t,'なし')}</select>${starsHTML('blue',n.blue.s)}</div>`;
@@ -825,7 +826,7 @@ function editorHTML(){
   if(!n.whites.length)h+=`<p class="hint">上の欄に一部を入力すると、ゲーム内の白因子（スキル・レース・シナリオ・隠し因子）から候補が出ます。</p>`;
   h+=`<details><summary>まとめて入力する</summary><div class="frow" style="margin-top:6px"><input type="text" id="ed-bulk" placeholder="阿吽の呼吸3, 食い下がり2"><button class="btn sm" id="bulkAdd">追加</button></div></details></div>`;
   if(n.status==='plan'){
-    h+=`<div class="sec"><h3>このキャラで狙う白因子</h3><p class="hint">育成時に取得を狙う白因子。系統樹に「狙」として表示され、子の集計にも反映されます。</p>`;
+    h+=`<div class="sec"><h3>このキャラで狙う白因子</h3><p class="hint">育成時に取得を狙う白因子。血統表に「狙」として表示され、子の集計にも反映されます。</p>`;
     h+=`<div class="combo"><input type="text" id="ed-tq" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-tlist" placeholder="狙う白因子を検索して追加"><div class="clist" id="ed-tlist" role="listbox" hidden></div></div>`;
     if(n.targets.length)h+=`<div class="tchips">${n.targets.map(t=>`<span class="tchip" aria-pressed="true">${esc(t)} <button type="button" class="x" data-untarget="${esc(t)}" aria-label="${esc(t)}を外す">×</button></span>`).join('')}</div>`;
     h+=`</div>`;
@@ -834,7 +835,7 @@ function editorHTML(){
   if(n.parents.length<2)h+=`<button class="btn sm" id="edAddP">＋ 親を追加</button>`;
   h+=`<button class="btn sm" id="edReg">保有キャラに登録</button><button class="btn sm" id="edPlace">保有キャラから配置</button><button class="btn sm" id="edClear">因子を空にする</button>`;
   if(child)h+=`<button class="btn sm danger" id="edDel">この枠と祖先を消す</button>`;
-  h+=`</div><div class="row" id="edDelConfirm" hidden><span style="font-size:13px">${d>=3?'この枠と、その先の祖先を消します。':'この枠と、その先の祖先の内容をすべて消します。'}</span><button class="btn sm danger" id="edDelYes">削除する</button><button class="btn sm" id="edDelNo">やめる</button></div><div class="row" id="edRmConfirm" hidden><span style="font-size:13px">この枠（と、その先の祖先）を系統樹から取り除きます。</span><button class="btn sm danger" id="edRmYes">取り除く</button><button class="btn sm" id="edRmNo">やめる</button></div></div>`;
+  h+=`</div><div class="row" id="edDelConfirm" hidden><span style="font-size:13px">${d>=3?'この枠と、その先の祖先を消します。':'この枠と、その先の祖先の内容をすべて消します。'}</span><button class="btn sm danger" id="edDelYes">削除する</button><button class="btn sm" id="edDelNo">やめる</button></div><div class="row" id="edRmConfirm" hidden><span style="font-size:13px">この枠（と、その先の祖先）を血統表から取り除きます。</span><button class="btn sm danger" id="edRmYes">取り除く</button><button class="btn sm" id="edRmNo">やめる</button></div></div>`;
   return h;
 }
 
@@ -1228,7 +1229,7 @@ function registerRoster(n){
 function renderRoster(){
   const q=$('#rFilter').value.trim();
   const list=S.roster.filter(r=>!q||(r.name+r.memo).includes(q));
-  if(!list.length){$('#rList').innerHTML=`<div class="li"><span class="sub">${S.roster.length?'該当するキャラがいません。':'まだ登録がありません。系統樹のカードを選び、編集パネルの「保有キャラに登録」で追加できます。'}</span></div>`;return}
+  if(!list.length){$('#rList').innerHTML=`<div class="li"><span class="sub">${S.roster.length?'該当するキャラがいません。':'まだ登録がありません。血統表のカードを選び、編集パネルの「保有キャラに登録」で追加できます。'}</span></div>`;return}
   const f=selId&&findNode(selId);
   $('#rList').innerHTML=list.map(r=>{const uw=r.whites.filter(w=>w.n.trim()).length;
     return `<div class="li" data-rid="${r.id}"><div class="nm"><b>${esc(r.name)}</b> <span class="sub">${esc(r.memo)}</span><div class="chips" style="margin-top:2px">${r.blue.t?`<span class="chip c-blue">${STAT_S[r.blue.t]}<span class="s">★${r.blue.s}</span></span>`:''}${r.red.t?`<span class="chip c-red">${esc(r.red.t)}<span class="s">★${r.red.s}</span></span>`:''}<span class="sub">白因子 ${uw}種 ／ 継承元 ${r.parents.filter(p=>!isEmpty(p)).length}人</span></div></div>
@@ -1254,7 +1255,7 @@ $('#openRoster').onclick=()=>openOv('#ovRoster');
 $('#openData').onclick=()=>openOv('#ovData');
 
 /* ---------- data export/import ---------- */
-const exportJSON=()=>JSON.stringify({app:'inshi-tree',version:1,exported:new Date().toISOString(),...S},null,1);
+const exportJSON=()=>JSON.stringify({app:'inshi-tree',version:1,exported:new Date().toISOString(),...S,plans:realPlans()},null,1);
 $('#dExport').onclick=async()=>{
   const d0=new Date(),z=v=>String(v).padStart(2,'0');
   const name='ウマ娘血統プランナー_'+d0.getFullYear()+'-'+z(d0.getMonth()+1)+'-'+z(d0.getDate())+'_'+z(d0.getHours())+z(d0.getMinutes())+'.json';
@@ -1296,7 +1297,7 @@ $('#newPlanCancel').onclick=()=>{$('#planNewPanel').hidden=true};
 $('#newPlanName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();createFromPanel()}else if(e.key==='Escape'){$('#planNewPanel').hidden=true}});
 $('#tree').addEventListener('click',e=>{if(e.target.closest('[data-newplan]'))openNewPanel();else if(e.target.closest('[data-sample]'))showSample()});
 function showSample(){let p=S.plans.find(x=>x.sample);
-  if(!p){p=samplePlan();S.plans.unshift(p);dirty.add('plan:'+p.id);touch('settings')}
+  if(!p){p=samplePlan();S.plans.unshift(p)}
   curId=p.id;UI.cur=curId;saveUI();selId=null;$('#planMenu').hidden=true;$('#planNewPanel').hidden=true;renderAll();
   window.scrollTo({top:0,behavior:'smooth'});toast('使用例を表示しました')}
 $('#showSample').onclick=showSample;
@@ -1332,7 +1333,7 @@ $('#compactBtn').onclick=()=>{UI.compact=!UI.compact;saveUI();closeDrawer();rend
 $('#zoomR').addEventListener('input',e=>{if(UI.compact&&!isMobile())return;UI.zoom=+e.target.value;applyView()});
 $('#zoomR').addEventListener('change',()=>saveUI());
 $('#drawerX').onclick=closeDrawer;
-/* 系統樹をマウスでつかんで動かす（カードの上からでも、少し動かすとドラッグになる） */
+/* 血統表をマウスでつかんで動かす（カードの上からでも、少し動かすとドラッグになる） */
 {const tw=$('#treewrap');let drag=null,suppress=false;
   const noGrab=t=>!!t.closest('button,select,input,textarea,a,label,.fq,.addp');
   const scrollable=()=>tw.scrollWidth>tw.clientWidth+1||tw.scrollHeight>tw.clientHeight+1||document.documentElement.scrollHeight>window.innerHeight+1;
