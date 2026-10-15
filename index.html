@@ -131,7 +131,6 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .c-w0{color:var(--muted);border-color:var(--line)}
 .c-gc{border:1px dashed var(--f-gene);color:var(--f-gene)}
 .c-gc.sure{border-style:solid;background:color-mix(in srgb,var(--f-gene) 16%,transparent);font-weight:700}
-.c-tgt{border:1px dashed var(--warn);color:var(--warn)}
 .c-more{color:var(--muted)}
 .apts{display:grid;grid-template-columns:repeat(10,1fr);gap:1px;font-size:10.5px;letter-spacing:-.02em;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
 .apts span{background:var(--surface);text-align:center;padding:1px 0;white-space:nowrap;color:var(--muted)}
@@ -346,10 +345,6 @@ body.compact .drawerx{display:block;flex:none;border:0;background:none;font-size
 .x{border:0;background:transparent;color:var(--muted);font-size:16px;padding:0 4px}
 .x:hover{color:var(--bad)}
 .hint{font-size:12px;color:var(--muted);margin:0}
-.tchips{display:flex;flex-wrap:wrap;gap:4px}
-.tchip{border:1px dashed var(--line);background:transparent;border-radius:999px;font-size:12px;padding:1px 9px}
-.tchip[aria-pressed="true"]{border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--ink)}
-.tchip .n{font-family:var(--font-num);font-size:11px;color:var(--muted);margin-left:3px}
 
 table.t{width:100%;border-collapse:collapse;font-size:12.5px}
 table.t th{font-size:11px;color:var(--muted);font-weight:500;text-align:right;padding:3px 4px;border-bottom:1px solid var(--line)}
@@ -511,7 +506,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const rid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
 const clone=o=>JSON.parse(JSON.stringify(o));
 
-function blank(){return{id:rid(),card:0,free:false,name:'',memo:'',status:'',blue:{t:'',s:0},red:{t:'',s:0},green:{n:'',s:0},genes:[],whites:[],targets:[],parents:[]}}
+function blank(){return{id:rid(),card:0,free:false,name:'',memo:'',status:'',blue:{t:'',s:0},red:{t:'',s:0},green:{n:'',s:0},genes:[],whites:[],parents:[]}}
 function mk(o){const n=Object.assign(blank(),o);n.blue=Object.assign({t:'',s:0},o.blue);n.red=Object.assign({t:'',s:0},o.red);n.green=Object.assign({n:'',s:0},o.green);return n}
 function tree(depth){const n=blank();if(depth>0)n.parents=[tree(depth-1),tree(depth-1)];return n}
 function isEmpty(n){return !n.name&&!n.red.t&&!n.blue.t&&!n.green.n&&!n.whites.length&&!n.genes.length&&!n.status}
@@ -592,7 +587,7 @@ if(!S.plans.length){S.plans=[samplePlan()];sampleOnly=true}
 curId=(UI.cur&&S.plans.find(p=>p.id===UI.cur))?UI.cur:(S.plans[0]?S.plans[0].id:null);
 
 function normalize(d){
-  const fix=n=>{const m=mk(n||{});m.free=!!m.free;m.card=CARD_BY.has(+m.card)?+m.card:0;if(m.card&&UNIQ_OLD[m.card]&&m.green.n===UNIQ_OLD[m.card])m.green.n=CARD_BY.get(m.card).uniq;m.whites=(m.whites||[]).filter(w=>w&&w.n!==undefined).map(w=>({n:String(w.n),s:+w.s||1}));m.genes=(m.genes||[]).map(g=>({t:g.t||'',s:+g.s||1}));m.targets=(m.targets||[]).map(String);m.parents=(m.parents||[]).slice(0,2).map(fix);if(!m.id)m.id=rid();return m};
+  const fix=n=>{const m=mk(n||{});m.free=!!m.free;m.card=CARD_BY.has(+m.card)?+m.card:0;if(m.card&&UNIQ_OLD[m.card]&&m.green.n===UNIQ_OLD[m.card])m.green.n=CARD_BY.get(m.card).uniq;m.whites=(m.whites||[]).filter(w=>w&&w.n!==undefined).map(w=>({n:String(w.n),s:+w.s||1}));m.genes=(m.genes||[]).map(g=>({t:g.t||'',s:+g.s||1}));{const tg=(m.targets||[]).map(String).filter(Boolean);if(tg.length)m.memo=(m.memo?m.memo+' ':'')+'狙い：'+tg.join('、');delete m.targets}m.parents=(m.parents||[]).slice(0,2).map(fix);if(!m.id)m.id=rid();return m};
   return{plans:(d.plans||[]).map(p=>({id:p.id||rid(),title:p.title||'無題の計画',goals:Array.isArray(p.goals)?p.goals:[],root:fix(p.root),sample:!!p.sample,updated:p.updated||Date.now()})),
     settings:{useful:Array.isArray(d.settings?.useful)?d.settings.useful.map(u=>({n:String(u.n),p:u.p==2?2:1})):defaultUseful(),threshold:+d.settings?.threshold||4,costumeNick:(d.settings&&typeof d.settings.costumeNick==='object'&&d.settings.costumeNick)||{},charApt:(d.settings&&typeof d.settings.charApt==='object'&&d.settings.charApt)||{}},
     roster:Array.isArray(d.roster)?d.roster.map(fix):[]};
@@ -618,7 +613,6 @@ function aggSrc(src){
     for(const g of n.genes){if(g.t){(gene[g.t]??=[0,0])[r-1]+=g.s}}
     if(n.blue.t&&n.blue.s){(blue[n.blue.t]??=[0,0])[r-1]+=n.blue.s}
     for(const w of n.whites){const k=w.n.trim();if(!k)continue;(white[k]??=[0,0])[r-1]+=w.s}
-    if(n.status==='plan')for(const t of n.targets){(planned[t]??=[]).push(n.name||'予定キャラ')}
   }
   return{src,apt,gene,blue,white,planned};
 }
@@ -738,7 +732,6 @@ function cardHTML(n,d){
   for(const x of n.genes)if(x.t)w+=`<span class="chip c-gene c-gw">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
   if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種・★${ws.reduce((t,x)=>t+(+x.s||0),0)}</span>`;if(tri&&tri.size)w+=`<span class="chip c-tri" title="${esc([...tri].join('、'))}">3人共通 ${tri.size}</span>`}
   else for(const x of ws){const t=tri&&tri.has(x.n.trim());w+=`<span class="chip c-w1${t?' tri':''}"${t?' title="自身と両親の3人に共通する白因子"':''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`}
-  if(n.status==='plan')for(const t of n.targets)w+=`<span class="chip c-tgt">狙 ${esc(t)}</span>`;
   if(w)h+=`<div class="chips">${w}</div>`;
   if(false){
     const a=agg(n);let s='';
@@ -831,12 +824,6 @@ function editorHTML(){
   n.whites.forEach((w,i)=>{h+=`<div class="wrow"><input type="text" id="ed-w${i}" data-f="whites.${i}.n" value="${esc(w.n)}"${WHITE_SET.has(w.n.trim())?'':' class="unk" title="一覧にない名前です"'}>${starsHTML('whites.'+i,w.s)}<button class="x" data-delw="${i}" aria-label="削除">×</button></div>`});
   if(!n.whites.length)h+=`<p class="hint">上の欄に一部を入力すると、ゲーム内の白因子（スキル・レース・シナリオ・隠し因子）から候補が出ます。</p>`;
   h+=`<details><summary>まとめて入力する</summary><div class="frow" style="margin-top:6px"><input type="text" id="ed-bulk" placeholder="阿吽の呼吸3, 食い下がり2"><button class="btn sm" id="bulkAdd">追加</button></div></details></div>`;
-  if(n.status==='plan'){
-    h+=`<div class="sec"><h3>このキャラで狙う白因子</h3><p class="hint">育成時に取得を狙う白因子。血統表に「狙」として表示され、子の集計にも反映されます。</p>`;
-    h+=`<div class="combo"><input type="text" id="ed-tq" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-tlist" placeholder="狙う白因子を検索して追加"><div class="clist" id="ed-tlist" role="listbox" hidden></div></div>`;
-    if(n.targets.length)h+=`<div class="tchips">${n.targets.map(t=>`<span class="tchip" aria-pressed="true">${esc(t)} <button type="button" class="x" data-untarget="${esc(t)}" aria-label="${esc(t)}を外す">×</button></span>`).join('')}</div>`;
-    h+=`</div>`;
-  }
   h+=`<div class="sec"><h3>操作</h3><div class="row">`;
   if(n.parents.length<2)h+=`<button class="btn sm" id="edAddP">＋ 親を追加</button>`;
   h+=`<button class="btn sm" id="edReg">保有キャラに登録</button><button class="btn sm" id="edPlace">保有キャラから配置</button><button class="btn sm" id="edClear">因子を空にする</button>`;
@@ -898,7 +885,7 @@ function summaryHTML(f){
    if(gk.length){any=true;h+=`<div class="sec"><h3>緑因子（★合計）</h3><div class="chips">${gk.map(k=>`<span class="chip c-green">${esc(k)}<span class="s">★${sum(gm[k])}</span></span>`).join('')}</div></div>`}}
   const wk=Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])||x.localeCompare(y,'ja'));
   if(wk.length){any=true;h+=`<div class="sec"><h3>白因子（${wk.length}種・★合計）</h3>`;h+=`<div class="tw"><table class="t"><thead><tr><th>白因子</th><th>親</th><th>祖父母</th><th>計</th></tr></thead><tbody>`;
-    for(const k of wk){const r=a.white[k],pl=a.planned[k];h+=`<tr><td>${esc(k)}${pl?` <span class="chip c-tgt" title="${esc(pl.join('、'))} が狙い中">狙${pl.length}</span>`:''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}
+    for(const k of wk){const r=a.white[k],pl=0;h+=`<tr><td>${esc(k)}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}
     h+=`</tbody></table></div></div>`}
   if(!any)h+=`<p class="empty-note">親・祖父母にまだ因子が入力されていません。</p>`;
   return h;
@@ -984,7 +971,6 @@ function renderWList(kind,q){
 function hideWList(){['#ed-wlist','#ed-tlist'].forEach(s=>{const b=$(s);if(b)b.hidden=true})}
 function pickWhite(name){
   const f=findNode(selId);if(!f||!name)return;const n=f.n;name=name.trim();if(!name)return;
-  if(wMode==='t'){if(!n.targets.includes(name))n.targets.push(name);touch('plan');renderEditor();soft();ed.querySelector('#ed-tq')?.focus();return}
   const ex=n.whites.find(w=>w.n.trim()===name);
   if(ex){toast(name+' はすでに入っています');}else{n.whites.push({n:name,s:1});touch('plan')}
   renderHeader();renderEditor();soft();ed.querySelector('#ed-wq')?.focus();
@@ -1025,7 +1011,6 @@ ed.addEventListener('click',e=>{
   if(st){const key=st.dataset.star,v=+st.dataset.v;const o=key.includes('.')?getObj(n,key+'.x')[0]:n[key];
     o.s=v;touch('plan');refreshStars(n);soft();return}
   const sb=t.closest('[data-status]');if(sb){n.status=n.status===sb.dataset.status?'':sb.dataset.status;touch('plan');renderTree();renderEditor();renderSummary();return}
-  const ut=t.closest('[data-untarget]');if(ut){n.targets=n.targets.filter(x=>x!==ut.dataset.untarget);touch('plan');renderEditor();soft();return}
   if(t.dataset.delw!==undefined){n.whites.splice(+t.dataset.delw,1);touch('plan');renderEditor();soft();return}
   if(t.dataset.delgene!==undefined){n.genes.splice(+t.dataset.delgene,1);touch('plan');renderEditor();soft();return}
   switch(t.id){
@@ -1131,8 +1116,11 @@ async function scanFiles(files){
       if(t.cut){unread++;continue}
       if(lastKind!==t.kind){await w.setParameters({tessedit_char_whitelist:scSets()[t.kind].chars});lastKind=t.kind}
       /* 2つのしきい値で読み、候補が1つに絞れた（同点の別候補がない）結果を優先する。最後まで同点なら「要確認」にする */
-      let best={c:null,s:0,tie:true},raw='';const better=(m,b)=>!m.c?false:!b.c?true:(b.tie&&!m.tie)?true:(m.tie&&!b.tie)?false:m.s>b.s;
-      for(const th of [120,90]){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);if(better(m,best)){best=m;raw=tx}if(best.s>=0.99&&!best.tie)break}
+      let best={c:null,s:0,tie:true},raw='';const eff=m=>m.c?m.s-(m.tie?0.15:0):-1,better=(m,b)=>eff(m)>eff(b);
+      const tryRead=async()=>{for(const th of [120,90]){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);if(better(m,best)){best=m;raw=tx}if(best.s>=0.99&&!best.tie)break}};
+      await tryRead();
+      /* 文字の候補を絞ると、かえって崩れることがある（例：天皇賞（春））。決め手に欠けるときは、候補を絞らずにもう一度読む */
+      if(!best.c||best.s<0.8||best.tie){await w.setParameters({tessedit_char_whitelist:''});lastKind=null;await tryRead()}
       if(!best.c||best.s<0.5){unread++;continue}
       if(best.tie)best={...best,s:Math.min(best.s,0.79)};
       const key=t.kind+'|'+best.c,ex=found.get(key);
@@ -1523,7 +1511,7 @@ function xlsxBook(f,mode){
   for(const x of STATS)if(sum(a.blue[x]))push('青因子',x,a.blue[x]);
   const gm={};for(const {n:s,r} of a.src){if(s.green.n&&s.green.s){(gm[s.green.n]??=[0,0])[r-1]+=s.green.s}}
   for(const k of Object.keys(gm))push('緑因子',k,gm[k]);
-  for(const k of Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])))push('白因子',k,a.white[k],a.planned[k]?'狙い中：'+a.planned[k].join('、'):'');
+  for(const k of Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])))push('白因子',k,a.white[k],'');
   const head=[[`${plan().title}`],[give?`${n.name||'未設定'} が継承させる因子（自身＋親${n.parents.length}人）`:`${n.name||'未設定'} が受け継ぐ因子（親${n.parents.length}人・祖父母${a.src.length-n.parents.length}人）`],[]];
   const ws=X.utils.aoa_to_sheet(head.concat(rows));
   for(let i=1;i<rows.length;i++){const r=head.length+i+1;ws['E'+r]={t:'n',f:`C${r}+D${r}`}}
