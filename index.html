@@ -89,6 +89,13 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 
 /* pedigree connectors */
 .branch{display:flex;align-items:center}
+.cstack{display:flex;flex-direction:column;gap:6px}
+.card.cand{border-style:dashed;border-color:var(--accent)}
+.card.cand .ctag{display:inline-block;font-size:11px;font-weight:700;color:var(--accent-ink);background:var(--accent);border-radius:4px;padding:0 6px;margin-bottom:3px}
+.chip.chg{outline:2px solid var(--accent);outline-offset:1px}
+.cdiff{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;line-height:1.5;display:flex;flex-direction:column;gap:4px}
+.cdiff .row{gap:4px;flex-wrap:wrap}
+.cdiff .sub{color:var(--muted)}
 .parents{display:flex;flex-direction:column;position:relative;padding-left:var(--gap)}
 .parents::before{content:"";position:absolute;left:0;top:50%;width:var(--gap);border-top:2px solid var(--line)}
 .parents>.branch{position:relative;padding-left:var(--gap);padding-block:3px}
@@ -588,7 +595,7 @@ if(!S.plans.length){S.plans=[samplePlan()];sampleOnly=true}
 curId=(UI.cur&&S.plans.find(p=>p.id===UI.cur))?UI.cur:(S.plans[0]?S.plans[0].id:null);
 
 function normalize(d){
-  const fix=n=>{const m=mk(n||{});m.free=!!m.free;m.card=CARD_BY.has(+m.card)?+m.card:0;if(m.card&&UNIQ_OLD[m.card]&&m.green.n===UNIQ_OLD[m.card])m.green.n=CARD_BY.get(m.card).uniq;m.whites=(m.whites||[]).filter(w=>w&&w.n!==undefined).map(w=>({n:String(w.n),s:+w.s||1}));m.genes=(m.genes||[]).map(g=>({t:g.t||'',s:+g.s||1}));{const tg=(m.targets||[]).map(String).filter(Boolean);if(tg.length)m.memo=(m.memo?m.memo+' ':'')+'狙い：'+tg.join('、');delete m.targets}m.parents=(m.parents||[]).slice(0,2).map(fix);if(!m.id)m.id=rid();return m};
+  const fix=n=>{const m=mk(n||{});m.free=!!m.free;m.card=CARD_BY.has(+m.card)?+m.card:0;if(m.card&&UNIQ_OLD[m.card]&&m.green.n===UNIQ_OLD[m.card])m.green.n=CARD_BY.get(m.card).uniq;m.whites=(m.whites||[]).filter(w=>w&&w.n!==undefined).map(w=>({n:String(w.n),s:+w.s||1}));m.genes=(m.genes||[]).map(g=>({t:g.t||'',s:+g.s||1}));{const tg=(m.targets||[]).map(String).filter(Boolean);if(tg.length)m.memo=(m.memo?m.memo+' ':'')+'狙い：'+tg.join('、');delete m.targets}m.parents=(m.parents||[]).slice(0,2).map(fix);if(!m.id)m.id=rid();if(m.cand&&typeof m.cand==='object'){const c=fix(Object.assign({},m.cand,{parents:[],cand:null}));delete c.cand;m.cand=c}else delete m.cand;return m};
   return{plans:(d.plans||[]).map(p=>({id:p.id||rid(),title:p.title||'無題の計画',goals:Array.isArray(p.goals)?p.goals:[],root:fix(p.root),sample:!!p.sample,updated:p.updated||Date.now()})),
     settings:{useful:Array.isArray(d.settings?.useful)?d.settings.useful.map(u=>({n:String(u.n),p:u.p==2?2:1})):defaultUseful(),threshold:+d.settings?.threshold||4,costumeNick:(d.settings&&typeof d.settings.costumeNick==='object'&&d.settings.costumeNick)||{},charApt:(d.settings&&typeof d.settings.charApt==='object'&&d.settings.charApt)||{}},
     roster:Array.isArray(d.roster)?d.roster.map(fix):[]};
@@ -599,7 +606,7 @@ function walk(n,f,d=0,child=null){f(n,d,child);n.parents.forEach(p=>walk(p,f,d+1
 function trioOf(n){if(n.parents.length<2||isEmpty(n)||n.parents.some(isEmpty))return null;const st=x=>new Set(x.whites.map(w=>w.n.trim()).filter(Boolean)),a=st(n),b=st(n.parents[0]),c=st(n.parents[1]);return [...a].filter(k=>b.has(k)&&c.has(k))}
 let TRI=new Map(),SIL=new Map();
 function calcTri(){TRI=new Map();SIL=new Map();const p=plan();if(!p)return;walk(p.root,x=>{if(x.parents.length===2&&!x.parents.some(isEmpty)){const st=y=>new Set(y.whites.map(w=>w.n.trim()).filter(Boolean)),own=st(x),a=st(x.parents[0]),b=st(x.parents[1]);for(const k of a)if(b.has(k)&&!own.has(k))for(const y of x.parents){if(!SIL.has(y.id))SIL.set(y.id,new Set());SIL.get(y.id).add(k)}}for(const k of trioOf(x)||[])for(const y of [x,...x.parents]){if(!TRI.has(y.id))TRI.set(y.id,new Set());TRI.get(y.id).add(k)}})}
-function findNode(id){const pl=plan();if(!pl)return null;let r=null;walk(pl.root,(n,d,c)=>{if(n.id===id)r={n,d,child:c}});return r}
+function findNode(id){const pl=plan();if(!pl)return null;let r=null;walk(pl.root,(n,d,c)=>{if(n.id===id)r={n,d,child:c};else if(n.cand&&n.cand.id===id)r={n:n.cand,d,child:c,candOf:n}});return r}
 function maxDepth(n){return n.parents.length?1+Math.max(...n.parents.map(maxDepth)):0}
 const U=()=>new Map(S.settings.useful.map(u=>[u.n,u.p]));
 
@@ -730,9 +737,9 @@ function cardHTML(n,d){
   {const gc=geneCand(n);if(gc.length)h+=`<div class="chips" title="親・祖父母の赤因子★合計から見た、この枠に付く遺伝子">${gc.map(g=>`<span class="chip c-gc${g.sure?' sure':''}">${APT_S[g.t]}遺伝子 ${g.sure?'確定':'可能性'}<span class="s">★${g.p}</span></span>`).join('')}</div>`}
   if(n.green.n)h+=`<div class="chips"><span class="chip c-green" title="${esc(n.green.n)}">${esc(n.green.n)}<span class="s">${starTxt(n.green.s)}</span></span></div>`;
   let w='';
-  for(const x of n.genes)if(x.t)w+=`<span class="chip c-gene c-gw">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
+  for(const x of n.genes)if(x.t)w+=`<span class="chip c-gene c-gw${CHG&&CHG.has('遺:'+x.t)?' chg':''}">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
   if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種・★${ws.reduce((t,x)=>t+(+x.s||0),0)}</span>`;if(tri&&tri.size)w+=`<span class="chip c-tri" title="${esc([...tri].join('、'))}">3人共通 ${tri.size}</span>`}
-  else for(const x of ws){const t=tri&&tri.has(x.n.trim()),sv=!t&&sil&&sil.has(x.n.trim());w+=`<span class="chip c-w1${t?' tri':sv?' sil':''}"${t?' title="自身と両親の3人に共通する白因子"':sv?' title="両親で共通、子は未所持の白因子"':''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`}
+  else for(const x of ws){const t=tri&&tri.has(x.n.trim()),sv=!t&&sil&&sil.has(x.n.trim());w+=`<span class="chip c-w1${t?' tri':sv?' sil':''}${CHG&&CHG.has(x.n.trim())?' chg':''}"${t?' title="自身と両親の3人に共通する白因子"':sv?' title="両親で共通、子は未所持の白因子"':''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`}
   if(w)h+=`<div class="chips">${w}</div>`;
   if(false){
     const a=agg(n);let s='';
@@ -752,17 +759,58 @@ function compactBody(n,cdc,ws,extra,tri){
   if(tri&&tri.size)c+=`<span class="chip c-tri" title="自身と両親の3人に共通：${esc([...tri].join('、'))}">共通${tri.size}</span>`;
   if(c)h+=`<div class="chips">${c}</div>`;else if(isEmpty(n))h+=`<div class="memo">クリックして入力</div>`;
   return h}
+/* ---------- 更新候補（今のカードの下に並べて比べ、よければ入れ替える） ---------- */
+const CAND_KEYS=['card','free','name','memo','status','blue','red','green','genes','whites'];
+let NOCAND=false,CHG=null;
+function makeCand(n){const c=blank();c.parents=[];return c}
+function withFields(n,src,fn){const save={};for(const k of CAND_KEYS){save[k]=n[k];n[k]=src[k]}try{return fn()}finally{for(const k of CAND_KEYS)n[k]=save[k]}}
+function candSnap(n,child){return{aff:child?affinity(child):null,sa:child?startApt(child):null,gc:child?geneCand(child):[],triC:child?trioOf(child):null,triN:trioOf(n)}}
+function candDiff(n,child){
+  const c=n.cand,out={fac:[],calc:[]},st=x=>'★'+(x||1);
+  const one=(lab,a,b,fmt)=>{if(fmt(a)!==fmt(b))out.fac.push(`${lab} ${fmt(a)||'なし'}→${fmt(b)||'なし'}`)};
+  if((n.name||'')!==(c.name||''))out.fac.push(`キャラ ${n.name||'未設定'}→${c.name||'未設定'}`);
+  one('青',n.blue,c.blue,x=>x.t?x.t+st(x.s):'');one('赤',n.red,c.red,x=>x.t?x.t+st(x.s):'');one('緑',n.green,c.green,x=>x.n&&x.s?x.n+st(x.s):'');
+  const gm=l=>new Map(l.filter(x=>x.t).map(x=>[x.t+'の遺伝子',x.s])),wm=l=>new Map(l.filter(x=>x.n.trim()).map(x=>[x.n.trim(),x.s]));
+  for(const [A,B] of [[gm(n.genes),gm(c.genes)],[wm(n.whites),wm(c.whites)]]){
+    for(const [k,v] of B){if(!A.has(k))out.fac.push(`＋${k}${st(v)}`);else if(A.get(k)!==v)out.fac.push(`${k} ${st(A.get(k))}→${st(v)}`)}
+    for(const [k,v] of A)if(!B.has(k))out.fac.push(`−${k}${st(v)}`)}
+  const b=candSnap(n,child),a=withFields(n,c,()=>candSnap(n,child));
+  if(child){const nm=esc(child.name||'子');
+    if(b.aff&&a.aff&&b.aff.total!==a.aff.total)out.calc.push(`${nm}の相性 ${b.aff.total}→${a.aff.total}`);
+    if(b.sa&&a.sa)for(const x of APTS){const p=b.sa[x],q=a.sa[x];if(p&&q&&p.start!==q.start)out.calc.push(`${nm}の開始時 ${x} ${p.start}→${q.start}`)}
+    const gs=l=>new Map(l.map(g=>[g.t,g.sure?'確定':'可能性']));const G1=gs(b.gc),G2=gs(a.gc);
+    for(const x of APTS){const p=G1.get(x)||'',q=G2.get(x)||'';if(p!==q)out.calc.push(`${nm}の${x}の遺伝子 ${p||'なし'}→${q||'なし'}`)}
+    const t1=new Set(b.triC||[]),t2=new Set(a.triC||[]);for(const k of t2)if(!t1.has(k))out.calc.push(`${nm}と両親の3人共通 ＋${k}`);for(const k of t1)if(!t2.has(k))out.calc.push(`${nm}と両親の3人共通 −${k}`)}
+  {const t1=new Set(b.triN||[]),t2=new Set(a.triN||[]);for(const k of t2)if(!t1.has(k))out.calc.push(`この枠と両親の3人共通 ＋${k}`);for(const k of t1)if(!t2.has(k))out.calc.push(`この枠と両親の3人共通 −${k}`)}
+  return out}
+function candHTML(n,d,child){
+  const view=Object.assign({},n.cand,{parents:n.parents});
+  {const old=new Map(n.whites.filter(x=>x.n.trim()).map(x=>[x.n.trim(),x.s])),og=new Map(n.genes.filter(x=>x.t).map(x=>[x.t,x.s]));CHG=new Set();
+   for(const x of n.cand.whites){const k=x.n.trim();if(k&&old.get(k)!==x.s)CHG.add(k)}for(const x of n.cand.genes)if(x.t&&og.get(x.t)!==x.s)CHG.add('遺:'+x.t)}
+  /* 金・銀の枠：この候補で入れ替えたと仮定して判定する */
+  {let t,sv;withFields(n,n.cand,()=>{calcTri();t=TRI.get(n.id);sv=SIL.get(n.id)});calcTri();if(t)TRI.set(n.cand.id,t);if(sv)SIL.set(n.cand.id,sv)}
+  let h;try{h=cardHTML(view,d)}finally{CHG=null}
+  h=h.replace(/<button type="button" class="ctog"[^>]*>[^<]*<\/button>/,'').replace('<div class="card','<div class="card cand').replace('<div class="gtag">'+GEN(d)+'</div>','<div class="gtag">'+GEN(d)+'</div><div class="ctag">更新候補</div>');
+  const anc=n.parents.some(p=>!isEmpty(p));
+  if(isEmpty(n.cand))return h.replace(/<\/div>$/,`<div class="cdiff"><div class="sub">更新後のキャラと因子を入力してください（編集タブで手入力、またはスクショから読み取り）。入力すると、ここに今のカードとの違いが表示されます。</div><div class="row"><button type="button" class="btn sm" data-cdel="${n.id}">候補を消す</button></div></div></div>`);
+  const df=candDiff(n,child);
+  const box=`<div class="cdiff"><div><b>計算への影響：</b>${df.calc.length?df.calc.join('、'):'なし'}</div>
+    <div class="row"><button type="button" class="btn sm primary" data-capply="${n.id}">この内容で更新</button>${anc?`<button type="button" class="btn sm" data-capply2="${n.id}">更新して継承元を空にする</button>`:''}<button type="button" class="btn sm" data-cdel="${n.id}">候補を消す</button></div>
+    ${anc?'<div class="sub">この個体の継承元（親）が、今の血統表の親と違う場合は「更新して継承元を空にする」を選んでください。</div>':''}</div>`;
+  return h.replace(/<\/div>$/,box+'</div>')}
+function candApply(n,clearAnc,d){for(const k of CAND_KEYS)n[k]=n.cand[k];delete n.cand;
+  if(clearAnc)n.parents=n.parents.map(()=>tree(Math.max(0,3-(d+1))));}
 function addParent(n){const nn=blank();if(n.parents.length===1&&n.parents[0].slot===1){delete n.parents[0].slot;n.parents.unshift(nn)}else{if(n.parents[0])delete n.parents[0].slot;n.parents.push(nn)}return nn}
-function branchHTML(n,d){
+function branchHTML(n,d,child){
   const col=n.parents.length&&(UI.collapsed||[]).includes(n.id);
-  let h=`<div class="branch${col?' collapsed':''}">${cardHTML(n,d)}`;
+  let h=`<div class="branch${col?' collapsed':''}">${n.cand&&!NOCAND?`<div class="cstack">${cardHTML(n,d)}${candHTML(n,d,child)}</div>`:cardHTML(n,d)}`;
   const ps=n.parents,canAdd=ps.length<2&&(!isEmpty(n)||d<=2||ps.length===1);
   if(ps.length||canAdd){
     h+='<div class="parents">';
     const addB=canAdd?`<div class="branch"><button class="addp" data-add="${n.id}">＋ 親を追加</button></div>`:'';
     const lower=ps.length===1&&ps[0].slot===1;
     if(lower)h+=addB;
-    for(const p of ps)h+=branchHTML(p,d+1);
+    for(const p of ps)h+=branchHTML(p,d+1,n);
     if(!lower)h+=addB;
     h+='</div>';
   }
@@ -806,8 +854,9 @@ function refreshAptSec(){const cur=$('#ed-apt-sec');if(!cur)return;const t=docum
 function editorHTML(){
   const f=selId&&findNode(selId);
   if(!f)return `<p class="empty-note">血統表のカードをクリックすると、ここで因子を編集できます。</p>`;
-  const {n,d,child}=f;
-  let h=`<div><div class="gen">${GEN(d)}${child?` ／ ${esc(child.name||'未設定')} の継承元`:''}</div><h2>${esc(n.name||'未設定')}</h2></div>`;
+  const {n,d,child,candOf}=f;
+  let h=`<div><div class="gen">${candOf?`${GEN(d)} ／ 更新候補（今のカード：${esc(candOf.name||'未設定')}）`:`${GEN(d)}${child?` ／ ${esc(child.name||'未設定')} の継承元`:''}`}</div><h2>${esc(n.name||'未設定')}</h2></div>`;
+  if(candOf)h+=`<p class="hint">更新後の内容を入力してください（手入力・スクショ読み取りのどちらでも可）。血統表では今のカードの下に並び、因子の変化と計算への影響が表示されます。よければカードの「この内容で更新」を押します。</p>`;
   h+=`<div class="scanbar"><button class="btn primary sm" id="openScan">スクショから読み取る</button><span class="sub">ゲームの継承画面のスクショから、キャラと因子をまとめて入力（ここにドラッグ＆ドロップも可）</span></div>`;
   {const cd=n.card&&CARD_BY.get(n.card);
    h+=`<div class="fld"><label for="ed-name">キャラ（名前・愛称・衣装名・固有スキルで絞り込み）</label><div class="combo"><input type="text" id="ed-name" data-f="name" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-clist" value="${esc(n.name)}" placeholder="例：ステイゴールド、嫁カフェ、水着"><div class="clist" id="ed-clist" role="listbox" hidden></div></div>${cd?`<div class="cur">衣装：<input type="text" id="ed-nick" class="nick-in" value="${esc(labOf(cd))}" aria-label="衣装の愛称" title="愛称を変更できます（空にすると自動の愛称に戻ります）"><span class="t">［${esc(cd.title)}］</span><button type="button" class="x" id="cardClear" aria-label="衣装の選択を解除">×</button></div>`:''}</div>`;}
@@ -825,7 +874,9 @@ function editorHTML(){
   n.whites.forEach((w,i)=>{h+=`<div class="wrow"><input type="text" id="ed-w${i}" data-f="whites.${i}.n" value="${esc(w.n)}"${WHITE_SET.has(w.n.trim())?'':' class="unk" title="一覧にない名前です"'}>${starsHTML('whites.'+i,w.s)}<button class="x" data-delw="${i}" aria-label="削除">×</button></div>`});
   if(!n.whites.length)h+=`<p class="hint">上の欄に一部を入力すると、ゲーム内の白因子（スキル・レース・シナリオ・隠し因子）から候補が出ます。</p>`;
   h+=`<details><summary>まとめて入力する</summary><div class="frow" style="margin-top:6px"><input type="text" id="ed-bulk" placeholder="阿吽の呼吸3, 食い下がり2"><button class="btn sm" id="bulkAdd">追加</button></div></details></div>`;
+  if(candOf){h+=`<div class="sec"><h3>操作</h3><div class="row"><button class="btn sm" id="edCandBack">今のカードに戻る</button><button class="btn sm" id="edCandDel">候補を消す</button></div><p class="hint">更新はカードの「この内容で更新」から行います。</p></div>`;return h}
   h+=`<div class="sec"><h3>操作</h3><div class="row">`;
+  if(!isEmpty(n))h+=n.cand?`<button class="btn sm primary" id="edCandSel">更新候補を編集</button>`:`<button class="btn sm primary" id="edCand" title="今のカードを残したまま、空のカードに更新後の因子を入力して比べられます">更新候補を作る</button>`;
   if(n.parents.length<2)h+=`<button class="btn sm" id="edAddP">＋ 親を追加</button>`;
   h+=`<button class="btn sm" id="edReg">保有キャラに登録</button><button class="btn sm" id="edPlace">保有キャラから配置</button><button class="btn sm" id="edClear">因子を空にする</button>`;
   if(child)h+=`<button class="btn sm danger" id="edDel">この枠と祖先を消す</button>`;
@@ -903,6 +954,10 @@ function getObj(n,path){const k=path.split('.');let o=n;for(let i=0;i<k.length-1
 
 /* ---------- events: tree ---------- */
 $('#tree').addEventListener('click',e=>{
+  const ca=e.target.closest('[data-capply],[data-capply2],[data-cdel]');
+  if(ca){e.stopPropagation();const id=ca.dataset.capply||ca.dataset.capply2||ca.dataset.cdel,f=findNode(id);if(!f||!f.n.cand)return;
+    if(ca.dataset.cdel){delete f.n.cand;selId=f.n.id;touch('plan');renderAll();toast('更新候補を消しました');return}
+    candApply(f.n,!!ca.dataset.capply2,f.d);selId=f.n.id;touch('plan');renderAll();toast(ca.dataset.capply2?'更新しました（継承元は空にしました）':'カードを更新しました');return}
   const fb=e.target.closest('[data-free]');
   if(fb){const f=findNode(fb.dataset.free);if(f){f.n.free=!f.n.free;touch('plan');renderTree();renderSummary();if(selId===f.n.id)renderEditor()}return}
   if(e.target.closest('.fq'))return;
@@ -1020,6 +1075,10 @@ ed.addEventListener('click',e=>{
     case 'bulkAdd':{const v=$('#ed-bulk').value;const items=parseBulk(v);if(!items.length)return;
       for(const it of items){const ex=n.whites.find(w=>w.n.trim()===it.n);if(ex)ex.s=it.s;else n.whites.push(it)}
       touch('plan');renderHeader();renderEditor();soft();ed.querySelector('#ed-bulk')?.focus();toast(items.length+'件の白因子を追加しました');break}
+    case 'edCand':{n.cand=makeCand(n);selId=n.cand.id;touch('plan');renderAll();toast('空の更新候補を作りました。更新後のキャラと因子を入力してください',3500);break}
+    case 'edCandSel':{if(n.cand){selId=n.cand.id;renderAll()}break}
+    case 'edCandBack':{if(f.candOf){selId=f.candOf.id;renderAll()}break}
+    case 'edCandDel':{if(f.candOf){delete f.candOf.cand;selId=f.candOf.id;touch('plan');renderAll();toast('更新候補を消しました')}break}
     case 'edAddP':{const nn=addParent(n);selId=nn.id;touch('plan');renderAll();break}
     case 'edReg':registerRoster(n);break;
     case 'openScan':openScan();break;
@@ -1235,7 +1294,7 @@ function openScan(){const f=findNode(selId);$('#scanTarget').textContent=f?`「$
 
 /* ---------- roster ---------- */
 function trimDepth(n,d){const c=clone(n);const cut=(x,k)=>{x.parents=k>=d?[]:x.parents.map(p=>cut(p,k+1));return x};return cut(c,0)}
-function reid(n){n.id=rid();n.parents.forEach(reid);return n}
+function reid(n){n.id=rid();if(n.cand)n.cand.id=rid();n.parents.forEach(reid);return n}
 function registerRoster(n){
   if(!n.name.trim()){toast('名前を入力してから登録してください');return}
   const card=trimDepth(n,2);card.status='have';
@@ -1390,7 +1449,8 @@ function addCanvas(doc,cv,first){
     if(!firstSlice)doc.addPage('a4',orient);doc.addImage(c.toDataURL('image/jpeg',0.93),'JPEG',m,m,aw,h*sW);firstSlice=false;y+=h}
 }
 let pdfBusy=false;
-function sheetsHTML(){
+function sheetsHTML(){NOCAND=true;try{return sheetsHTML0()}finally{NOCAND=false}}
+function sheetsHTML0(){
   const p=plan(),root=p.root,date=new Date().toLocaleDateString('ja-JP');
   const head=sub=>`<div class="pdf-head"><h1>${esc(p.title)}</h1><span class="m">${sub}</span><span class="m">${date}</span></div>`;
   const savedSel=selId,selF=(selId&&findNode(selId))||{n:root,d:0,child:null};selId=null;
