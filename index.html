@@ -488,12 +488,12 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <header><h2 id="hScan">スクショから因子を読み取る</h2><button class="btn" data-close>閉じる</button></header>
   <p class="hint" id="scanTarget"></p>
   <p class="hint">「ウマ娘詳細」→「継承」タブや「因子一覧」のスクショを選ぶと、キャラ（緑因子から判定）と、青・赤・緑・白因子、遺伝子の★の数を読み取ります。画像はこの端末の中だけで処理し、外部には送りません。初回は文字認識の辞書データ（約16MB）を読み込むため、ネット接続が必要です。</p>
-  <div class="dropzone" id="scanDrop"><div><b>ここにスクショをドラッグ＆ドロップ</b></div><div class="sub">複数枚まとめてOK。パソコンではコピーした画像を貼り付け（⌘V / Ctrl+V）もできます</div><label class="btn primary" for="scanFile">画像を選ぶ</label><input type="file" id="scanFile" accept="image/*" multiple hidden></div>
+  <div class="dropzone" id="scanDrop"><div><b>ここにスクショをドラッグ＆ドロップ</b></div><div class="sub">複数枚まとめてOK。1枚ずつ追加しても、前の読み取り結果に足されます。パソコンではコピーした画像を貼り付け（⌘V / Ctrl+V）もできます</div><label class="btn primary" for="scanFile">画像を選ぶ</label><input type="file" id="scanFile" accept="image/*" multiple hidden></div>
   <p class="hint" id="scanStatus" role="status"></p>
   <div id="scanChar"></div>
   <div id="scanList" class="tw"></div>
   <div id="scanExtra"></div>
-  <div class="row"><button class="btn primary" id="scanApply" disabled>このカードに追加</button><span class="sub">読み取り結果は必ずゲーム画面と見比べてください。</span></div>
+  <div class="row"><button class="btn primary" id="scanApply" disabled>このカードに追加</button><button class="btn" id="scanClear" type="button">読み取り結果を消す</button><span class="sub">読み取り結果は必ずゲーム画面と見比べてください。</span></div>
 </div></div>
 <div class="ov" id="ovImg" hidden><div class="dlg" role="dialog" aria-labelledby="hImg" style="max-width:min(96vw,900px)">
   <header><h2 id="hImg">画像で書き出す</h2><button class="btn" data-close>閉じる</button></header>
@@ -1110,7 +1110,7 @@ function parseBulk(v){
 /* ---------- スクショから因子を読み取る（ブラウザ内で処理・画像は外部に送らない） ---------- */
 const LIB_TESS='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
 const TESS_LANG='https://cdn.jsdelivr.net/npm/@tesseract.js-data/jpn@1.0.0/4.0.0';
-let tessWorker=null,scanRes=[],scanBusy=false,scanCard=0,scanUseCard=true,scanDelExtra=false;
+let tessWorker=null,scanRes=[],scanShots=0,scanBusy=false,scanCard=0,scanUseCard=true,scanDelExtra=false;
 const cardLabel=c=>c?`${c.name}［${c.title}］`:'';
 const SC_NORM_MAP={'力':'か','口':'ろ','工':'え','二':'に','夕':'た','卜':'と','八':'は','〇':'○'};
 const scNorm=s=>(s||'').normalize('NFKC').replace(/[\s・\.\-ー一_、。,'"`:;|!！/／]/g,'').replace(/[ァ-ン]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/[力口工二夕卜八〇]/g,c=>SC_NORM_MAP[c]);
@@ -1173,11 +1173,12 @@ async function scWorker(onp){if(tessWorker)return tessWorker;if(!window.Tesserac
   tessWorker=await window.Tesseract.createWorker('jpn',1,{langPath:TESS_LANG,gzip:true,logger:m=>{if(onp&&m&&m.status&&/load|download|init/i.test(m.status))onp(m)}});
   await tessWorker.setParameters({tessedit_pageseg_mode:'7'});return tessWorker}
 async function scanFiles(files){
-  if(scanBusy)return;scanBusy=true;const st=$('#scanStatus');scanRes=[];renderScan();
+  if(scanBusy)return;scanBusy=true;const st=$('#scanStatus');const prev=scanRes.length;
   try{
     st.textContent='文字認識の準備中…（初回は辞書データ約16MBを読み込みます）';
     const w=await scWorker(m=>{st.textContent='文字認識の準備中… '+(m.progress?Math.round(m.progress*100)+'%':'')});
-    const found=new Map();let total=0,done=0,unread=0;const infos=[];
+    /* 1枚ずつ追加しても前の読み取り結果は残し、まとめる（同じ因子は★の多い方） */
+    const found=new Map(scanRes.map(r=>[(r.parent?'p|':'s|')+r.kind+'|'+r.name,r]));let total=0,done=0,unread=0;const infos=[];
     for(const f of files){const img=await scLoadImage(f);const info=scFindTiles(img);infos.push(info);total+=info.tiles.length}
     if(!total){st.textContent='因子が見つかりませんでした。ゲームの「ウマ娘詳細」→「継承」タブや「因子一覧」のスクショを選んでください。';return}
     let lastKind=null;
@@ -1205,9 +1206,9 @@ async function scanFiles(files){
     /* 並びはゲームの因子一覧と同じ：青→赤→緑→レース→スキル→シナリオ→遺伝子→隠し因子（スクショの順番や枚数に関係なく） */
     const ko=r=>{if(r.kind==='blue')return-3;if(r.kind==='pink')return-2;if(r.kind==='green')return-1;const g=r.name.match(/^(.+)の遺伝子$/);if(g&&APTS.includes(g[1]))return 35000+APTS.indexOf(g[1]);return WHITE_ORD.get(r.name)??90000};
     scanRes=[...found.values()].sort((a,b)=>ko(a)-ko(b));
-    {const gr=scanRes.find(r=>r.kind==='green'&&!r.parent);const c=gr&&CARDS.find(x=>x.uniq===gr.name);scanCard=c?c.id:0;scanPrep()}
+    if(!scanCard){const gr=scanRes.find(r=>r.kind==='green'&&!r.parent);const c=gr&&CARDS.find(x=>x.uniq===gr.name);scanCard=c?c.id:0;scanPrep()}scanShots+=files.length;
     const pc=scanRes.filter(x=>x.parent).length;
-    st.textContent=`${scanRes.length}件を読み取りました`+(unread?`（読み取れなかった枠：${unread}件。画面の端で切れた枠などです）`:'')+(pc?`。「継承元」より下の${pc}件は、親の因子としてチェックを外しています`:'')+'。内容を確認して「このカードに追加」を押してください。'+(infos.some(x=>x.small)?'画像が小さいため、読み間違いや読み落としが増えます。PC版はウインドウを大きくして撮ると精度が上がります。':'');
+    st.textContent=(prev?`${files.length}枚を追加で読み取り、合計${scanRes.length}件になりました（これまでに${scanShots}枚）`:`${scanRes.length}件を読み取りました`)+(unread?`（読み取れなかった枠：${unread}件。画面の端で切れた枠などです）`:'')+(pc?`。「継承元」より下の${pc}件は、親の因子としてチェックを外しています`:'')+'。内容を確認して「このカードに追加」を押してください。'+(infos.some(x=>x.small)?'画像が小さいため、読み間違いや読み落としが増えます。PC版はウインドウを大きくして撮ると精度が上がります。':'');
   }catch(e){st.textContent='読み取りに失敗しました'+(e&&e.message?'：'+e.message:'')+'（ネット接続が必要です）'}
   finally{scanBusy=false;renderScan()}}
 const SC_KIND={gray:'白因子',blue:'青因子',pink:'赤因子',green:'緑因子'};
@@ -1262,6 +1263,7 @@ function scanApply(){const ctx=scanCtx();if(!ctx.n){toast('先に血統表のカ
     else if(r.kind==='pink'&&APTS.includes(r.name)){n.red={t:r.name,s};co++}
     else if(r.kind==='green'){n.green={n:r.name,s};co++}}
   touch('plan');closeOv();renderAll();toast(`${scanUseCard&&ctx.nc?cardLabel(ctx.nc)+'：':''}白因子${cw}件・遺伝子${cg}件・青/赤/緑${co}件を反映しました`,4000)}
+$('#scanClear').onclick=()=>{if(scanBusy)return;scanRes=[];scanShots=0;scanCard=0;renderScan();$('#scanStatus').textContent='読み取り結果を消しました。スクショを選び直してください。'};
 $('#scanFile').addEventListener('change',e=>{const fs=[...e.target.files];if(fs.length)scanFiles(fs);e.target.value=''});
 $('#scanList').addEventListener('change',e=>{const t=e.target;if(t.dataset.si!==undefined){scanRes[+t.dataset.si].on=t.checked;renderScan()}
   else if(t.dataset.ss!==undefined){scanRes[+t.dataset.ss].stars=+t.value;scanRes[+t.dataset.ss].choice=undefined;renderScan()}
@@ -1292,7 +1294,7 @@ $('#scanChar').addEventListener('change',e=>{const t=e.target;if(t.id==='scanUse
 $('#scanExtra').addEventListener('change',e=>{if(e.target.id==='scanDelExtra')scanDelExtra=e.target.checked});
 function openScan(){const f=findNode(selId);$('#scanTarget').textContent=f?`「${f.n.name||'未設定'}」の枠に追加します`:'先に血統表のカードを選んでください';
   const S=scSets();if(!$('#dl-scan-gray')){const mk=(id,arr)=>`<datalist id="${id}">${arr.map(x=>`<option value="${esc(x.c)}"></option>`).join('')}</datalist>`;document.body.insertAdjacentHTML('beforeend',`<datalist id="dl-scan-cards">${CARDS.map(c=>`<option value="${esc(cardLabel(c))}"></option>`).join('')}</datalist>`+mk('dl-scan-gray',S.gray.arr)+mk('dl-scan-blue',S.blue.arr)+mk('dl-scan-pink',S.pink.arr)+mk('dl-scan-green',S.green.arr))}
-  if(!scanBusy){scanRes=[];scanCard=0;renderScan();$('#scanStatus').textContent='ゲームの「ウマ娘詳細」→「継承」タブのスクショを選んでください（複数枚まとめて選べます）。'}openOv('#ovScan')}
+  if(!scanBusy){scanRes=[];scanShots=0;scanCard=0;renderScan();$('#scanStatus').textContent='ゲームの「ウマ娘詳細」→「継承」タブのスクショを選んでください（複数枚まとめて選べます）。'}openOv('#ovScan')}
 
 /* ---------- roster ---------- */
 function trimDepth(n,d){const c=clone(n);const cut=(x,k)=>{x.parents=k>=d?[]:x.parents.map(p=>cut(p,k+1));return x};return cut(c,0)}
