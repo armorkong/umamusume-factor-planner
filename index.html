@@ -1491,47 +1491,111 @@ function printPDF(){
   setTimeout(()=>{try{window.print()}catch(e){}setTimeout(fin,1500)},50);
 }
 function withTimeout(pr,ms){return Promise.race([pr,new Promise(r=>setTimeout(()=>r(null),ms))])}
+/* PDF：書き出し用に描いた血統表の画像を、その大きさの1ページのPDFにする（A4に押し込まないので崩れない） */
 $('#pdfBtn').onclick=async()=>{
-  if(pdfBusy)return;
+  if(pdfBusy||!plan())return;
   const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
-  const hasClaude=!!(window.claude&&typeof window.claude.use==='function');
-  if(!framed||!hasClaude){
-    toast('印刷画面が開きます。「PDFとして保存」を選んでください',4000);printPDF();return}
+  const hasClaude=framed&&!!(window.claude&&typeof window.claude.use==='function');
   pdfBusy=true;const btn=$('#pdfBtn');btn.disabled=true;btn.textContent='PDFを作成中…';
-  let restore=null,stage=null;
   try{
-    const dl=await withTimeout(window.claude.use('downloads'),5000);
-    if(!dl)throw{code:'unavailable'};
-    if(!window.htmlToImage)await loadScript(LIB_H2I);
-    if(!window.jspdf)await loadScript(LIB_PDF);
-    restore=forceLight();
-    stage=document.createElement('div');stage.className='pdfstage';stage.innerHTML=sheetsHTML();
-    document.body.appendChild(stage);cleanSheets(stage);
-    try{await withTimeout(document.fonts.ready,2000)}catch(e){}
-    const bg=getComputedStyle(document.body).backgroundColor||'#ffffff';
-    const {jsPDF}=window.jspdf;let doc=null,i=0;
-    for(const sheet of stage.children){
-      const cv=await withTimeout(window.htmlToImage.toCanvas(sheet,{pixelRatio:2,backgroundColor:bg,skipFonts:true,cacheBust:false}),20000);
-      if(!cv)throw new Error('画像化がタイムアウトしました');
-      if(!doc)doc=new jsPDF({orientation:cv.width>cv.height?'l':'p',unit:'pt',format:'a4',compress:true});
-      addCanvas(doc,cv,i===0);i++;
-    }
-    stage.remove();stage=null;restore();restore=null;
-    const name=((plan().title||'無題の計画').trim()).replace(/[\\/:*?"<>|]/g,'_')+'.pdf';
-    await dl.save({filename:name,data:doc.output('blob')});
-    toast('PDFを書き出しました');
+    let dl=null;if(hasClaude){dl=await withTimeout(window.claude.use('downloads'),5000);if(!dl)throw{code:'unavailable'}}
+    if(!window.jspdf){try{await loadScript(LIB_PDF)}catch(e){if(!hasClaude){toast('PDF作成用の処理を読み込めないため、印刷画面を開きます。「PDFとして保存」を選んでください',5000);printPDF();return}throw e}}
+    await new Promise(r=>setTimeout(r,30));
+    const cv=drawTreeCanvas(),{jsPDF}=window.jspdf;
+    const w=(+cv.dataset.w)*0.75,h=(+cv.dataset.h)*0.75;
+    const doc=new jsPDF({orientation:w>h?'l':'p',unit:'pt',format:[w,h],compress:true});
+    doc.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,w,h);
+    const name=((plan().title||'無題の計画').trim()).replace(/[\\/:*?"<>|]/g,'_')+'.pdf',blob=doc.output('blob');
+    if(dl){await dl.save({filename:name,data:blob});toast('PDFを書き出しました');return}
+    saveBlobLink(blob,name);toast('PDFを保存しました（ダウンロードフォルダ）',3500);
   }catch(e){
     const c=e&&e.code;
     if(c==='declined'){}
-    else if(c==='unavailable'||c==='not_granted'||c==='capability_disabled'||c==='extension_not_enabled')toast('この表示ではPDFの保存が使えません。claude.aiのページを開き直してお試しください',5000);
+    else if(c)toast('この表示ではPDFの保存が使えません。claude.aiのページを開き直してお試しください',5000);
     else toast('PDFを作成できませんでした'+(e&&e.message?'：'+e.message:''),5000);
-  }finally{
-    if(stage)stage.remove();if(restore)restore();
-    pdfBusy=false;const btn=$('#pdfBtn');btn.disabled=false;btn.textContent='PDFで書き出す';
-  }
+  }finally{pdfBusy=false;const b=$('#pdfBtn');b.disabled=!plan();b.textContent='PDFで書き出す'}
 };
 
-/* ---------- Excel export ---------- */
+/* ---------- 書き出し用の血統表を Canvas に直接描く（画面のHTMLを画像化しないので、大きな血統表でも速く、Safariでも止まらない） ---------- */
+function drawTreeCanvas(){
+  calcTri();
+  const p=plan(),F='"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic","Meiryo",system-ui,sans-serif';
+  const C={bg:'#edf1ee',card:'#fbfcfb',line:'#c5cfc9',ink:'#17201b',muted:'#5b6961',red:'#cc3d63',redBg:'#f8e0e7',blue:'#2c66c4',blueBg:'#e2eaf8',green:'#2f8a43',greenBg:'#e1f0e4',gene:'#b04a8f',geneBg:'#f5e5ef',accent:'#1d5a44',warn:'#b0641b'};
+  const CW=310,PAD=10,GX=40,GY=10,M=28,HEAD=86,CH=18,CG=4,RG=4;
+  const mc=document.createElement('canvas').getContext('2d');
+  const tw=(t,f)=>{mc.font=f;return mc.measureText(t).width};
+  const fChip='11.5px '+F,fChipB='bold 11.5px '+F;
+  const chip=(text,st)=>({text,st,w:Math.ceil(tw(text,st.bold?fChipB:fChip))+12});
+  const S_={red:{bg:C.redBg,fg:C.red},blue:{bg:C.blueBg,fg:C.blue},green:{bg:C.greenBg,fg:C.green},
+    gene:{bg:C.geneBg,fg:C.gene,bd:'#d9a0c6',bold:true},gc:{fg:C.gene,bd:C.gene,dash:true},gcs:{bg:'#f1d9e9',fg:C.gene,bd:C.gene,bold:true},
+    w:{bg:'#ffffff',fg:C.ink,bd:C.line},sil:{bg:'#d6dbe0',fg:C.ink,bd:'#7f8a93',bold:true},tri:{bg:'#fbecc0',fg:C.ink,bd:'#d49a00',bold:true},
+    trp:{grad:true,fg:'#ffffff',bd:'#c3cbd2',bold:true,shadow:true},more:{bg:'#ffffff',fg:C.muted,bd:C.line},warn:{bg:'#fff3e3',fg:C.warn,bd:C.warn}};
+  const st=s=>s?'★'+s:'';
+  const wrap=chips=>{const rows=[];let cur=[],x=0;const max=CW-PAD*2;for(const c of chips){if(cur.length&&x+c.w>max){rows.push(cur);cur=[];x=0}cur.push(c);x+=c.w+CG}if(cur.length)rows.push(cur);return rows};
+  function model(n){
+    const m={n,rows:[]};
+    if(isEmpty(n)){m.title='未設定';if(n.red.t)m.rows.push({k:'chips',rows:wrap([chip(n.red.t+'★'+(n.red.s||1),S_.red)])});return finish(m)}
+    m.title=n.name||'（名前なし）';
+    const r=affinity(n);m.aff=r?(r.dup?'重複':r.sym+r.total):'';m.affLv=r&&!r.dup?r.lv:-1;
+    m.pill=n.status==='have'?'自前':n.status==='rent'?'レンタル':n.status==='plan'?'予定':'';
+    const cdc=n.card&&CARD_BY.get(n.card);if(cdc)m.costume=[labOf(cdc),'［'+cdc.title+'］'];
+    const a=[];if(n.red.t)a.push(chip(n.red.t+' ★'+(n.red.s||1),redBad(n)?S_.warn:S_.red));if(n.blue.t)a.push(chip(n.blue.t+' ★'+(n.blue.s||1),S_.blue));
+    if(a.length)m.rows.push({k:'chips',rows:wrap(a)});
+    const sa=startApt(n);if(sa)m.rows.push({k:'apt',sa});
+    const gc=geneCand(n);if(gc.length)m.rows.push({k:'chips',rows:wrap(gc.map(g=>chip(APT_S[g.t]+'遺伝子 '+(g.sure?'確定':'可能性')+' ★'+g.p,g.sure?S_.gcs:S_.gc)))});
+    if(n.green.n)m.rows.push({k:'chips',rows:wrap([chip(n.green.n+(n.green.s?' ★'+n.green.s:''),S_.green)])});
+    const tri=TRI.get(n.id),sil=SIL.get(n.id),ptn=PTN.get(n.id),w=[];
+    for(const x of n.genes)if(x.t)w.push(chip(x.t+'の遺伝子 '+st(x.s),S_.gene));
+    const ws=sortWhites(n.whites.filter(x=>x.n.trim()));
+    if(UI.onlyUseful){if(ws.length)w.push(chip('白因子 '+ws.length+'種・★'+ws.reduce((t,x)=>t+(+x.s||0),0),S_.more))}
+    else for(const x of ws){const k=x.n.trim(),t=tri&&tri.has(k);w.push(chip(k+' '+st(x.s),t&&ptn&&ptn.has(k)?S_.trp:t?S_.tri:sil&&sil.has(k)?S_.sil:S_.w))}
+    if(w.length)m.rows.push({k:'chips',rows:wrap(w)});
+    return finish(m)}
+  function finish(m){let h=PAD+20;if(m.costume)h+=17;for(const r of m.rows){h+=RG;h+=r.k==='apt'?20:r.rows.length*(CH+CG)-CG}m.h=h+PAD;return m}
+  /* 配置：子は自分の親たちの範囲の中央に置く（画面と同じ） */
+  const col=n=>(UI.collapsed||[]).includes(n.id);
+  let maxD=0;
+  function lay(n,d,y0){maxD=Math.max(maxD,d);const m=model(n);m.d=d;m.x=M+d*(CW+GX);const ps=col(n)?[]:n.parents;
+    if(!ps.length){m.y=y0;m.ps=[];return{m,h:m.h}}
+    let y=y0;const kids=[];for(const q of ps){const r=lay(q,d+1,y);kids.push(r.m);y+=r.h+GY}
+    const span=y-GY-y0;let total=Math.max(span,m.h);
+    if(m.h>span){const off=(m.h-span)/2;const shift=(k)=>{k.y+=off;k.ps.forEach(shift)};kids.forEach(shift)}
+    const a=kids[0].y+kids[0].h/2,b=kids[kids.length-1].y+kids[kids.length-1].h/2;m.y=(a+b)/2-m.h/2;m.ps=kids;return{m,h:total}}
+  const root=lay(p.root,0,M+HEAD);
+  const W=M*2+(maxD+1)*CW+maxD*GX,H=Math.ceil(M+HEAD+root.h+M);
+  const scale=Math.max(1,Math.min(2,Math.sqrt(14e6/(W*H))));
+  const cv=document.createElement('canvas');cv.width=Math.round(W*scale);cv.height=Math.round(H*scale);cv.dataset.w=W;cv.dataset.h=H;
+  const g=cv.getContext('2d');g.scale(scale,scale);g.textBaseline='middle';
+  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()};
+  g.fillStyle=C.bg;g.fillRect(0,0,W,H);
+  g.strokeStyle='#8b9692';g.lineWidth=2;g.strokeRect(M/2,M/2,W-M,H-M);
+  g.fillStyle=C.ink;g.font='bold 24px '+F;g.fillText(p.title||'無題の計画',M,M+18);
+  g.font='12px '+F;g.fillStyle=C.muted;g.fillText('血統表　'+new Date().toLocaleDateString('ja-JP'),M+tw(p.title||'無題の計画','bold 24px '+F)+16,M+20);
+  g.fillStyle='#e3e9e5';g.fillRect(M,M+46,W-M*2,22);g.fillStyle=C.muted;g.font='bold 12px '+F;
+  for(let d=0;d<=maxD;d++)g.fillText(GEN(d),M+d*(CW+GX)+4,M+57);
+  function drawChip(c,x,y){const s=c.st;
+    if(s.grad){const gr=g.createLinearGradient(0,y,0,y+CH);gr.addColorStop(0,'#d9ad3c');gr.addColorStop(.45,'#a57a14');gr.addColorStop(.55,'#7d5a08');gr.addColorStop(1,'#b8902a');g.fillStyle=gr}else g.fillStyle=s.bg||'transparent';
+    rr(x,y,c.w,CH,4);if(s.bg||s.grad)g.fill();
+    if(s.bd){g.strokeStyle=s.bd;g.lineWidth=s.bold?1.5:1;g.setLineDash(s.dash?[3,2]:[]);g.stroke();g.setLineDash([])}
+    g.font=s.bold?fChipB:fChip;g.fillStyle=s.fg;
+    if(s.shadow){g.shadowColor='rgba(0,0,0,.5)';g.shadowOffsetY=1;g.shadowBlur=1}
+    g.fillText(c.text,x+6,y+CH/2+.5);g.shadowColor='transparent';g.shadowOffsetY=0;g.shadowBlur=0}
+  function drawCard(m){const x=m.x,y=m.y;
+    rr(x,y,CW,m.h,8);g.fillStyle=C.card;g.fill();g.strokeStyle=C.line;g.lineWidth=1;g.setLineDash(isEmpty(m.n)?[4,3]:[]);g.stroke();g.setLineDash([]);
+    let cy=y+PAD+10;g.font='bold 15px '+F;g.fillStyle=isEmpty(m.n)?C.muted:C.ink;g.fillText(m.title,x+PAD,cy);
+    let rx=x+CW-PAD;const tag=(t,fg,bd)=>{g.font='11px '+F;const w=tw(t,'11px '+F)+10;rx-=w;rr(rx,cy-9,w,18,4);g.strokeStyle=bd;g.lineWidth=1;g.stroke();g.fillStyle=fg;g.fillText(t,rx+5,cy+.5);rx-=4};
+    if(m.pill)tag(m.pill,m.pill==='自前'?C.accent:m.pill==='レンタル'?C.blue:C.warn,C.line);
+    if(m.aff)tag(m.aff,m.affLv===2?C.accent:m.affLv===1?C.blue:C.muted,m.affLv===2?C.accent:C.line);
+    cy+=12;
+    if(m.costume){g.font='bold 11px '+F;g.fillStyle=C.accent;g.fillText(m.costume[0],x+PAD,cy+8);g.font='11px '+F;g.fillStyle=C.muted;g.fillText(m.costume[1],x+PAD+tw(m.costume[0],'bold 11px '+F)+6,cy+8);cy+=17}
+    for(const r of m.rows){cy+=RG;
+      if(r.k==='apt'){const cw=(CW-PAD*2)/10;APTS.forEach((a,i)=>{const v=r.sa[a],cx=x+PAD+i*cw,up=v&&v.start!==v.base;g.fillStyle=up?'#f9e3e9':'#ffffff';g.fillRect(cx,cy,cw,18);g.strokeStyle=C.line;g.strokeRect(cx+.5,cy+.5,cw-1,17);
+        g.font='10.5px '+F;g.fillStyle=up?C.red:C.muted;const t1=APT_S[a],t2=v?v.start:'-';const w1=tw(t1,'10.5px '+F),w2=tw(t2,'bold 11px '+F);const sx=cx+(cw-w1-w2-2)/2;g.fillText(t1,sx,cy+9.5);g.font='bold 11px '+F;g.fillStyle=up?C.red:C.ink;g.fillText(t2,sx+w1+2,cy+9.5)});cy+=20;continue}
+      r.rows.forEach((row,i)=>{let cx=x+PAD;for(const c of row){drawChip(c,cx,cy);cx+=c.w+CG}cy+=CH+(i<r.rows.length-1?CG:0)})}}
+  function drawLinks(m){if(!m.ps.length)return;const x1=m.x+CW,ym=m.y+m.h/2,xm=x1+GX/2;g.strokeStyle='#9aa59f';g.lineWidth=1.5;g.beginPath();g.moveTo(x1,ym);g.lineTo(xm,ym);
+    const ys=m.ps.map(k=>k.y+k.h/2);g.moveTo(xm,Math.min(...ys,ym));g.lineTo(xm,Math.max(...ys,ym));for(const k of m.ps){g.moveTo(xm,k.y+k.h/2);g.lineTo(k.x,k.y+k.h/2)}g.stroke();m.ps.forEach(drawLinks)}
+  drawLinks(root.m);(function all(m){drawCard(m);m.ps.forEach(all)})(root.m);
+  return cv}
 
 /* ---------- 画像（PNG）書き出し ---------- */
 let imgBusy=false,imgURL=null,imgBlob=null,imgName='';
@@ -1545,21 +1609,11 @@ $('#imgBtn').onclick=async()=>{
   const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
   const hasClaude=framed&&!!(window.claude&&typeof window.claude.use==='function');
   imgBusy=true;const btn=$('#imgBtn');btn.disabled=true;btn.textContent='画像を作成中…';
-  let restore=null,stage=null;
   try{
     let dl=null;if(hasClaude){dl=await withTimeout(window.claude.use('downloads'),5000);if(!dl)throw{code:'unavailable'}}
-    if(!window.htmlToImage)await loadScript(LIB_H2I);
-    restore=forceLight();
-    stage=document.createElement('div');stage.className='pdfstage';stage.innerHTML=sheetsHTML();
-    document.body.appendChild(stage);cleanSheets(stage);
-    const sheet=stage.firstElementChild;const w=sheet.scrollWidth,h=sheet.scrollHeight;
-    const pr=Math.max(1,Math.min(2,Math.sqrt(16e6/(w*h))));
-    const bg=getComputedStyle(document.body).backgroundColor||'#ffffff';
-    const opt={pixelRatio:pr,backgroundColor:bg,skipFonts:true,cacheBust:false,width:w,height:h};
-    await withTimeout(window.htmlToImage.toBlob(sheet,opt),20000); // Safariは1回目に描画が欠けることがあるため2回実行
-    const blob=await withTimeout(window.htmlToImage.toBlob(sheet,opt),20000);
-    if(!blob)throw new Error('画像化がタイムアウトしました');
-    stage.remove();stage=null;restore();restore=null;
+    await new Promise(r=>setTimeout(r,30));
+    const cv=drawTreeCanvas();
+    const blob=await new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('画像を作れませんでした')),'image/png'));
     const name=((plan().title||'無題の計画').trim()).replace(/[\\/:*?"<>|]/g,'_')+'.png';
     if(dl){await dl.save({filename:name,data:blob});toast('画像を書き出しました');return}
     if(isIOS){imgBlob=blob;imgName=name;if(imgURL)URL.revokeObjectURL(imgURL);imgURL=URL.createObjectURL(blob);$('#imgPrev').src=imgURL;openOv('#ovImg');return}
@@ -1568,11 +1622,8 @@ $('#imgBtn').onclick=async()=>{
     const c=e&&e.code;
     if(c==='declined'){}
     else if(c)toast('この表示では画像の保存が使えません。claude.aiのページを開き直してお試しください',5000);
-    else toast('画像を作成できませんでした'+(e&&e.message?'：'+e.message:'')+'（ネット接続が必要です）',5000);
-  }finally{
-    if(stage)stage.remove();if(restore)restore();
-    imgBusy=false;const b=$('#imgBtn');b.disabled=!plan();b.textContent='画像で書き出す';
-  }
+    else toast('画像を作成できませんでした'+(e&&e.message?'：'+e.message:''),5000);
+  }finally{imgBusy=false;const b=$('#imgBtn');b.disabled=!plan();b.textContent='画像で書き出す'}
 };
 const LIB_XLSX='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 async function saveFile(name,blob){
