@@ -392,6 +392,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <div class="row">
     <select id="planSel" aria-label="計画を選択"></select>
     <button class="btn" id="planNew">＋ 新しい計画</button>
+    <button class="btn" id="planDup" title="表示中の計画をコピーして、別の計画として試せます">計画を複製</button>
     <button class="btn" id="planMenuBtn" aria-expanded="false">計画の名前変更・削除</button>
   </div>
   <div class="row">
@@ -455,8 +456,8 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 
 <div class="ov" id="ovData" hidden><div class="dlg" role="dialog" aria-labelledby="hD">
   <header><h2 id="hD">書き出し・読み込み</h2><button class="btn" data-close>閉じる</button></header>
-  <p class="hint">全計画・保有キャラ・衣装の愛称などの設定を1つのJSONファイルにまとめます。バックアップや別の端末への移行に使えます。</p>
-  <div class="row"><button class="btn primary" id="dExport">JSONファイルに書き出す</button><button class="btn" id="dShow">テキストで表示</button></div>
+  <p class="hint">全計画・保有キャラ・衣装の愛称などの設定を1つのJSONファイルにまとめます。バックアップや別の端末への移行に使えます。計画を1つだけ移したいときは「表示中の計画だけ書き出す」を使い、移す先で「新しい計画として追加」で読み込んでください。</p>
+  <div class="row"><button class="btn primary" id="dExport">すべてをJSONファイルに書き出す</button><button class="btn" id="dExportOne">表示中の計画だけ書き出す</button><button class="btn" id="dShow">テキストで表示</button></div>
   <textarea id="dText" hidden readonly></textarea>
   <div class="sec">
     <h3>読み込み</h3>
@@ -832,11 +833,11 @@ function renderTree(){if(!plan())return;
 /* ---------- render: header ---------- */
 function renderEmpty(){
   $('#planSel').innerHTML='<option value="">（計画がありません）</option>';$('#planSel').disabled=true;
-  $('#planMenuBtn').disabled=true;$('#pdfBtn').disabled=true;$('#imgBtn').disabled=true;$('#planMenu').hidden=true;$('#sampleBanner').hidden=true;
+  $('#planMenuBtn').disabled=true;$('#planDup').disabled=true;$('#pdfBtn').disabled=true;$('#imgBtn').disabled=true;$('#planMenu').hidden=true;$('#sampleBanner').hidden=true;
   $('#genHead').innerHTML='';$('#tree').innerHTML=`<div class="empty-note" style="max-width:420px">計画がありません。<br><button class="btn primary" data-newplan style="margin-top:8px">＋ 新しい計画を作る</button> <button class="btn" data-sample style="margin-top:8px">使用例を見る</button></div>`;
   $('#editor').innerHTML=`<p class="empty-note">計画を作ると、ここで因子を編集できます。</p>`;$('#summary').innerHTML='';
 }
-function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#pdfBtn').disabled=false;$('#imgBtn').disabled=false;
+function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#planDup').disabled=false;$('#pdfBtn').disabled=false;$('#imgBtn').disabled=false;
   $('#planSel').innerHTML=S.plans.map(p=>`<option value="${p.id}"${p.id===curId?' selected':''}>${esc(p.title)}</option>`).join('');
   $('#onlyUseful').setAttribute('aria-pressed',UI.onlyUseful);applyView();
   $('#planTitle').value=plan().title;
@@ -1335,18 +1336,24 @@ $('#openRoster').onclick=()=>openOv('#ovRoster');
 $('#openData').onclick=()=>openOv('#ovData');
 
 /* ---------- data export/import ---------- */
-const exportJSON=()=>JSON.stringify({app:'inshi-tree',version:1,exported:new Date().toISOString(),...S,plans:realPlans()},null,1);
-$('#dExport').onclick=async()=>{
+let expOne=false;
+/* one=true：表示中の計画だけ（別の端末へ1つだけ移したいとき）。使用例も通常の計画として書き出せる */
+const exportJSON=(one=expOne)=>{const base={app:'inshi-tree',version:1,exported:new Date().toISOString()};
+  if(one&&plan()){const c=clone(plan());c.sample=false;return JSON.stringify({...base,plans:[c],settings:{costumeNick:S.settings.costumeNick||{},charApt:S.settings.charApt||{}},roster:[]},null,1)}
+  return JSON.stringify({...base,...S,plans:realPlans()},null,1)};
+const doExport=async one=>{expOne=one;
   const d0=new Date(),z=v=>String(v).padStart(2,'0');
-  const name='ウマ娘血統プランナー_'+d0.getFullYear()+'-'+z(d0.getMonth()+1)+'-'+z(d0.getDate())+'_'+z(d0.getHours())+z(d0.getMinutes())+'.json';
+  const name=(one?((plan().title||'無題の計画').trim().replace(/[\\/:*?"<>|]/g,'_')+'_'):'ウマ娘血統プランナー_')+d0.getFullYear()+'-'+z(d0.getMonth()+1)+'-'+z(d0.getDate())+'_'+z(d0.getHours())+z(d0.getMinutes())+'.json';
   const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
   if(!framed){try{const url=URL.createObjectURL(new Blob([exportJSON()],{type:'application/json'}));const l=document.createElement('a');l.href=url;l.download=name;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);toast('JSONファイルを保存しました（ダウンロードフォルダ）',3500);return}catch(e){}}
   try{const dl=window.claude?.use?await window.claude.use('downloads'):null;
     if(!dl)throw{code:'unavailable'};await dl.save({filename:name,data:exportJSON()});toast('書き出しました')}
   catch(e){if(e&&e.code==='declined')return;showText();toast('ファイル保存が使えないため、テキストで表示しました')}
 };
+$('#dExport').onclick=()=>doExport(false);
+$('#dExportOne').onclick=()=>{if(!plan())return;doExport(true)};
 function showText(){const t=$('#dText');t.value=exportJSON();t.hidden=false;t.select();try{navigator.clipboard.writeText(t.value).then(()=>toast('クリップボードにコピーしました'),()=>{})}catch(e){}}
-$('#dShow').onclick=showText;
+$('#dShow').onclick=()=>{expOne=false;showText()};
 $('#dFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('#dPaste').value=r.result};r.readAsText(f)});
 $('#dAdd').onclick=()=>{
   let d;try{d=JSON.parse($('#dPaste').value);if(!d.plans||!d.plans.length)throw 0}catch(e){toast('JSONを読み取れませんでした。書き出したファイルを選んでください');return}
@@ -1383,6 +1390,8 @@ function showSample(){let p=S.plans.find(x=>x.sample);
 $('#showSample').onclick=showSample;
 $('#planMenuBtn').onclick=()=>{const m=$('#planMenu');m.hidden=!m.hidden;$('#planNewPanel').hidden=true;$('#planMenuBtn').setAttribute('aria-expanded',!m.hidden);$('#planDelConfirm').hidden=true};
 $('#planTitle').addEventListener('input',e=>{if(!plan())return;plan().title=e.target.value||'無題の計画';touch('plan');const o=$('#planSel').selectedOptions[0];if(o)o.textContent=plan().title});
+$('#planDup').onclick=()=>{const p0=plan();if(!p0)return;const c=clone(p0);reid(c.root);c.id=rid();c.title=(p0.sample?p0.title.replace(/^使用例：/,''):p0.title||'無題の計画')+'のコピー';c.sample=false;c.created=c.updated=Date.now();
+  S.plans.push(c);curId=c.id;UI.cur=curId;saveUI();selId=c.root.id;touch('plan');touch('settings');renderAll();toast('「'+c.title+'」を作りました。元の計画はそのまま残っています',3500)};
 $('#planDel').onclick=()=>$('#planDelConfirm').hidden=false;
 $('#planDelNo').onclick=()=>$('#planDelConfirm').hidden=true;
 $('#planDelYes').onclick=()=>deletePlan(curId);
