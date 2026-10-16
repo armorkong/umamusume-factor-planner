@@ -126,7 +126,8 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .c-gw{background:color-mix(in srgb,var(--f-gene) 10%,transparent);font-weight:600}
 .c-gene.goal{background:color-mix(in srgb,var(--f-gene) 18%,transparent)}
 .c-w2{background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--ink);border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
-.c-w1{background:color-mix(in srgb,var(--silver) 13%,transparent);color:var(--ink);border-color:color-mix(in srgb,var(--silver) 40%,transparent)}
+.c-w1{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.c-w1.sil{background:color-mix(in srgb,#a7b1ba 30%,transparent);border-color:#7f8a93;box-shadow:inset 0 0 0 1px #7f8a93;font-weight:600}
 .c-w1.tri,.c-tri{background:color-mix(in srgb,#f2b81c 24%,transparent);color:var(--ink);border-color:#d49a00;box-shadow:inset 0 0 0 1px #d49a00;font-weight:600}
 .c-w0{color:var(--muted);border-color:var(--line)}
 .c-gc{border:1px dashed var(--f-gene);color:var(--f-gene)}
@@ -596,8 +597,8 @@ const plan=()=>S.plans.find(p=>p.id===curId);
 function walk(n,f,d=0,child=null){f(n,d,child);n.parents.forEach(p=>walk(p,f,d+1,n))}
 /* 自身と両親の3人が共通して持つ白因子（3人組ごとに判定） */
 function trioOf(n){if(n.parents.length<2||isEmpty(n)||n.parents.some(isEmpty))return null;const st=x=>new Set(x.whites.map(w=>w.n.trim()).filter(Boolean)),a=st(n),b=st(n.parents[0]),c=st(n.parents[1]);return [...a].filter(k=>b.has(k)&&c.has(k))}
-let TRI=new Map();
-function calcTri(){TRI=new Map();const p=plan();if(!p)return;walk(p.root,x=>{for(const k of trioOf(x)||[])for(const y of [x,...x.parents]){if(!TRI.has(y.id))TRI.set(y.id,new Set());TRI.get(y.id).add(k)}})}
+let TRI=new Map(),SIL=new Map();
+function calcTri(){TRI=new Map();SIL=new Map();const p=plan();if(!p)return;walk(p.root,x=>{if(x.parents.length===2&&!x.parents.some(isEmpty)){const st=y=>new Set(y.whites.map(w=>w.n.trim()).filter(Boolean)),own=st(x),a=st(x.parents[0]),b=st(x.parents[1]);for(const k of a)if(b.has(k)&&!own.has(k))for(const y of x.parents){if(!SIL.has(y.id))SIL.set(y.id,new Set());SIL.get(y.id).add(k)}}for(const k of trioOf(x)||[])for(const y of [x,...x.parents]){if(!TRI.has(y.id))TRI.set(y.id,new Set());TRI.get(y.id).add(k)}})}
 function findNode(id){const pl=plan();if(!pl)return null;let r=null;walk(pl.root,(n,d,c)=>{if(n.id===id)r={n,d,child:c}});return r}
 function maxDepth(n){return n.parents.length?1+Math.max(...n.parents.map(maxDepth)):0}
 const U=()=>new Map(S.settings.useful.map(u=>[u.n,u.p]));
@@ -711,7 +712,7 @@ function factorQ(n){
 function cardHTML(n,d){
   const p=plan(),goals=new Set();
   if(isEmpty(n))return `<div class="card empty g${Math.min(d,4)}${n.id===selId?' sel':''}" data-id="${n.id}" tabindex="0" role="button"><div class="gtag">${GEN(d)}</div><div class="chd"><b>未設定</b></div>${UI.compact?compactBody(n,null,[]):`<div class="memo">クリックして入力</div>${factorQ(n)}`}</div>`;
-  const ws=sortWhites(n.whites.filter(w=>w.n.trim())),tri=TRI.get(n.id);
+  const ws=sortWhites(n.whites.filter(w=>w.n.trim())),tri=TRI.get(n.id),sil=SIL.get(n.id);
   let h=`<div class="card g${Math.min(d,4)}${n.id===selId?' sel':''}${n.status==='plan'?' plan':''}" data-id="${n.id}" tabindex="0" role="button">`;
   const tog=n.parents.length?`<button type="button" class="ctog" data-tog="${n.id}" aria-expanded="${!(UI.collapsed||[]).includes(n.id)}">${(UI.collapsed||[]).includes(n.id)?'▸ 親を表示':'▾ 親を閉じる'}</button>`:'';
   const pill=n.status==='have'?'<span class="pill have">自前</span>':n.status==='rent'?'<span class="pill rent">レンタル</span>':n.status==='plan'?'<span class="pill plan">予定</span>':'';
@@ -731,7 +732,7 @@ function cardHTML(n,d){
   let w='';
   for(const x of n.genes)if(x.t)w+=`<span class="chip c-gene c-gw">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
   if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種・★${ws.reduce((t,x)=>t+(+x.s||0),0)}</span>`;if(tri&&tri.size)w+=`<span class="chip c-tri" title="${esc([...tri].join('、'))}">3人共通 ${tri.size}</span>`}
-  else for(const x of ws){const t=tri&&tri.has(x.n.trim());w+=`<span class="chip c-w1${t?' tri':''}"${t?' title="自身と両親の3人に共通する白因子"':''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`}
+  else for(const x of ws){const t=tri&&tri.has(x.n.trim()),sv=!t&&sil&&sil.has(x.n.trim());w+=`<span class="chip c-w1${t?' tri':sv?' sil':''}"${t?' title="自身と両親の3人に共通する白因子"':sv?' title="両親で共通、子は未所持の白因子"':''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`}
   if(w)h+=`<div class="chips">${w}</div>`;
   if(false){
     const a=agg(n);let s='';
