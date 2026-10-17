@@ -1120,6 +1120,19 @@ let SC_SETS=null;
 function scSets(){if(SC_SETS)return SC_SETS;
   const mk=list=>{const arr=[...new Set(list)].map(c=>({c,n:scNorm(c)}));return{arr,chars:[...new Set(list.join(''))].join('')}};
   SC_SETS={gray:mk([...WHITE_RAW.map(x=>x[0]),...APTS.map(a=>a+'の遺伝子')]),blue:mk(STATS),pink:mk(APTS),green:mk(CARDS.map(c=>c.uniq).filter(Boolean))};return SC_SETS}
+/* 白因子の並び順で読み間違いを正す：ゲームの因子一覧は レース→スキル→シナリオ→遺伝子→隠し因子 の順に並ぶので、
+   前後の因子と順番が合わない読み（例：隠し因子の位置で「健闘」を「健脚」（スキル）と読んだ）は、似た名前で順番が合う候補に置き換える */
+function scOrd(name){const g=name.match(/^(.+)の遺伝子$/);if(g&&APTS.includes(g[1]))return 35000+APTS.indexOf(g[1]);return WHITE_ORD.get(name)??null}
+function scCands(text){const n=scNorm(text);if(!n)return[];return scSets().gray.arr.map(x=>({c:x.c,s:1-scLev(n,x.n)/Math.max(n.length,x.n.length)})).filter(x=>x.s>=0.5).sort((a,b)=>b.s-a.s)}
+function scOrderFix(seq){
+  const L=seq.filter(o=>o.t.kind==='gray'&&!o.t.parent&&scOrd(o.best.c)!=null);
+  for(let i=0;i<L.length;i++){const o=L[i],v=scOrd(o.best.c);
+    let p=-Infinity,q=Infinity;for(let j=i-1;j>=0;j--){const x=scOrd(L[j].best.c);if(x!=null){p=x;break}}for(let j=i+1;j<L.length;j++){const x=scOrd(L[j].best.c);if(x!=null){q=x;break}}
+    /* 次の因子自体が順番から外れている（例：あとから付いた秋ウマ娘○が末尾に来る）ときは、次の因子を基準にしない */
+    if(q<p)q=Infinity;
+    if(v>=p&&v<=q)continue;
+    const alt=scCands(o.raw).find(a=>a.c!==o.best.c&&(()=>{const w=scOrd(a.c);return w!=null&&w>=p&&w<=q})());
+    if(alt)o.best={c:alt.c,s:Math.min(alt.s,0.79),tie:false}}}
 function scMatch(text,kind){const n=scNorm(text);if(!n)return{c:null,s:0};let b={c:null,s:0,tie:false};for(const x of scSets()[kind].arr){const s=1-scLev(n,x.n)/Math.max(n.length,x.n.length);if(s>b.s+1e-9)b={c:x.c,s,tie:false};else if(Math.abs(s-b.s)<1e-9&&x.c!==b.c)b.tie=true}return b}
 function scLoadImage(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('画像を読み込めませんでした'))};im.src=u})}
 /* 黄色い★を見つけて、因子の枠（★の位置・数・背景色）を割り出す */
@@ -1183,14 +1196,14 @@ async function scanFiles(files){
     for(const f of files){const img=await scLoadImage(f);const info=scFindTiles(img);infos.push(info);total+=info.tiles.length}
     if(!total){st.textContent='因子が見つかりませんでした。ゲームの「ウマ娘詳細」→「継承」タブや「因子一覧」のスクショを選んでください。';return}
     let lastKind=null;
-    for(const info of infos){for(const t of info.tiles){done++;st.textContent=`読み取り中… ${done}/${total}`;
+    for(const info of infos){const seq=[];for(const t of info.tiles){done++;st.textContent=`読み取り中… ${done}/${total}`;
       if(t.cut){unread++;continue}
       if(lastKind!==t.kind){await w.setParameters({tessedit_char_whitelist:scSets()[t.kind].chars});lastKind=t.kind}
       /* 2つのしきい値で読み、候補が1つに絞れた（同点の別候補がない）結果を優先する。最後まで同点なら「要確認」にする */
       let best={c:null,s:0,tie:true},raw='';const eff=m=>m.c?m.s-(m.tie?0.15:0):-1,better=(m,b)=>eff(m)>eff(b);
       /* 読み方を変えて何度か読み、候補ごとに点数を合計する（多数決）。同点で決めきれない読みと、一致度が低い読み（0.5未満）は数えない */
-      const votes=new Map();
-      const tryRead=async()=>{for(const th of (info.k>1?[150,120,90]:[120,90])){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');const m=scMatch(tx,t.kind);
+      const votes=new Map(),texts=[];
+      const tryRead=async()=>{for(const th of (info.k>1?[150,120,90]:[120,90])){const cv=scCrop(info,t,th);if(!cv)break;const r=await w.recognize(cv);const tx=(r.data.text||'').replace(/\s+/g,'');texts.push(tx);const m=scMatch(tx,t.kind);
         if(m.c&&!m.tie&&m.s>=0.5){const v=votes.get(m.c)||{sum:0,s:0,raw:''};v.sum+=m.s;if(m.s>v.s){v.s=m.s;v.raw=tx}votes.set(m.c,v)}
         if(better(m,best)){best=m;raw=tx}if(best.s>=0.99&&!best.tie)break}};
       await tryRead();
@@ -1198,9 +1211,14 @@ async function scanFiles(files){
       if(!best.c||best.s<0.8||best.tie){await w.setParameters({tessedit_char_whitelist:''});lastKind=null;await tryRead()}
       if(votes.size&&!(best.s>=0.99&&!best.tie)){let top=null;for(const [c,v] of votes)if(!top||v.sum>top[1].sum)top=[c,v];best={c:top[0],s:top[1].s,tie:false};raw=top[1].raw;
         const n2=[...votes.values()].filter(v=>v!==top[1]&&v.sum>=top[1].sum*0.8).length;if(n2)best.s=Math.min(best.s,0.79)}
+      /* 青・赤は候補が少ないので、1文字目だけでも候補が1つに決まれば採用する（例：「長」→長距離）。要確認にする */
+      if((t.kind==='blue'||t.kind==='pink')&&(!best.c||best.s<0.5)){for(const tx of texts){const n=scNorm(tx);if(!n)continue;const hit=scSets()[t.kind].arr.filter(x=>x.n[0]===n[0]);if(hit.length===1){best={c:hit[0].c,s:0.6,tie:false};raw=tx;break}}}
       if(!best.c||best.s<0.5){unread++;continue}
       if(best.tie)best={...best,s:Math.min(best.s,0.79)};
       /* 自身と継承元（親）の因子は別々に集計する（同じ因子名でも★を混ぜない） */
+      seq.push({t,best,raw})}
+      scOrderFix(seq);
+      for(const {t,best,raw} of seq){
       const key=(t.parent?'p|':'s|')+t.kind+'|'+best.c,ex=found.get(key);
       if(ex){ex.stars=Math.max(ex.stars,t.stars);ex.score=Math.max(ex.score,best.s)}
       else found.set(key,{kind:t.kind,name:best.c,stars:t.stars,score:best.s,parent:t.parent,raw,on:!t.parent})}}
