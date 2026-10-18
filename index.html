@@ -483,7 +483,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年10月18日 18:42</p>
+<p class="credit" id="appUpdated">最終更新：2026年10月18日 19:02</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -609,7 +609,7 @@ function walk(n,f,d=0,child=null){f(n,d,child);n.parents.forEach(p=>walk(p,f,d+1
 /* 自身と両親の3人が共通して持つ白因子（3人組ごとに判定） */
 function trioOf(n){if(n.parents.length<2||isEmpty(n)||n.parents.some(isEmpty))return null;const st=x=>new Set(x.whites.map(w=>w.n.trim()).filter(Boolean)),a=st(n),b=st(n.parents[0]),c=st(n.parents[1]);return [...a].filter(k=>b.has(k)&&c.has(k))}
 let TRI=new Map(),SIL=new Map(),PTN=new Map();
-function calcTri(){TRI=new Map();SIL=new Map();PTN=new Map();const p=plan();if(!p)return;walk(p.root,x=>{if(x.parents.length===2){const st=y=>new Set(y.whites.map(w=>w.n.trim()).filter(Boolean));const [a,b]=x.parents.map(st);[[x.parents[0],a,b],[x.parents[1],b,a]].forEach(([y,m,o])=>{const z=new Set();for(const k of m)if(o.has(k))z.add(k);PTN.set(y.id,z)})}if(x.parents.length===2&&!x.parents.some(isEmpty)){const st=y=>new Set(y.whites.map(w=>w.n.trim()).filter(Boolean)),own=st(x),a=st(x.parents[0]),b=st(x.parents[1]);for(const k of a)if(b.has(k)&&!own.has(k))for(const y of x.parents){if(!SIL.has(y.id))SIL.set(y.id,new Set());SIL.get(y.id).add(k)}}for(const k of trioOf(x)||[])for(const y of [x,...x.parents]){if(!TRI.has(y.id))TRI.set(y.id,new Set());TRI.get(y.id).add(k)}})}
+function calcTri(){TRI=new Map();SIL=new Map();PTN=new Map();const p=plan();if(!p)return;walk(p.root,x=>{if(x.parents.length===2){const st=y=>new Set(y.whites.map(w=>w.n.trim()).filter(Boolean));const [a,b]=x.parents.map(st);[[x.parents[0],a,b],[x.parents[1],b,a]].forEach(([y,m,o])=>{const z=new Set();for(const k of m)if(o.has(k))z.add(k);PTN.set(y.id,z)})}if(x.parents.length===2&&!x.parents.some(isEmpty)){const st=y=>new Set(y.whites.map(w=>w.n.trim()).filter(Boolean)),own=st(x),a=st(x.parents[0]),b=st(x.parents[1]);for(const k of a)if(b.has(k)&&!own.has(k))for(const y of x.parents){if(!SIL.has(y.id))SIL.set(y.id,new Set());SIL.get(y.id).add(k)}}/* 金枠は、自身と自分の両親の3人が持つときに「自身」だけに付ける（親の側は、その親自身の両親とも共通でない限り付けない） */for(const k of trioOf(x)||[]){if(!TRI.has(x.id))TRI.set(x.id,new Set());TRI.get(x.id).add(k)}})}
 function findNode(id){const pl=plan();if(!pl)return null;let r=null;walk(pl.root,(n,d,c)=>{if(n.id===id)r={n,d,child:c};else if(n.cand&&n.cand.id===id)r={n:n.cand,d,child:c,candOf:n}});return r}
 function maxDepth(n){return n.parents.length?1+Math.max(...n.parents.map(maxDepth)):0}
 const U=()=>new Map(S.settings.useful.map(u=>[u.n,u.p]));
@@ -743,7 +743,7 @@ function cardHTML(n,d){
   let w='';
   for(const x of n.genes)if(x.t)w+=`<span class="chip c-gene c-gw${CHG&&CHG.has('遺:'+x.t)?' chg':''}">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
   if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種・★${ws.reduce((t,x)=>t+(+x.s||0),0)}</span>`;if(tri&&tri.size)w+=`<span class="chip c-tri" title="${esc([...tri].join('、'))}">3人共通 ${tri.size}</span>`}
-  else for(const x of ws){const t=tri&&tri.has(x.n.trim()),sv=!t&&sil&&sil.has(x.n.trim());const tp=t&&ptn&&ptn.has(x.n.trim());w+=`<span class="chip c-w1${t?' tri':sv?' sil':''}${tp?' trp':''}${CHG&&CHG.has(x.n.trim())?' chg':''}"${tp?' title="自身と両親の3人に共通し、組む相手（子のもう一方の親）も持つ白因子"':t?' title="自身と両親の3人に共通する白因子"':sv?' title="両親で共通、子は未所持の白因子"':''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`}
+  else for(const x of ws){const t=tri&&tri.has(x.n.trim()),sv=!t&&sil&&sil.has(x.n.trim());const tp=t&&ptn&&ptn.has(x.n.trim());w+=`<span class="chip c-w1${t?' tri':sv?' sil':''}${tp?' trp':''}${CHG&&CHG.has(x.n.trim())?' chg':''}"${tp?' title="自身と両親の3人に共通し、組む相手（子のもう一方の親）も持つ白因子"':t?' title="自身と自分の両親の3人に共通する白因子"':sv?' title="両親で共通、子は未所持の白因子"':''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`}
   if(w)h+=`<div class="chips">${w}</div>`;
   if(false){
     const a=agg(n);let s='';
