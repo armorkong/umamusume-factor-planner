@@ -483,7 +483,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年10月18日 18:16</p>
+<p class="credit" id="appUpdated">最終更新：2026年10月18日 18:42</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -804,10 +804,10 @@ function candHTML(n,d,child){
   let box='<div class="cdiff">';
   if(anc)box+=ask;
   if(isEmpty(n.cand))box+=`<div class="sub">更新後のキャラと因子を入力してください（編集タブで手入力、またはスクショから読み取り）。</div><div class="row">${del}</div>`;
-  else if(!asked)box+=`<div class="sub">上の質問に答えると、更新ボタンが表示されます。親が同じ場合は、金・銀の枠と計算への影響も表示します。</div><div class="row">${del}</div>`;
-  else if(same){const grand=child?(findNode(child.id)||{}).child:null,df=candDiff(n,child,grand);
-    box+=`<div><b>計算への影響：</b>${df.calc.length?df.calc.join('、'):'なし'}</div><div class="row"><button type="button" class="btn sm primary" data-capply="${n.id}">この内容で更新</button>${del}</div>`}
-  else box+=`<div class="sub">親が違うため、金・銀の枠と計算への影響は表示していません。更新すると、この枠より先の祖先は空の枠に戻ります。</div><div class="row"><button type="button" class="btn sm primary" data-capply2="${n.id}">更新して継承元を空にする</button>${del}</div>`;
+  else if(!asked)box+=`<div class="sub">上の質問に答えると、更新ボタンが表示されます。親が同じ場合は、金・銀の枠も表示します。</div><div class="row">${del}</div>`;
+  else if(same){
+    box+=`<div class="row"><button type="button" class="btn sm primary" data-capply="${n.id}">この内容で更新</button>${del}</div>`}
+  else box+=`<div class="sub">親が違うため、金・銀の枠は表示していません。更新すると、この枠より先の祖先は空の枠に戻ります。</div><div class="row"><button type="button" class="btn sm primary" data-capply2="${n.id}">更新して継承元を空にする</button>${del}</div>`;
   box+='</div>';
   return h.replace(/<\/div>$/,box+'</div>')}
 function candApply(n,clearAnc,d){for(const k of CAND_KEYS)n[k]=n.cand[k];delete n.cand;
@@ -868,7 +868,7 @@ function editorHTML(){
   if(!f)return `<p class="empty-note">血統表のカードをクリックすると、ここで因子を編集できます。</p>`;
   const {n,d,child,candOf}=f;
   let h=`<div><div class="gen">${candOf?`${GEN(d)} ／ 更新候補（今のカード：${esc(candOf.name||'未設定')}）`:`${GEN(d)}${child?` ／ ${esc(child.name||'未設定')} の継承元`:''}`}</div><h2>${esc(n.name||'未設定')}</h2></div>`;
-  if(candOf)h+=`<p class="hint">更新後の内容を入力してください（手入力・スクショ読み取りのどちらでも可）。血統表では今のカードの下に並び、因子の変化と計算への影響が表示されます。よければカードの「この内容で更新」を押します。</p>`;
+  if(candOf)h+=`<p class="hint">更新後の内容を入力してください（手入力・スクショ読み取りのどちらでも可）。血統表では今のカードの下に並びます。よければカードの「この内容で更新」を押します。</p>`;
   h+=`<div class="scanbar"><button class="btn primary sm" id="openScan">スクショから読み取る</button><span class="sub">ゲームの継承画面のスクショから、キャラと因子をまとめて入力（ここにドラッグ＆ドロップも可）</span></div>`;
   {const cd=n.card&&CARD_BY.get(n.card);
    h+=`<div class="fld"><label for="ed-name">キャラ（名前・愛称・衣装名・固有スキルで絞り込み）</label><div class="combo"><input type="text" id="ed-name" data-f="name" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-clist" value="${esc(n.name)}" placeholder="例：ステイゴールド、嫁カフェ、水着"><div class="clist" id="ed-clist" role="listbox" hidden></div></div>${cd?`<div class="cur">衣装：<input type="text" id="ed-nick" class="nick-in" value="${esc(labOf(cd))}" aria-label="衣装の愛称" title="愛称を変更できます（空にすると自動の愛称に戻ります）"><span class="t">［${esc(cd.title)}］</span><button type="button" class="x" id="cardClear" aria-label="衣装の選択を解除">×</button></div>`:''}</div>`;}
