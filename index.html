@@ -96,6 +96,7 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .cdiff{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:11.5px;line-height:1.5;display:flex;flex-direction:column;gap:4px}
 .cdiff .row{gap:4px;flex-wrap:wrap}
 .cdiff .sub{color:var(--muted)}
+.cask{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:6px;background:color-mix(in srgb,var(--accent) 8%,transparent)}
 .parents{display:flex;flex-direction:column;position:relative;padding-left:var(--gap)}
 .parents::before{content:"";position:absolute;left:0;top:50%;width:var(--gap);border-top:2px solid var(--line)}
 .parents>.branch{position:relative;padding-left:var(--gap);padding-block:3px}
@@ -482,7 +483,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年10月16日</p>
+<p class="credit" id="appUpdated">最終更新：2026年10月18日 18:16</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -767,8 +768,8 @@ const CAND_KEYS=['card','free','name','memo','status','blue','red','green','gene
 let NOCAND=false,CHG=null;
 function makeCand(n){const c=blank();c.parents=[];return c}
 function withFields(n,src,fn){const save={};for(const k of CAND_KEYS){save[k]=n[k];n[k]=src[k]}try{return fn()}finally{for(const k of CAND_KEYS)n[k]=save[k]}}
-function candSnap(n,child){return{aff:child?affinity(child):null,sa:child?startApt(child):null,gc:child?geneCand(child):[],triC:child?trioOf(child):null,triN:trioOf(n)}}
-function candDiff(n,child){
+function candSnap(n,child,grand){return{gaff:grand?affinity(grand):null,aff:child?affinity(child):null,sa:child?startApt(child):null,gc:child?geneCand(child):[],triC:child?trioOf(child):null,triN:trioOf(n)}}
+function candDiff(n,child,grand){
   const c=n.cand,out={fac:[],calc:[]},st=x=>'★'+(x||1);
   const one=(lab,a,b,fmt)=>{if(fmt(a)!==fmt(b))out.fac.push(`${lab} ${fmt(a)||'なし'}→${fmt(b)||'なし'}`)};
   if((n.name||'')!==(c.name||''))out.fac.push(`キャラ ${n.name||'未設定'}→${c.name||'未設定'}`);
@@ -777,29 +778,37 @@ function candDiff(n,child){
   for(const [A,B] of [[gm(n.genes),gm(c.genes)],[wm(n.whites),wm(c.whites)]]){
     for(const [k,v] of B){if(!A.has(k))out.fac.push(`＋${k}${st(v)}`);else if(A.get(k)!==v)out.fac.push(`${k} ${st(A.get(k))}→${st(v)}`)}
     for(const [k,v] of A)if(!B.has(k))out.fac.push(`−${k}${st(v)}`)}
-  const b=candSnap(n,child),a=withFields(n,c,()=>candSnap(n,child));
+  const b=candSnap(n,child,grand),a=withFields(n,c,()=>candSnap(n,child,grand));
   if(child){const nm=esc(child.name||'子');
     if(b.aff&&a.aff&&b.aff.total!==a.aff.total)out.calc.push(`${nm}の相性 ${b.aff.total}→${a.aff.total}`);
+    if(grand&&b.gaff&&a.gaff&&b.gaff.total!==a.gaff.total)out.calc.push(`${esc(grand.name||'孫')}の相性 ${b.gaff.total}→${a.gaff.total}`);
     if(b.sa&&a.sa)for(const x of APTS){const p=b.sa[x],q=a.sa[x];if(p&&q&&p.start!==q.start)out.calc.push(`${nm}の開始時 ${x} ${p.start}→${q.start}`)}
     const gs=l=>new Map(l.map(g=>[g.t,g.sure?'確定':'可能性']));const G1=gs(b.gc),G2=gs(a.gc);
     for(const x of APTS){const p=G1.get(x)||'',q=G2.get(x)||'';if(p!==q)out.calc.push(`${nm}の${x}の遺伝子 ${p||'なし'}→${q||'なし'}`)}
     const t1=new Set(b.triC||[]),t2=new Set(a.triC||[]);for(const k of t2)if(!t1.has(k))out.calc.push(`${nm}と両親の3人共通 ＋${k}`);for(const k of t1)if(!t2.has(k))out.calc.push(`${nm}と両親の3人共通 −${k}`)}
-  {const t1=new Set(b.triN||[]),t2=new Set(a.triN||[]);for(const k of t2)if(!t1.has(k))out.calc.push(`この枠と両親の3人共通 ＋${k}`);for(const k of t1)if(!t2.has(k))out.calc.push(`この枠と両親の3人共通 −${k}`)}
   return out}
 function candHTML(n,d,child){
-  const view=Object.assign({},n.cand,{parents:n.parents});
+  const anc=n.parents.some(p=>!isEmpty(p)),asked=!anc||typeof n.cand.sameAnc==='boolean',same=!anc||n.cand.sameAnc===true;
+  /* 親が違う（またはまだ答えていない）ときは、今の親を使った計算・金銀の枠は出さない */
+  const view=Object.assign({},n.cand,{parents:same?n.parents:[]});
   {const old=new Map(n.whites.filter(x=>x.n.trim()).map(x=>[x.n.trim(),x.s])),og=new Map(n.genes.filter(x=>x.t).map(x=>[x.t,x.s]));CHG=new Set();
    for(const x of n.cand.whites){const k=x.n.trim();if(k&&old.get(k)!==x.s)CHG.add(k)}for(const x of n.cand.genes)if(x.t&&og.get(x.t)!==x.s)CHG.add('遺:'+x.t)}
-  /* 金・銀の枠：この候補で入れ替えたと仮定して判定する */
-  {let t,sv,pt;withFields(n,n.cand,()=>{calcTri();t=TRI.get(n.id);sv=SIL.get(n.id);pt=PTN.get(n.id)});calcTri();if(t)TRI.set(n.cand.id,t);if(sv)SIL.set(n.cand.id,sv);if(pt)PTN.set(n.cand.id,pt)}
+  TRI.delete(n.cand.id);SIL.delete(n.cand.id);PTN.delete(n.cand.id);
+  /* 金・銀の枠：親が同じときだけ、この候補で入れ替えたと仮定して判定する */
+  if(same){let t,sv,pt;withFields(n,n.cand,()=>{calcTri();t=TRI.get(n.id);sv=SIL.get(n.id);pt=PTN.get(n.id)});calcTri();if(t)TRI.set(n.cand.id,t);if(sv)SIL.set(n.cand.id,sv);if(pt)PTN.set(n.cand.id,pt)}
   let h;try{h=cardHTML(view,d)}finally{CHG=null}
   h=h.replace(/<button type="button" class="ctog"[^>]*>[^<]*<\/button>/,'').replace('<div class="card','<div class="card cand').replace('<div class="gtag">'+GEN(d)+'</div>','<div class="gtag">'+GEN(d)+'</div><div class="ctag">更新候補</div>');
-  const anc=n.parents.some(p=>!isEmpty(p));
-  if(isEmpty(n.cand))return h.replace(/<\/div>$/,`<div class="cdiff"><div class="sub">更新後のキャラと因子を入力してください（編集タブで手入力、またはスクショから読み取り）。入力すると、ここに今のカードとの違いが表示されます。</div><div class="row"><button type="button" class="btn sm" data-cdel="${n.id}">候補を消す</button></div></div></div>`);
-  const df=candDiff(n,child);
-  const box=`<div class="cdiff"><div><b>計算への影響：</b>${df.calc.length?df.calc.join('、'):'なし'}</div>
-    <div class="row"><button type="button" class="btn sm primary" data-capply="${n.id}">この内容で更新</button>${anc?`<button type="button" class="btn sm" data-capply2="${n.id}">更新して継承元を空にする</button>`:''}<button type="button" class="btn sm" data-cdel="${n.id}">候補を消す</button></div>
-    ${anc?'<div class="sub">この個体の継承元（親）が、今の血統表の親と違う場合は「更新して継承元を空にする」を選んでください。</div>':''}</div>`;
+  const pn=n.parents.map(p=>esc(p.name||'未設定')).join('・');
+  const ask=`<div class="cask"><b>この個体の親（継承元）は、今の血統表の親（${pn}）と同じですか？</b><div class="row"><button type="button" class="btn sm${n.cand.sameAnc===true?' primary':''}" data-csame="1" data-cid="${n.id}">同じ</button><button type="button" class="btn sm${n.cand.sameAnc===false?' primary':''}" data-csame="0" data-cid="${n.id}">違う</button></div></div>`;
+  const del=`<button type="button" class="btn sm" data-cdel="${n.id}">候補を消す</button>`;
+  let box='<div class="cdiff">';
+  if(anc)box+=ask;
+  if(isEmpty(n.cand))box+=`<div class="sub">更新後のキャラと因子を入力してください（編集タブで手入力、またはスクショから読み取り）。</div><div class="row">${del}</div>`;
+  else if(!asked)box+=`<div class="sub">上の質問に答えると、更新ボタンが表示されます。親が同じ場合は、金・銀の枠と計算への影響も表示します。</div><div class="row">${del}</div>`;
+  else if(same){const grand=child?(findNode(child.id)||{}).child:null,df=candDiff(n,child,grand);
+    box+=`<div><b>計算への影響：</b>${df.calc.length?df.calc.join('、'):'なし'}</div><div class="row"><button type="button" class="btn sm primary" data-capply="${n.id}">この内容で更新</button>${del}</div>`}
+  else box+=`<div class="sub">親が違うため、金・銀の枠と計算への影響は表示していません。更新すると、この枠より先の祖先は空の枠に戻ります。</div><div class="row"><button type="button" class="btn sm primary" data-capply2="${n.id}">更新して継承元を空にする</button>${del}</div>`;
+  box+='</div>';
   return h.replace(/<\/div>$/,box+'</div>')}
 function candApply(n,clearAnc,d){for(const k of CAND_KEYS)n[k]=n.cand[k];delete n.cand;
   if(clearAnc)n.parents=n.parents.map(()=>tree(Math.max(0,3-(d+1))));}
@@ -957,6 +966,7 @@ function getObj(n,path){const k=path.split('.');let o=n;for(let i=0;i<k.length-1
 
 /* ---------- events: tree ---------- */
 $('#tree').addEventListener('click',e=>{
+  const cs=e.target.closest('[data-csame]');if(cs){e.stopPropagation();const f=findNode(cs.dataset.cid);if(f&&f.n.cand){f.n.cand.sameAnc=cs.dataset.csame==='1';touch('plan');renderAll()}return}
   const ca=e.target.closest('[data-capply],[data-capply2],[data-cdel]');
   if(ca){e.stopPropagation();const id=ca.dataset.capply||ca.dataset.capply2||ca.dataset.cdel,f=findNode(id);if(!f||!f.n.cand)return;
     if(ca.dataset.cdel){delete f.n.cand;selId=f.n.id;touch('plan');renderAll();toast('更新候補を消しました');return}
