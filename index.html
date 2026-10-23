@@ -408,6 +408,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
     <select id="planSel" aria-label="計画を選択"></select>
     <button class="btn" id="planNew">＋ 新しい計画</button>
     <button class="btn" id="planDup" title="表示中の計画をコピーして、別の計画として試せます">計画を複製</button>
+    <button class="btn" id="planShare" title="表示中の計画をURLにして、スマホ・パソコンの間で渡せます">URLで共有</button>
     <button class="btn" id="planMenuBtn" aria-expanded="false">計画の名前変更・削除</button>
   </div>
   <div class="row">
@@ -483,6 +484,23 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   </div>
 </div></div>
 
+<div class="ov" id="ovShare" hidden><div class="dlg" role="dialog" aria-labelledby="hShare">
+  <header><h2 id="hShare">URLで共有</h2><button class="btn" data-close>閉じる</button></header>
+  <p class="hint">表示中の計画（優先白因子・サポカを含む）をURLにします。別の端末でこのURLを開くと、計画を取り込めます。計画の中身はURLの「#」より後ろに入るので、サーバーには送られません。保有キャラと更新候補は含みません。</p>
+  <div class="frow"><input type="text" id="shUrl" readonly aria-label="共有URL" style="flex:1;font-family:var(--font-num);font-size:12px"></div>
+  <div class="row"><button class="btn primary" id="shCopy">URLをコピー</button><button class="btn" id="shSend" hidden>共有…（AirDrop・LINEなど）</button><span class="sub" id="shLen"></span></div>
+  <div class="sec">
+    <h3>受け取る</h3>
+    <p class="hint">共有URLを開いても取り込めないとき（アプリ内ブラウザなど）は、URLをここに貼り付けてください。</p>
+    <div class="frow"><input type="text" id="shPaste" placeholder="共有URLを貼り付け" style="flex:1"><button class="btn" id="shLoad">読み込む</button></div>
+  </div>
+</div></div>
+<div class="ov" id="ovRecv" hidden><div class="dlg" role="dialog" aria-labelledby="hRecv">
+  <header><h2 id="hRecv">共有された計画</h2><button class="btn" data-close>やめる</button></header>
+  <div id="rvBody"></div>
+  <div class="row" id="rvBtns"></div>
+</div></div>
+
 <datalist id="dl-whites"></datalist>
 <datalist id="dl-names"></datalist>
 <section class="about" aria-labelledby="aboutH">
@@ -497,7 +515,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年10月23日 15:56</p>
+<p class="credit" id="appUpdated">最終更新：2026年10月23日 19:56</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -883,11 +901,11 @@ function renderTree(){if(!plan())return;
 /* ---------- render: header ---------- */
 function renderEmpty(){
   $('#planSel').innerHTML='<option value="">（計画がありません）</option>';$('#planSel').disabled=true;
-  $('#planMenuBtn').disabled=true;$('#planDup').disabled=true;$('#pdfBtn').disabled=true;$('#imgBtn').disabled=true;$('#planMenu').hidden=true;$('#sampleBanner').hidden=true;
+  $('#planMenuBtn').disabled=true;$('#planDup').disabled=true;$('#planShare').disabled=true;$('#pdfBtn').disabled=true;$('#imgBtn').disabled=true;$('#planMenu').hidden=true;$('#sampleBanner').hidden=true;
   $('#genHead').innerHTML='';$('#tree').innerHTML=`<div class="empty-note" style="max-width:420px">計画がありません。<br><button class="btn primary" data-newplan style="margin-top:8px">＋ 新しい計画を作る</button> <button class="btn" data-sample style="margin-top:8px">使用例を見る</button></div>`;
   $('#editor').innerHTML=`<p class="empty-note">計画を作ると、ここで因子を編集できます。</p>`;$('#summary').innerHTML='';
 }
-function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#planDup').disabled=false;$('#pdfBtn').disabled=false;$('#imgBtn').disabled=false;
+function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#planDup').disabled=false;$('#planShare').disabled=false;$('#pdfBtn').disabled=false;$('#imgBtn').disabled=false;
   $('#planSel').innerHTML=S.plans.map(p=>`<option value="${p.id}"${p.id===curId?' selected':''}>${esc(p.title)}</option>`).join('');
   $('#onlyUseful').setAttribute('aria-pressed',UI.onlyUseful);applyView();
   $('#planTitle').value=plan().title;
@@ -1432,6 +1450,59 @@ document.querySelectorAll('.ov').forEach(o=>{o.addEventListener('click',e=>{if(e
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOv()});
 $('#openRoster').onclick=()=>openOv('#ovRoster');
 $('#openData').onclick=()=>openOv('#ovData');
+
+/* ---------- URLで共有（計画を圧縮してURLの#以降に入れる。サーバーには送らない） ---------- */
+const SH_BASE=/github\.io$/.test(location.hostname)?location.href.split('#')[0]:'https://armorkong.github.io/umamusume-factor-planner/';
+const SH_ST=['','have','rent','plan'],WIDX=new Map(WHITE_RAW.map((x,i)=>[x[0],i]));
+const trimA=a=>{while(a.length&&(a[a.length-1]===0||(Array.isArray(a[a.length-1])&&!a[a.length-1].length)))a.pop();return a};
+function shEnc(n){const c=n.card&&CARD_BY.get(n.card);
+  return trimA([n.card||0,c&&c.name===n.name?0:(n.name||0),Math.max(0,SH_ST.indexOf(n.status)),n.free?1:0,n.memo||0,
+    n.blue.t?[STATS.indexOf(n.blue.t),n.blue.s||1]:0,n.red.t?[APTS.indexOf(n.red.t),n.red.s||1]:0,
+    n.green.n?[c&&c.uniq===n.green.n?0:n.green.n,n.green.s||0]:0,
+    n.genes.filter(g=>g.t).map(g=>[APTS.indexOf(g.t),g.s||1]),
+    n.whites.filter(w=>w.n.trim()).map(w=>{const i=WIDX.get(w.n.trim());return i===undefined?[w.n.trim(),w.s||1]:i*4+(w.s||1)}),
+    n.parents.map(shEnc)])}
+function shDec(a){a=Array.isArray(a)?a:[];const m=blank(),c=a[0]&&CARD_BY.get(+a[0]);
+  m.card=c?c.id:0;m.name=a[1]?String(a[1]):c?c.name:'';m.status=SH_ST[a[2]]||'';m.free=!!a[3];m.memo=a[4]?String(a[4]):'';
+  if(a[5])m.blue={t:STATS[a[5][0]]||'',s:+a[5][1]||1};if(a[6])m.red={t:APTS[a[6][0]]||'',s:+a[6][1]||1};
+  if(a[7])m.green={n:a[7][0]?String(a[7][0]):(c?c.uniq:''),s:+a[7][1]||0};
+  m.genes=(a[8]||[]).map(g=>({t:APTS[g[0]]||'',s:+g[1]||1})).filter(g=>g.t);
+  m.whites=(a[9]||[]).map(w=>Array.isArray(w)?{n:String(w[0]),s:+w[1]||1}:{n:(WHITE_RAW[w>>2]||[''])[0],s:w&3||1}).filter(w=>w.n);
+  m.parents=(a[10]||[]).slice(0,2).map(shDec);return m}
+const b64u={enc:u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')},
+  dec:t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');const s=atob(t+'==='.slice((t.length+3)%4));const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}};
+async function zip(str,inflate){const cs=inflate?new DecompressionStream('deflate-raw'):new CompressionStream('deflate-raw');const st=new Blob([str]).stream().pipeThrough(cs);return new Uint8Array(await new Response(st).arrayBuffer())}
+async function shMake(p){const w=(p.wants||[]).map(x=>{const i=WIDX.get(x);return i===undefined?x:i});
+  const js=JSON.stringify([1,p.title||'',shEnc(p.root),w,p.supports||[],p.goals||[]]);
+  if(typeof CompressionStream==='function')return SH_BASE+'#p=z'+b64u.enc(await zip(js));
+  return SH_BASE+'#p=j'+b64u.enc(new TextEncoder().encode(js))}
+async function shParse(text){const m=String(text||'').match(/#p=([zj])([A-Za-z0-9_-]+)/);if(!m)throw new Error('共有URLではありません');
+  const u=b64u.dec(m[2]);const js=m[1]==='z'?new TextDecoder().decode(await zip(u,true)):new TextDecoder().decode(u);
+  const a=JSON.parse(js);if(!Array.isArray(a)||a[0]!==1)throw new Error('形式が違います');
+  const root=normalize({plans:[{title:'x',root:shDec(a[2])}]}).plans[0].root;
+  return{title:String(a[1]||'共有された計画'),root,wants:(a[3]||[]).map(x=>typeof x==='number'?(WHITE_RAW[x]||[''])[0]:String(x)).filter(Boolean),supports:(a[4]||[]).map(Number).filter(x=>SUP_BY.has(x)).slice(0,6),goals:Array.isArray(a[5])?a[5]:[]}}
+let shPending=null;
+function shCount(n){let k=0;walk(n,x=>{if(!isEmpty(x))k++});return k}
+function shOpenRecv(d){shPending=d;const same=S.plans.find(p=>!p.sample&&p.title===d.title);
+  $('#rvBody').innerHTML=`<p>「<b>${esc(d.title)}</b>」（入力済み ${shCount(d.root)}枠${d.supports.length?`・サポカ${d.supports.length}枚`:''}${d.wants.length?`・優先白因子${d.wants.length}`:''}）を取り込みます。</p>${same?'<p class="hint">同じ名前の計画があります。上書きすると、その計画の中身が共有された内容に置き換わります。</p>':''}`;
+  $('#rvBtns').innerHTML=(same?`<button class="btn primary" data-rv="over">「${esc(d.title)}」を上書き</button><button class="btn" data-rv="add">別の計画として追加</button>`:`<button class="btn primary" data-rv="add">計画として追加</button>`)+`<button class="btn" data-close>やめる</button>`;
+  openOv('#ovRecv')}
+$('#rvBtns').addEventListener('click',e=>{const b=e.target.closest('[data-rv]');if(!b||!shPending)return;const d=shPending;shPending=null;let pl;
+  if(b.dataset.rv==='over'){pl=S.plans.find(p=>!p.sample&&p.title===d.title);reid(d.root);Object.assign(pl,{root:d.root,wants:d.wants,supports:d.supports,goals:d.goals})}
+  else{const titles=new Set(S.plans.map(p=>p.title));let t=d.title,k=2;while(titles.has(t)){t=d.title+'（'+fw(k)+'）';k++}
+    pl={id:rid(),title:t,goals:d.goals,wants:d.wants,supports:d.supports,root:reid(d.root),created:Date.now(),updated:Date.now()};S.plans.push(pl)}
+  curId=pl.id;UI.cur=curId;saveUI();selId=null;touch('plan');closeOv();renderAll();toast('「'+pl.title+'」を取り込みました',3000)});
+async function shFromText(t,quiet){try{shOpenRecv(await shParse(t));return true}catch(e){if(!quiet)toast('共有URLを読み取れませんでした'+(e&&e.message?'：'+e.message:''),4000);return false}}
+$('#planShare').onclick=async()=>{const p=plan();if(!p)return;openOv('#ovShare');$('#shUrl').value='作成中…';$('#shLen').textContent='';
+  let url;try{url=await shMake(p)}catch(e){$('#shUrl').value='';toast('URLを作れませんでした',4000);return}
+  $('#shUrl').value=url;$('#shLen').textContent=url.length+'文字';$('#shSend').hidden=!navigator.share;
+};
+$('#shCopy').onclick=async()=>{const v=$('#shUrl').value;try{await navigator.clipboard.writeText(v);toast('URLをコピーしました')}catch(e){$('#shUrl').select();toast('URLを選択しました。コピーしてください')}};
+$('#shSend').onclick=async()=>{try{await navigator.share({title:(plan()||{}).title||'ウマ娘血統プランナー',url:$('#shUrl').value})}catch(e){}};
+$('#shLoad').onclick=()=>shFromText($('#shPaste').value);
+function shCheckHash(){if(!/#p=/.test(location.hash))return;const h=location.hash;try{history.replaceState(null,'',location.href.split('#')[0])}catch(e){}shFromText(h)}
+window.addEventListener('hashchange',shCheckHash);
+setTimeout(shCheckHash,0);
 
 /* ---------- data export/import ---------- */
 let expOne=false;
