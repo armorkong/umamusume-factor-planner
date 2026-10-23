@@ -140,12 +140,6 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .c-prio{background:var(--want);color:var(--want-ink);border-color:var(--want);font-weight:700;letter-spacing:.06em}
 .c-want{background:var(--want-bg);color:var(--want);border-color:var(--want);font-weight:700}
 .wantrow td:first-child{color:var(--want);font-weight:700}
-/* サポカで取れる白因子：灰色の文字＋薄い斜線（因子化の優先度が低い） */
-.chip.c-w1.sup{color:var(--muted);font-weight:400;background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--muted) 16%,transparent) 0 1.5px,transparent 1.5px 6px)}
-.chip.c-w1.sup .s{color:inherit}
-/* 金銀枠のサポカ扱い：金と銀白の枠はそのまま、白い斜線を重ねる */
-.c-w1.tri.trp.sup{background:repeating-linear-gradient(135deg,rgba(255,255,255,.42) 0 2px,transparent 2px 6px),linear-gradient(180deg,#d9ad3c 0%,#a57a14 45%,#7d5a08 55%,#b8902a 100%);color:#fff;font-weight:400;text-shadow:0 1px 1px rgba(0,0,0,.55)}
-.c-w1.tri.trp.sup .s{color:#fff}
 .suprow td{color:var(--muted)}
 .c-sup{font-size:10px;padding:0 4px;color:var(--muted);border:1px solid var(--line);border-radius:4px;margin-left:4px;font-weight:400;vertical-align:1px}
 .rs{color:var(--muted);font-size:.9em;font-weight:400}
@@ -433,6 +427,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 <section class="goals">
   <span class="lbl">表示</span>
   <button class="tog plain" id="onlyUseful" aria-pressed="false">白因子を折りたたむ</button>
+  <button class="tog plain" id="hideSup" aria-pressed="false" title="育成ウマ娘に入力したサポカで取れるスキルの白因子を隠し、サポカ外の白因子だけを表示します">サポカ外の因子のみ表示</button>
   <button class="tog plain" id="compactBtn" aria-pressed="false">簡易表示</button>
   <label class="zoomctl">縮小<input type="range" id="zoomR" min="50" max="100" step="5" value="100" aria-label="血統表の表示倍率"><span id="zoomV" class="num">100%</span></label>
 </section>
@@ -515,7 +510,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年10月23日 19:56</p>
+<p class="credit" id="appUpdated">最終更新：2026年10月23日 20:07</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -639,7 +634,7 @@ function defaultUseful(){return[['阿吽の呼吸',2],['食い下がり',2],['�
 /* ---------- state ---------- */
 let S={plans:[],settings:{useful:defaultUseful(),threshold:4,charApt:{}},roster:[]};
 let curId=null, selId=null, tab='edit', sampleOnly=false;
-let UI={onlyUseful:false,cur:null,collapsed:[],compact:false,zoom:100};
+let UI={onlyUseful:false,hideSup:false,cur:null,collapsed:[],compact:false,zoom:100};
 try{UI=Object.assign(UI,JSON.parse(localStorage.getItem(UKEY)||'{}'))}catch(e){}
 function saveUI(){try{localStorage.setItem(UKEY,JSON.stringify(UI))}catch(e){}}
 let hadData=false;try{const raw=localStorage.getItem(LKEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.plans)){hadData=true;S=normalize(d)}}}catch(e){}
@@ -795,13 +790,14 @@ function cardHTML(n,d){
   const wchip=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),sv=!t&&sil&&sil.has(k),tp=t&&ptn&&ptn.has(k),so=d>0?supOf(k):null,sp=so&&!pr;const tt=[];
     if(tp)tt.push('自身と両親の3人に共通し、組む相手（子のもう一方の親）も持つ白因子');else if(t)tt.push('自身と自分の両親の3人に共通する白因子');else if(sv)tt.push('両親で共通、子は未所持の白因子');
     if(pr&&RACE_SKILL[k]&&!WANT.has(k))tt.push(RACE_SKILL[k]+'のヒント');if(so)tt.push('サポカで取れる：'+so.join('、'));
-    return `<span class="chip c-w1${t?' tri':sv?' sil':''}${tp?' trp':''}${sp?' sup':''}${CHG&&CHG.has(k)?' chg':''}"${tt.length?` title="${esc(tt.join(' ／ '))}"`:''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`};
-  if(pw.length)h+=`<div class="chips prio"><span class="chip c-prio" title="育成ウマ娘で設定した優先白因子">優先</span>${pw.map(x=>wchip(x,true)).join('')}</div>`;
+    return `<span class="chip c-w1${t?' tri':sv?' sil':''}${tp?' trp':''}${CHG&&CHG.has(k)?' chg':''}"${tt.length?` title="${esc(tt.join(' ／ '))}"`:''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`};
+  if(pw.length&&!UI.onlyUseful)h+=`<div class="chips prio"><span class="chip c-prio" title="育成ウマ娘で設定した優先白因子">優先</span>${pw.map(x=>wchip(x,true)).join('')}</div>`;
   const rest=ws.filter(x=>!pw.includes(x));
   let w='';
   for(const x of n.genes)if(x.t)w+=`<span class="chip c-gene c-gw${CHG&&CHG.has('遺:'+x.t)?' chg':''}">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
-  if(UI.onlyUseful){if(rest.length)w+=`<span class="chip c-more">白因子 ${rest.length}種・★${rest.reduce((t,x)=>t+(+x.s||0),0)}</span>`;if(tri&&tri.size)w+=`<span class="chip c-tri" title="${esc([...tri].join('、'))}">3人共通 ${tri.size}</span>`}
-  else for(const x of rest)w+=wchip(x,false);
+  if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種</span>`;if(tri&&tri.size)w+=`<span class="chip c-tri" title="${esc([...tri].join('、'))}">3人共通 ${tri.size}</span>`}
+  else{const hid=[];for(const x of rest){if(UI.hideSup&&d>0&&supOf(x.n))hid.push(x);else w+=wchip(x,false)}
+    if(hid.length)w+=`<span class="chip c-more" title="サポカで取れるため非表示：${esc(hid.map(x=>x.n+'★'+x.s).join('、'))}">サポカ分 ${hid.length}種を非表示</span>`}
   if(w)h+=`<div class="chips">${w}</div>`;
   if(false){
     const a=agg(n);let s='';
@@ -907,7 +903,7 @@ function renderEmpty(){
 }
 function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#planDup').disabled=false;$('#planShare').disabled=false;$('#pdfBtn').disabled=false;$('#imgBtn').disabled=false;
   $('#planSel').innerHTML=S.plans.map(p=>`<option value="${p.id}"${p.id===curId?' selected':''}>${esc(p.title)}</option>`).join('');
-  $('#onlyUseful').setAttribute('aria-pressed',UI.onlyUseful);applyView();
+  $('#onlyUseful').setAttribute('aria-pressed',UI.onlyUseful);$('#hideSup').setAttribute('aria-pressed',!!UI.hideSup);applyView();
   $('#planTitle').value=plan().title;
   $('#sampleBanner').hidden=!plan().sample;
   // datalists
@@ -952,7 +948,7 @@ function editorHTML(){
     h+=`<div class="sec"><h3>サポートカード（${SP.length}/6）</h3>`;
     if(SP.length<6)h+=`<div class="combo"><input type="text" id="ed-sq" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-slist" placeholder="サポカを検索して追加（例：キタサン、SSR 賢さ）"><div class="clist" id="ed-slist" role="listbox" hidden></div></div>`;
     if(SP.length)h+=`<div style="margin-top:6px">${SP.map((id,i)=>{const c=SUP_BY.get(id);return c?`<div class="wrow"><span style="flex:1;font-size:13px"><b>${esc(c[3])}${esc(c[4])}</b> <span class="sub">${SUP_R[c[1]]} ${SUP_T[c[2]]}</span><br><span class="sub">${esc(supSkills(id).join('、')||'白因子になるスキルなし')}</span></span><button class="x" data-delsup="${i}" aria-label="外す">×</button></div>`:''}).join('')}</div>`;
-    h+=`<p class="hint">このサポカのヒント・イベントで取れるスキルの白因子は、親以降のカードで<span class="chip c-w1 sup">灰色の斜線</span>で表示し、集計では「サポカ」と表示します（因子で継承する優先度が低いため）。優先白因子に入れたものは薄くしません。</p></div>`}
+    h+=`<p class="hint">このサポカのヒント・イベントで取れるスキルの白因子は、受け継ぐ因子・継承させる因子の表とExcelで「サポカ」と表示します（因子で継承する優先度が低いため）。血統表では「表示」の行の「サポカ外の因子のみ表示」で隠せます（優先白因子は隠しません）。</p></div>`}
   if(candOf){h+=`<div class="sec"><h3>操作</h3><div class="row"><button class="btn sm" id="edCandBack">今のカードに戻る</button><button class="btn sm" id="edCandDel">候補を消す</button></div><p class="hint">更新はカードの「この内容で更新」から行います。</p></div>`;return h}
   h+=`<div class="sec"><h3>操作</h3><div class="row">`;
   if(!isEmpty(n))h+=n.cand?`<button class="btn sm primary" id="edCandSel">更新候補を編集</button>`:`<button class="btn sm primary" id="edCand" title="今のカードを残したまま、空のカードに更新後の因子を入力して比べられます">更新候補を作る</button>`;
@@ -1567,6 +1563,7 @@ $('#planDelYes').onclick=()=>deletePlan(curId);
 function deletePlan(id){S.plans=S.plans.filter(p=>p.id!==id);dirty.add('plan:'+id);curId=S.plans[0]?S.plans[0].id:null;UI.cur=curId;saveUI();touch('settings');selId=null;$('#planMenu').hidden=true;renderAll();toast('計画を削除しました')}
 $('#sampleDrop').onclick=()=>{deletePlan(curId);toast('使用例を閉じました。上の「使用例」からいつでも再表示できます',4000)};
 $('#onlyUseful').onclick=()=>{UI.onlyUseful=!UI.onlyUseful;saveUI();renderHeader();renderTree()};
+$('#hideSup').onclick=()=>{UI.hideSup=!UI.hideSup;saveUI();renderHeader();renderTree();if(UI.hideSup&&!((plan()||{}).supports||[]).length)toast('育成ウマ娘の編集画面でサポカを入力すると、そのスキルが隠れます',3500)};
 function applyView(){document.body.classList.toggle('compact',!!UI.compact);$('#compactBtn').setAttribute('aria-pressed',!!UI.compact);
   const auto=!!UI.compact&&!isMobile();$('#zoomR').disabled=auto;
   if(auto){fitZoom();return}
@@ -1724,11 +1721,11 @@ function drawTreeCanvas(){
     if(n.green.n)m.rows.push({k:'chips',rows:wrap([chip(n.green.n+(n.green.s?' ★'+n.green.s:''),S_.green)])});
     const tri=TRI.get(n.id),sil=SIL.get(n.id),ptn=PTN.get(n.id),w=[];
     const ws=sortWhites(n.whites.filter(x=>x.n.trim())),pw=d>0?ws.filter(x=>isWant(x.n)):[],rest=ws.filter(x=>!pw.includes(x));
-    const wc=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),c=chip(k+' '+st(x.s),t&&ptn&&ptn.has(k)?S_.trp:t?S_.tri:sil&&sil.has(k)?S_.sil:S_.w);if(!pr&&d>0&&supOf(k))c.dim=true;return c};
-    if(pw.length)m.rows.push({k:'chips',band:true,rows:wrap([chip('優先',S_.prio),...pw.map(x=>wc(x,true))])});
+    const wc=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),c=chip(k+' '+st(x.s),t&&ptn&&ptn.has(k)?S_.trp:t?S_.tri:sil&&sil.has(k)?S_.sil:S_.w);return c};
+    if(pw.length&&!UI.onlyUseful)m.rows.push({k:'chips',band:true,rows:wrap([chip('優先',S_.prio),...pw.map(x=>wc(x,true))])});
     for(const x of n.genes)if(x.t)w.push(chip(x.t+'の遺伝子 '+st(x.s),S_.gene));
-    if(UI.onlyUseful){if(rest.length)w.push(chip('白因子 '+rest.length+'種・★'+rest.reduce((t,x)=>t+(+x.s||0),0),S_.more))}
-    else for(const x of rest)w.push(wc(x,false));
+    if(UI.onlyUseful){if(ws.length)w.push(chip('白因子 '+ws.length+'種',S_.more))}
+    else{let hid=0;for(const x of rest){if(UI.hideSup&&d>0&&supOf(x.n))hid++;else w.push(wc(x,false))}if(hid)w.push(chip('サポカ分 '+hid+'種を非表示',S_.more))}
     if(w.length)m.rows.push({k:'chips',rows:wrap(w)});
     return finish(m)}
   function finish(m){let h=PAD+20;if(m.costume)h+=17;for(const r of m.rows){h+=RG;h+=r.k==='apt'?20:r.rows.length*(CH+CG)-CG+(r.band?6:0)}m.h=h+PAD;return m}
@@ -1754,15 +1751,12 @@ function drawTreeCanvas(){
   g.fillStyle='#e3e9e5';g.fillRect(M,M+46,W-M*2,22);g.fillStyle=C.muted;g.font='bold 12px '+F;
   for(let d=0;d<=maxD;d++)g.fillText(GEN(d),M+d*(CW+GX)+4,M+57);
   function drawChip(c,x,y){let s=c.st;
-    if(c.dim)s=Object.assign({},s,{bold:false},s.grad?{}:{fg:C.muted,shadow:false});
     if(s.grad){const gr=g.createLinearGradient(0,y,0,y+CH);gr.addColorStop(0,'#d9ad3c');gr.addColorStop(.45,'#a57a14');gr.addColorStop(.55,'#7d5a08');gr.addColorStop(1,'#b8902a');g.fillStyle=gr}else g.fillStyle=s.bg||'transparent';
     rr(x,y,c.w,CH,4);if(s.bg||s.grad)g.fill();
     if(s.bd){g.strokeStyle=s.bd;g.lineWidth=s.bold?1.5:1;g.setLineDash(s.dash?[3,2]:[]);g.stroke();g.setLineDash([])}
     g.font=s.bold?fChipB:fChip;g.fillStyle=s.fg;
     if(s.shadow){g.shadowColor='rgba(0,0,0,.5)';g.shadowOffsetY=1;g.shadowBlur=1}
-    g.fillText(c.text,x+6,y+CH/2+.5);g.shadowColor='transparent';g.shadowOffsetY=0;g.shadowBlur=0;
-    if(c.dim){g.save();rr(x,y,c.w,CH,4);g.clip();g.strokeStyle=s.grad?'rgba(255,255,255,.42)':'rgba(91,105,97,.16)';g.lineWidth=s.grad?2:1.5;g.beginPath();for(let k=-CH;k<c.w;k+=6){g.moveTo(x+k,y+CH);g.lineTo(x+k+CH,y)}g.stroke();g.restore();
-      g.font=fChip;g.fillStyle=s.fg;if(s.shadow){g.shadowColor='rgba(0,0,0,.55)';g.shadowOffsetY=1;g.shadowBlur=1}g.fillText(c.text,x+6,y+CH/2+.5);g.shadowColor='transparent';g.shadowOffsetY=0;g.shadowBlur=0}}
+    g.fillText(c.text,x+6,y+CH/2+.5);g.shadowColor='transparent';g.shadowOffsetY=0;g.shadowBlur=0}
   function drawCard(m){const x=m.x,y=m.y;
     rr(x,y,CW,m.h,8);g.fillStyle=C.card;g.fill();g.strokeStyle=C.line;g.lineWidth=1;g.setLineDash(isEmpty(m.n)?[4,3]:[]);g.stroke();g.setLineDash([]);
     let cy=y+PAD+10;g.font='bold 15px '+F;g.fillStyle=isEmpty(m.n)?C.muted:C.ink;g.fillText(m.title,x+PAD,cy);
