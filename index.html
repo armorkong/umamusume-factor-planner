@@ -414,12 +414,13 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   </div>
 </header>
 <div class="planmenu" id="planNewPanel" hidden>
-  <label class="fld" style="flex:1;min-width:200px">新しい計画の名前<input type="text" id="newPlanName"></label>
+  <label class="fld" style="flex:1;min-width:200px"><span id="newPlanLbl">新しい計画の名前</span><input type="text" id="newPlanName"></label>
   <button class="btn primary" id="newPlanOk">作成</button>
   <button class="btn" id="newPlanCancel">やめる</button>
 </div>
 <div class="planmenu" id="planMenu" hidden>
   <label class="fld" style="flex:1;min-width:200px">計画名<input type="text" id="planTitle"></label>
+  <button class="btn primary" id="planMenuDone">完了</button>
   <button class="btn danger" id="planDel">この計画を削除</button>
   <span id="planDelConfirm" hidden class="row"><span style="font-size:13px">本当に削除しますか？</span><button class="btn danger" id="planDelYes">削除する</button><button class="btn" id="planDelNo">やめる</button></span>
 </div>
@@ -510,7 +511,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年10月23日 20:07</p>
+<p class="credit" id="appUpdated">最終更新：2026年10月25日 17:10</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1414,25 +1415,26 @@ function trimDepth(n,d){const c=clone(n);const cut=(x,k)=>{x.parents=k>=d?[]:x.p
 function reid(n){n.id=rid();if(n.cand)n.cand.id=rid();n.parents.forEach(reid);return n}
 function registerRoster(n){
   if(!n.name.trim()){toast('名前を入力してから登録してください');return}
-  const card=trimDepth(n,2);card.status='have';
+  const card=trimDepth(n,2);card.status='have';card.saved=Date.now();
   const i=S.roster.findIndex(r=>r.name===card.name&&r.memo===card.memo);
   if(i>=0){card.id=S.roster[i].id;S.roster[i]=card;toast('保有キャラを更新しました')}else{S.roster.push(card);toast('保有キャラに登録しました')}
   touch('roster');renderHeader();
 }
+const fmtDT=t=>{const d=new Date(t),z=x=>String(x).padStart(2,'0');return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${z(d.getHours())}:${z(d.getMinutes())}`};
 function renderRoster(){
   const q=$('#rFilter').value.trim();
   const list=S.roster.filter(r=>!q||(r.name+r.memo).includes(q));
   if(!list.length){$('#rList').innerHTML=`<div class="li"><span class="sub">${S.roster.length?'該当するキャラがいません。':'まだ登録がありません。血統表のカードを選び、編集パネルの「保有キャラに登録」で追加できます。'}</span></div>`;return}
   const f=selId&&findNode(selId);
   $('#rList').innerHTML=list.map(r=>{const uw=r.whites.filter(w=>w.n.trim()).length;
-    return `<div class="li" data-rid="${r.id}"><div class="nm"><b>${esc(r.name)}</b> <span class="sub">${esc(r.memo)}</span><div class="chips" style="margin-top:2px">${r.blue.t?`<span class="chip c-blue">${STAT_S[r.blue.t]}<span class="s">★${r.blue.s}</span></span>`:''}${r.red.t?`<span class="chip c-red">${esc(r.red.t)}<span class="s">★${r.red.s}</span></span>`:''}<span class="sub">白因子 ${uw}種 ／ 継承元 ${r.parents.filter(p=>!isEmpty(p)).length}人</span></div></div>
+    return `<div class="li" data-rid="${r.id}"><div class="nm"><b>${esc(r.name)}</b> <span class="sub">${esc(r.memo)}</span><div class="chips" style="margin-top:2px">${r.blue.t?`<span class="chip c-blue">${STAT_S[r.blue.t]}<span class="s">★${r.blue.s}</span></span>`:''}${r.red.t?`<span class="chip c-red">${esc(r.red.t)}<span class="s">★${r.red.s}</span></span>`:''}<span class="sub">白因子 ${uw}種 ／ 継承元 ${r.parents.filter(p=>!isEmpty(p)).length}人${r.saved?` ／ 保存 ${fmtDT(r.saved)}`:''}</span></div></div>
     <button class="btn sm primary" data-place="${r.id}" ${f?'':'disabled'}>選択中の枠に配置</button><button class="btn sm danger" data-rdel="${r.id}">削除</button></div>`}).join('');
 }
 $('#rFilter').addEventListener('input',renderRoster);
 $('#rList').addEventListener('click',e=>{
   const pl=e.target.closest('[data-place]');
   if(pl){const r=S.roster.find(x=>x.id===pl.dataset.place),f=findNode(selId);if(!r||!f)return;
-    const c=reid(clone(r)),keepId=f.n.id,oldParents=f.n.parents;Object.assign(f.n,c);f.n.id=keepId;if(!c.parents.length)f.n.parents=oldParents;
+    const c=reid(clone(r));delete c.saved;const keepId=f.n.id,oldParents=f.n.parents;Object.assign(f.n,c);f.n.id=keepId;if(!c.parents.length)f.n.parents=oldParents;
     touch('plan');closeOv();renderAll();toast(r.name+' を配置しました');return}
   const del=e.target.closest('[data-rdel]');
   if(del){if(del.dataset.armed){S.roster=S.roster.filter(x=>x.id!==del.dataset.rdel);touch('roster');renderRoster()}else{del.dataset.armed='1';del.textContent='もう一度押すと削除'}}
@@ -1537,26 +1539,36 @@ $('#dImpYes').onclick=()=>{const d=JSON.parse($('#dPaste').value);const old=S.pl
   old.forEach(id=>{if(!S.plans.find(p=>p.id===id))dirty.add('plan:'+id)});markAll();curId=S.plans[0].id;selId=null;touch('settings');closeOv();renderAll();toast('読み込みました')};
 
 /* ---------- plans ---------- */
-$('#planSel').addEventListener('change',e=>{curId=e.target.value;UI.cur=curId;saveUI();selId=null;renderAll()});
+$('#planSel').addEventListener('change',e=>{curId=e.target.value;UI.cur=curId;saveUI();selId=null;closePlanMenu();renderAll()});
 const fw=k=>String(k).replace(/[0-9]/g,c=>String.fromCharCode(c.charCodeAt(0)+0xFEE0));
 function nextPlanName(){const t=new Set(S.plans.map(p=>p.title));let k=1;while(t.has('新しい計画'+fw(k)))k++;return '新しい計画'+fw(k)}
 function newPlan(title){const p={id:rid(),title:title||nextPlanName(),goals:[],wants:[],supports:[],root:tree(3),created:Date.now(),updated:Date.now()};S.plans.push(p);curId=p.id;UI.cur=curId;saveUI();selId=p.root.id;touch('plan');renderAll();setTab('edit');return p}
-function openNewPanel(){const pn=$('#planNewPanel');$('#planMenu').hidden=true;pn.hidden=false;const i=$('#newPlanName');i.value=nextPlanName();i.focus();i.select()}
-$('#planNew').onclick=()=>{const pn=$('#planNewPanel');if(!pn.hidden){pn.hidden=true;return}openNewPanel()};
-function createFromPanel(){const v=$('#newPlanName').value.trim();$('#planNewPanel').hidden=true;newPlan(v||nextPlanName());toast('「'+plan().title+'」を作りました（曽祖父母までの枠）')}
+let newMode='new';
+function uniqTitle(t){const ts=new Set(S.plans.map(p=>p.title));let x=t,k=2;while(ts.has(x)){x=t+'（'+fw(k)+'）';k++}return x}
+function openNewPanel(mode){newMode=mode||'new';const pn=$('#planNewPanel');closePlanMenu();pn.hidden=false;const i=$('#newPlanName');
+  if(newMode==='dup'){const p0=plan();$('#newPlanLbl').textContent='複製後の計画の名前';$('#newPlanOk').textContent='複製';i.value=uniqTitle((p0.sample?p0.title.replace(/^使用例：/,''):p0.title||'無題の計画')+'のコピー')}
+  else{$('#newPlanLbl').textContent='新しい計画の名前';$('#newPlanOk').textContent='作成';i.value=nextPlanName()}
+  i.focus();i.select()}
+$('#planNew').onclick=()=>{const pn=$('#planNewPanel');if(!pn.hidden&&newMode==='new'){pn.hidden=true;return}openNewPanel('new')};
+function createFromPanel(){const v=$('#newPlanName').value.trim();$('#planNewPanel').hidden=true;if(newMode==='dup'){dupPlan(v);return}newPlan(v||nextPlanName());toast('「'+plan().title+'」を作りました（曽祖父母までの枠）')}
 $('#newPlanOk').onclick=createFromPanel;
 $('#newPlanCancel').onclick=()=>{$('#planNewPanel').hidden=true};
 $('#newPlanName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();createFromPanel()}else if(e.key==='Escape'){$('#planNewPanel').hidden=true}});
 $('#tree').addEventListener('click',e=>{if(e.target.closest('[data-newplan]'))openNewPanel();else if(e.target.closest('[data-sample]'))showSample()});
 function showSample(){let p=S.plans.find(x=>x.sample);
   if(!p){p=samplePlan();S.plans.unshift(p)}
-  curId=p.id;UI.cur=curId;saveUI();selId=null;$('#planMenu').hidden=true;$('#planNewPanel').hidden=true;renderAll();
+  curId=p.id;UI.cur=curId;saveUI();selId=null;closePlanMenu();$('#planNewPanel').hidden=true;renderAll();
   window.scrollTo({top:0,behavior:'smooth'});toast('使用例を表示しました')}
 $('#showSample').onclick=showSample;
-$('#planMenuBtn').onclick=()=>{const m=$('#planMenu');m.hidden=!m.hidden;$('#planNewPanel').hidden=true;$('#planMenuBtn').setAttribute('aria-expanded',!m.hidden);$('#planDelConfirm').hidden=true};
+function closePlanMenu(){$('#planMenu').hidden=true;$('#planDelConfirm').hidden=true;$('#planMenuBtn').setAttribute('aria-expanded','false')}
+$('#planMenuBtn').onclick=()=>{const m=$('#planMenu');m.hidden=!m.hidden;$('#planNewPanel').hidden=true;$('#planMenuBtn').setAttribute('aria-expanded',!m.hidden);$('#planDelConfirm').hidden=true;if(!m.hidden){const i=$('#planTitle');i.focus();i.select()}};
+$('#planMenuDone').onclick=()=>{closePlanMenu();toast('計画名を「'+((plan()||{}).title||'')+'」にしました')};
+$('#planTitle').addEventListener('keydown',e=>{if(e.isComposing||e.keyCode===229)return;if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();closePlanMenu()}});
+document.addEventListener('pointerdown',e=>{const m=$('#planMenu');if(m.hidden)return;if(e.target.closest('#planMenu,#planMenuBtn'))return;closePlanMenu()});
 $('#planTitle').addEventListener('input',e=>{if(!plan())return;plan().title=e.target.value||'無題の計画';touch('plan');const o=$('#planSel').selectedOptions[0];if(o)o.textContent=plan().title});
-$('#planDup').onclick=()=>{const p0=plan();if(!p0)return;const c=clone(p0);reid(c.root);c.id=rid();c.title=(p0.sample?p0.title.replace(/^使用例：/,''):p0.title||'無題の計画')+'のコピー';c.sample=false;c.created=c.updated=Date.now();
-  S.plans.push(c);curId=c.id;UI.cur=curId;saveUI();selId=c.root.id;touch('plan');touch('settings');renderAll();toast('「'+c.title+'」を作りました。元の計画はそのまま残っています',3500)};
+function dupPlan(name){const p0=plan();if(!p0)return;const c=clone(p0);reid(c.root);c.id=rid();c.title=uniqTitle(name||((p0.sample?p0.title.replace(/^使用例：/,''):p0.title||'無題の計画')+'のコピー'));c.sample=false;c.created=c.updated=Date.now();
+  S.plans.push(c);curId=c.id;UI.cur=curId;saveUI();selId=c.root.id;touch('plan');touch('settings');renderAll();toast('「'+c.title+'」を作りました。元の計画はそのまま残っています',3500)}
+$('#planDup').onclick=()=>{const pn=$('#planNewPanel');if(!pn.hidden&&newMode==='dup'){pn.hidden=true;return}if(plan())openNewPanel('dup')};
 $('#planDel').onclick=()=>$('#planDelConfirm').hidden=false;
 $('#planDelNo').onclick=()=>$('#planDelConfirm').hidden=true;
 $('#planDelYes').onclick=()=>deletePlan(curId);
