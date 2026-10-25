@@ -511,7 +511,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年10月25日 17:10</p>
+<p class="credit" id="appUpdated">最終更新：2026年10月25日 22:07</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1498,7 +1498,12 @@ $('#planShare').onclick=async()=>{const p=plan();if(!p)return;openOv('#ovShare')
 $('#shCopy').onclick=async()=>{const v=$('#shUrl').value;try{await navigator.clipboard.writeText(v);toast('URLをコピーしました')}catch(e){$('#shUrl').select();toast('URLを選択しました。コピーしてください')}};
 $('#shSend').onclick=async()=>{try{await navigator.share({title:(plan()||{}).title||'ウマ娘血統プランナー',url:$('#shUrl').value})}catch(e){}};
 $('#shLoad').onclick=()=>shFromText($('#shPaste').value);
-function shCheckHash(){if(!/#p=/.test(location.hash))return;const h=location.hash;try{history.replaceState(null,'',location.href.split('#')[0])}catch(e){}shFromText(h)}
+/* 一度確認した共有URLは、このブラウザでは再び聞かない（ブックマーク・履歴の候補・ショートカットから#付きのURLで開き直したとき対策） */
+const shKey=t=>{const m=String(t).match(/#p=([zj][A-Za-z0-9_-]+)/);if(!m)return'';let h=2166136261;for(const c of m[1]){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return h.toString(36)+'.'+m[1].length};
+function shCheckHash(){if(!/#p=/.test(location.hash))return;const h=location.hash;try{history.replaceState(null,'',location.href.split('#')[0])}catch(e){}
+  const k=shKey(h);UI.shSeen=Array.isArray(UI.shSeen)?UI.shSeen:[];
+  if(k&&UI.shSeen.includes(k)){toast('この共有URLは確認済みのため、取り込みの確認を省きました（もう一度取り込むときは「URLで共有」の「受け取る」欄に貼り付けてください）',6000);return}
+  shFromText(h).then(ok=>{if(ok&&k){UI.shSeen=[k,...UI.shSeen.filter(x=>x!==k)].slice(0,50);saveUI()}})}
 window.addEventListener('hashchange',shCheckHash);
 setTimeout(shCheckHash,0);
 
