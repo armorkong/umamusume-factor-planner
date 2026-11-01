@@ -512,7 +512,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年10月27日 15:08</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月1日 22:58</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -952,7 +952,7 @@ function editorHTML(){
   h+=`<div class="combo"><input type="text" id="ed-wq" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-wlist" placeholder="白因子を検索して追加（例：呼吸、コーナー、有馬）"><div class="clist" id="ed-wlist" role="listbox" hidden></div></div>`;
   n.whites.forEach((w,i)=>{h+=`<div class="wrow"><input type="text" id="ed-w${i}" data-f="whites.${i}.n" value="${esc(w.n)}"${WHITE_SET.has(w.n.trim())?'':' class="unk" title="一覧にない名前です"'}>${starsHTML('whites.'+i,w.s)}<button class="x" data-delw="${i}" aria-label="削除">×</button></div>`});
   if(!n.whites.length)h+=`<p class="hint">上の欄に一部を入力すると、ゲーム内の白因子（スキル・レース・シナリオ・隠し因子）から候補が出ます。</p>`;
-  h+=`<details><summary>まとめて入力する</summary><div class="frow" style="margin-top:6px"><input type="text" id="ed-bulk" placeholder="阿吽の呼吸3, 食い下がり2"><button class="btn sm" id="bulkAdd">追加</button></div></details></div>`;
+  h+=`<details><summary>まとめて入力する（因子共有サイトの一覧を貼り付け可）</summary><div style="margin-top:6px;display:flex;flex-direction:column;gap:6px"><textarea id="ed-bulk" rows="5" style="min-height:96px;font-family:var(--font-body);font-size:13px" placeholder="1行に1つ、名前のあとに★の数（例）&#10;大阪杯3&#10;右回り○2&#10;阿吽の呼吸3, 食い下がり2"></textarea><div class="frow"><label style="font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center;flex:1"><input type="checkbox" id="ed-bulkRep"> 今の白因子を消してから入れる</label><button class="btn sm primary" id="bulkAdd">追加</button></div><p class="hint" style="margin:0">「〇〇の遺伝子」の行は遺伝子として入ります。同じ白因子がすでにあるときは★の数を書き換えます。</p></div></details></div>`;
   if(d===0&&!candOf){const P=plan(),W=P.wants||[],SP=P.supports||[];
     h+=`<div class="sec"><h3>優先白因子</h3><div class="combo"><input type="text" id="ed-tq" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-tlist" placeholder="優先したい白因子を検索して追加（例：夏ウマ娘、弧線）"><div class="clist" id="ed-tlist" role="listbox" hidden></div></div>`;
     h+=W.length?`<div class="chips" style="margin-top:6px">${W.map((w,i)=>`<span class="chip c-want">${esc(w)}<button type="button" class="x" data-delwant="${i}" aria-label="${esc(w)}を外す" style="margin-left:4px">×</button></span>`).join('')}</div>`:'';
@@ -1168,7 +1168,7 @@ ed.addEventListener('keydown',e=>{
     if(e.key==='Escape'){e.stopPropagation();hideCList();return}
   }
 });
-ed.addEventListener('keydown',e=>{if(e.target.id==='ed-bulk'&&e.key==='Enter'){e.preventDefault();$('#bulkAdd').click()}});
+ed.addEventListener('keydown',e=>{if(e.target.id==='ed-bulk'&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();$('#bulkAdd').click()}});
 ed.addEventListener('click',e=>{
   const f=findNode(selId);if(!f)return;const n=f.n;const t=e.target;
   const st=t.closest('[data-star]');
@@ -1182,9 +1182,12 @@ ed.addEventListener('click',e=>{
   switch(t.id){
     case 'cardClear':n.card=0;touch('plan');renderEditor();soft();break;
     case 'addGene':n.genes.push({t:'',s:1});renderEditor();ed.querySelector('#ed-g'+(n.genes.length-1))?.focus();break;
-    case 'bulkAdd':{const v=$('#ed-bulk').value;const items=parseBulk(v);if(!items.length)return;
-      for(const it of items){const ex=n.whites.find(w=>w.n.trim()===it.n);if(ex)ex.s=it.s;else n.whites.push(it)}
-      touch('plan');renderHeader();renderEditor();soft();ed.querySelector('#ed-bulk')?.focus();toast(items.length+'件の白因子を追加しました');break}
+    case 'bulkAdd':{const v=$('#ed-bulk').value;const r=parseBulk(v);if(!r.whites.length&&!r.genes.length){toast('読み取れる行がありませんでした');return}
+      if($('#ed-bulkRep')?.checked)n.whites=[];let add=0,upd=0;
+      for(const it of r.whites){const ex=n.whites.find(w=>w.n.trim()===it.n);if(ex){ex.s=it.s;upd++}else{n.whites.push(it);add++}}
+      for(const g of r.genes){const ex=n.genes.find(x=>x.t===g.t);if(ex)ex.s=g.s;else if(n.genes.length<3)n.genes.push(g)}
+      touch('plan');renderHeader();renderEditor();soft();
+      toast(`白因子 ${add}件を追加${upd?`・${upd}件の★を更新`:''}${r.genes.length?`・遺伝子 ${r.genes.length}件`:''}${r.unk.length?`（一覧にない名前：${r.unk.join('、')}）`:''}`,r.unk.length?6000:3000);break}
     case 'edCand':{n.cand=makeCand(n);selId=n.cand.id;touch('plan');renderAll();toast('空の更新候補を作りました。更新後のキャラと因子を入力してください',3500);break}
     case 'edCandSel':{if(n.cand){selId=n.cand.id;renderAll()}break}
     case 'edCandBack':{if(f.candOf){selId=f.candOf.id;renderAll()}break}
@@ -1207,12 +1210,27 @@ ed.addEventListener('click',e=>{
       if(i>=0)c.parents[i]=nb;selId=nb.id;touch('plan');renderAll();toast('枠の内容を消しました');break}
   }
 });
+/* まとめて入力：「名前★数」を1行ずつ、またはカンマ区切り。改行が消えて1行につながった貼り付けも、一覧の名前で区切って読む */
+const bzn=x=>String(x).normalize('NFKC').replace(/[◯〇⚪]/g,'○').replace(/[\s　]/g,'');
+const BZ=new Map(WHITE_RAW.map(x=>[bzn(x[0]),x[0]]));
+const BZMAX=Math.max(...[...BZ.keys()].map(k=>k.length));
 function parseBulk(v){
-  const out=[];for(let s of v.split(/[,、，\n]+/)){s=s.trim();if(!s)continue;
-    const m=s.match(/^(.*?)[\s★☆×x*]*([0-9０-９])$/);let name=s,st=1;
-    if(m&&m[1].trim()){name=m[1].trim();st=+String(m[2]).replace(/[０-９]/,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))}
-    out.push({n:name,s:Math.min(3,Math.max(1,st))})}
-  return out;
+  const whites=[],genes=[],unk=[];const num=c=>+String(c).normalize('NFKC');
+  const push=(name,st)=>{st=Math.min(3,Math.max(1,st||1));const g=bzn(name).match(/^(.+)の遺伝子$/);
+    if(g&&APTS.includes(g[1])){genes.push({t:g[1],s:st});return}
+    const k=BZ.get(bzn(name));if(!k)unk.push(name);const nm=k||name;const ex=whites.find(w=>w.n===nm);if(ex)ex.s=st;else whites.push({n:nm,s:st})};
+  for(let s of String(v||'').split(/[,、，\n\r\t]+/)){s=s.trim();if(!s)continue;
+    const t=bzn(s);
+    if(BZ.has(t)||/^.+の遺伝子$/.test(t)&&APTS.includes(t.slice(0,-4))){push(s,1);continue}
+    const m=t.match(/^(.*?)[★☆×x*]*([0-9])$/);
+    if(m&&(BZ.has(m[1])||/^.+の遺伝子$/.test(m[1]))){push(m[1],num(m[2]));continue}
+    /* つながった文字列：先頭から一覧の名前で一番長く一致するものを取り、続く★の数を読む */
+    let p=0,ok=true;const parts=[];
+    while(p<t.length){let hit='';for(let L=Math.min(BZMAX+6,t.length-p);L>0;L--){const c=t.slice(p,p+L);if(BZ.has(c)||/^.+の遺伝子$/.test(c)&&APTS.includes(c.slice(0,-4))){hit=c;break}}
+      if(!hit){ok=false;break}p+=hit.length;let st=1;const mm=t.slice(p).match(/^[★☆×x*]*([0-9])/);if(mm){st=num(mm[1]);p+=mm[0].length}parts.push([hit,st])}
+    if(ok&&parts.length){parts.forEach(([a,b])=>push(a,b));continue}
+    if(m&&m[1])push(m[1],num(m[2]));else push(s,1)}
+  return{whites,genes,unk};
 }
 
 /* ---------- スクショから因子を読み取る（ブラウザ内で処理・画像は外部に送らない） ---------- */
