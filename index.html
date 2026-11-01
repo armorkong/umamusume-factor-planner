@@ -512,7 +512,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月1日 22:58</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月1日 23:20</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1210,17 +1210,22 @@ ed.addEventListener('click',e=>{
       if(i>=0)c.parents[i]=nb;selId=nb.id;touch('plan');renderAll();toast('枠の内容を消しました');break}
   }
 });
-/* まとめて入力：「名前★数」を1行ずつ、またはカンマ区切り。改行が消えて1行につながった貼り付けも、一覧の名前で区切って読む */
+/* まとめて入力：「名前★数」を1行ずつ、またはカンマ区切り。名前と★の数が別の行に分かれた形にも対応。改行が消えて1行につながった貼り付けも、一覧の名前で区切って読む */
 const bzn=x=>String(x).normalize('NFKC').replace(/[◯〇⚪]/g,'○').replace(/[\s　]/g,'');
 const BZ=new Map(WHITE_RAW.map(x=>[bzn(x[0]),x[0]]));
+const BZC=WHITE_RAW.map(x=>x[0]).filter(n=>/[,、，]/.test(n));
 const BZMAX=Math.max(...[...BZ.keys()].map(k=>k.length));
 function parseBulk(v){
-  const whites=[],genes=[],unk=[];const num=c=>+String(c).normalize('NFKC');
+  const whites=[],genes=[],unk=[];const num=c=>+String(c).normalize('NFKC');let last=null;
   const push=(name,st)=>{st=Math.min(3,Math.max(1,st||1));const g=bzn(name).match(/^(.+)の遺伝子$/);
-    if(g&&APTS.includes(g[1])){genes.push({t:g[1],s:st});return}
-    const k=BZ.get(bzn(name));if(!k)unk.push(name);const nm=k||name;const ex=whites.find(w=>w.n===nm);if(ex)ex.s=st;else whites.push({n:nm,s:st})};
-  for(let s of String(v||'').split(/[,、，\n\r\t]+/)){s=s.trim();if(!s)continue;
+    if(g&&APTS.includes(g[1])){last={t:g[1],s:st};genes.push(last);return}
+    const k=BZ.get(bzn(name));if(!k)unk.push(name);const nm=k||name;const ex=whites.find(w=>w.n===nm);if(ex){ex.s=st;last=ex}else{last={n:nm,s:st};whites.push(last)}};
+  /* 「恩返し、召し上がれ」のように名前の中に読点があるものは、区切り扱いしないよう一時的に置き換える */
+  let src=String(v||'');for(const n of BZC){const re=new RegExp(n.split(/[,、，]/).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('[,、，]\\s*'),'g');src=src.replace(re,n.replace(/[,、，]/g,'\u0001'))}
+  for(let s of src.split(/[,、，\n\r\t]+/)){s=s.replace(/\u0001/g,'、').trim();if(!s)continue;
     const t=bzn(s);
+    /* ★の数だけの行（メモ帳などに貼ると名前と★が別の行になる）：直前の因子の★にする */
+    if(/^[★☆×x*]*[0-9]$/.test(t)){if(last)last.s=Math.min(3,Math.max(1,num(t.slice(-1))));continue}
     if(BZ.has(t)||/^.+の遺伝子$/.test(t)&&APTS.includes(t.slice(0,-4))){push(s,1);continue}
     const m=t.match(/^(.*?)[★☆×x*]*([0-9])$/);
     if(m&&(BZ.has(m[1])||/^.+の遺伝子$/.test(m[1]))){push(m[1],num(m[2]));continue}
