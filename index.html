@@ -410,6 +410,8 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
     <button class="btn" id="pdfBtn">PDFで書き出す</button>
     <button class="btn" id="imgBtn">画像で書き出す</button>
     <button class="btn" id="openData">書き出し・読み込み</button>
+    <button class="btn" id="undoBtn" disabled title="直前の入力を取り消します（Ctrl/⌘+Z）">↶ 元に戻す</button>
+    <button class="btn" id="redoBtn" disabled title="取り消した入力をやり直します（Ctrl/⌘+Shift+Z）">↷ やり直す</button>
     <span class="status" id="saveStatus"><i></i><span>読み込み中…</span></span>
   </div>
 </header>
@@ -512,7 +514,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月3日 21:18</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月3日 21:52</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -653,6 +655,7 @@ const realPlans=()=>S.plans.filter(p=>!p.sample);
 if(S.plans.some(p=>p.sample)){S.plans=realPlans();try{saveLocal()}catch(e){}}
 if(!S.plans.length){S.plans=[samplePlan()];sampleOnly=true}
 curId=(UI.cur&&S.plans.find(p=>p.id===UI.cur))?UI.cur:(S.plans[0]?S.plans[0].id:null);
+setTimeout(()=>{if(undoBase===null)undoReset()},0);
 
 function normalize(d){
   const fix=n=>{const m=mk(n||{});m.free=!!m.free;m.card=CARD_BY.has(+m.card)?+m.card:0;if(m.card&&UNIQ_OLD[m.card]&&m.green.n===UNIQ_OLD[m.card])m.green.n=CARD_BY.get(m.card).uniq;m.whites=(m.whites||[]).filter(w=>w&&w.n!==undefined).map(w=>({n:String(w.n),s:+w.s||1}));m.genes=(m.genes||[]).map(g=>({t:g.t||'',s:+g.s||1}));{const tg=(m.targets||[]).map(String).filter(Boolean);if(tg.length)m.memo=(m.memo?m.memo+' ':'')+'狙い：'+tg.join('、');delete m.targets}m.parents=(m.parents||[]).slice(0,2).map(fix);if(!m.id)m.id=rid();if(m.cand&&typeof m.cand==='object'){const c=fix(Object.assign({},m.cand,{parents:[],cand:null}));delete c.cand;m.cand=c}else delete m.cand;return m};
@@ -714,8 +717,24 @@ function saveLocal(){try{localStorage.setItem(LKEY,JSON.stringify({...S,plans:re
 function touch(kind){
   sampleOnly=false;
   if(kind==='plan'){const p=plan();if(p){p.updated=Date.now();if(!p.sample)dirty.add('plan:'+p.id)}}else dirty.add(kind);
-  saveLocal();clearTimeout(timer);timer=setTimeout(flush,800);setStatus();
+  saveLocal();clearTimeout(timer);timer=setTimeout(flush,800);setStatus();undoRecord(kind);
 }
+/* ---------- 元に戻す／やり直す（最大50回分。同じ欄への続けての入力は1回分にまとめる） ---------- */
+let UNDO=[],REDO=[],undoBase=null,undoT=0,undoKey='',undoBusy=false;
+const snapS=()=>JSON.stringify({S,curId});
+function undoReset(){UNDO=[];REDO=[];undoBase=snapS();updUndo()}
+function undoRecord(kind){if(undoBusy)return;const cur=snapS();if(undoBase===null){undoBase=cur;return}if(cur===undoBase)return;
+  const now=Date.now(),ae=document.activeElement,key=kind+':'+(ae&&/^(INPUT|TEXTAREA)$/.test(ae.tagName)&&(ae.dataset.f||ae.id==='planTitle'||ae.id==='ed-nick')?ae.id+(ae.dataset.f||''):'');
+  if(!(now-undoT<1500&&key===undoKey&&key.indexOf(':')<key.length-1&&UNDO.length)){UNDO.push(undoBase);if(UNDO.length>50)UNDO.shift()}
+  REDO=[];undoBase=cur;undoT=now;undoKey=key;updUndo()}
+function updUndo(){const u=document.getElementById('undoBtn'),r=document.getElementById('redoBtn');if(u)u.disabled=!UNDO.length;if(r)r.disabled=!REDO.length}
+function undoApply(redo){const from=redo?REDO:UNDO,to=redo?UNDO:REDO;if(!from.length)return;
+  to.push(snapS());const o=JSON.parse(from.pop());const ids=new Set([...S.plans.map(p=>p.id),...o.S.plans.map(p=>p.id)]);
+  S=o.S;curId=S.plans.find(p=>p.id===o.curId)?o.curId:(S.plans[0]?S.plans[0].id:null);UI.cur=curId;saveUI();
+  if(selId&&!findNode(selId))selId=null;
+  ids.forEach(id=>dirty.add('plan:'+id));dirty.add('settings');dirty.add('roster');
+  undoBusy=true;try{saveLocal();clearTimeout(timer);timer=setTimeout(flush,800);setStatus()}finally{undoBusy=false}
+  undoBase=snapS();undoKey='';updUndo();renderAll();toast(redo?'やり直しました':'1つ前の状態に戻しました')}
 function markAll(){dirty.add('settings');dirty.add('roster');realPlans().forEach(p=>dirty.add('plan:'+p.id))}
 async function writeKey(k){
   if(k==='settings')return col.doc('settings').set({json:JSON.stringify(S.settings)});
@@ -754,7 +773,7 @@ function setStatus(){
       for(const doc of snap.docs){let v;try{v=JSON.parse(doc.data().json)}catch(e){continue}
         if(doc.id==='settings')d.settings=v;else if(doc.id==='roster')d.roster=v;else if(doc.id.startsWith('plan_'))d.plans.push(v)}
       d.plans.filter(p=>p&&p.sample).forEach(p=>dirty.add('plan:'+p.id));d.plans=d.plans.filter(p=>p&&!p.sample);
-      if(d.plans.length){d.plans.sort((a,b)=>(a.created||0)-(b.created||0));S=normalize(d);sampleOnly=false;
+      if(d.plans.length){d.plans.sort((a,b)=>(a.created||0)-(b.created||0));S=normalize(d);sampleOnly=false;undoReset();
         if(!S.plans.find(p=>p.id===curId))curId=S.plans[0].id;selId=null;saveLocal();renderAll()}
     }
     cloud='on';setStatus();if(dirty.size)flush();
@@ -1482,6 +1501,10 @@ function openOv(id){lastFocus=document.activeElement;document.querySelectorAll('
 function closeOv(){document.querySelectorAll('.ov').forEach(o=>o.hidden=true);lastFocus?.focus?.()}
 document.querySelectorAll('.ov').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o||e.target.closest('[data-close]'))closeOv()})});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOv()});
+$('#undoBtn').onclick=()=>undoApply(false);$('#redoBtn').onclick=()=>undoApply(true);
+document.addEventListener('keydown',e=>{if(!(e.ctrlKey||e.metaKey)||e.altKey)return;const k=e.key.toLowerCase();if(k!=='z'&&k!=='y')return;
+  const t=e.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return; /* 入力欄の中では、ブラウザ標準の文字の取り消しを使う */
+  e.preventDefault();undoApply(k==='y'||e.shiftKey)});
 $('#openRoster').onclick=()=>openOv('#ovRoster');
 $('#openData').onclick=()=>openOv('#ovData');
 
