@@ -512,7 +512,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月1日 23:20</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月3日 21:06</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -861,8 +861,9 @@ function candHTML(n,d,child){
   {const old=new Map(n.whites.filter(x=>x.n.trim()).map(x=>[x.n.trim(),x.s])),og=new Map(n.genes.filter(x=>x.t).map(x=>[x.t,x.s]));CHG=new Set();
    for(const x of n.cand.whites){const k=x.n.trim();if(k&&old.get(k)!==x.s)CHG.add(k)}for(const x of n.cand.genes)if(x.t&&og.get(x.t)!==x.s)CHG.add('遺:'+x.t)}
   TRI.delete(n.cand.id);SIL.delete(n.cand.id);PTN.delete(n.cand.id);
-  /* 金・銀の枠：親が同じときだけ、この候補で入れ替えたと仮定して判定する */
-  if(same){let t,sv,pt;withFields(n,n.cand,()=>{calcTri();t=TRI.get(n.id);sv=SIL.get(n.id);pt=PTN.get(n.id)});calcTri();if(t)TRI.set(n.cand.id,t);if(sv)SIL.set(n.cand.id,sv);if(pt)PTN.set(n.cand.id,pt)}
+  /* 枠はこの候補で入れ替えたと仮定して判定する。銀枠（組む相手と共通・子は未所持）は候補の親に関係しないので常に出す。
+     金枠・金銀枠は候補の親が今の親と同じときだけ */
+  if(!isEmpty(n.cand)){let t,sv,pt;withFields(n,n.cand,()=>{calcTri();t=TRI.get(n.id);sv=SIL.get(n.id);pt=PTN.get(n.id)});calcTri();if(t&&same&&asked)TRI.set(n.cand.id,t);if(sv)SIL.set(n.cand.id,sv);if(pt)PTN.set(n.cand.id,pt)}
   let h;try{h=cardHTML(view,d)}finally{CHG=null}
   h=h.replace(/<button type="button" class="ctog"[^>]*>[^<]*<\/button>/,'').replace('<div class="card','<div class="card cand').replace('<div class="gtag">'+GEN(d)+'</div>','<div class="gtag">'+GEN(d)+'</div><div class="ctag">更新候補</div>');
   const pn=n.parents.map(p=>esc(p.name||'未設定')).join('・');
@@ -871,10 +872,10 @@ function candHTML(n,d,child){
   let box='<div class="cdiff">';
   if(anc)box+=ask;
   if(isEmpty(n.cand))box+=`<div class="sub">更新後のキャラと因子を入力してください（編集タブで手入力、またはスクショから読み取り）。</div><div class="row">${del}</div>`;
-  else if(!asked)box+=`<div class="sub">上の質問に答えると、更新ボタンが表示されます。親が同じ場合は、金・銀の枠も表示します。</div><div class="row">${del}</div>`;
+  else if(!asked)box+=`<div class="sub">上の質問に答えると、更新ボタンが表示されます。銀枠は今も表示しています。親が同じ場合は、金枠・金銀枠も表示します。</div><div class="row">${del}</div>`;
   else if(same){
     box+=`<div class="row"><button type="button" class="btn sm primary" data-capply="${n.id}">この内容で更新</button>${del}</div>`}
-  else box+=`<div class="sub">親が違うため、金・銀の枠は表示していません。更新すると、この枠より先の祖先は空の枠に戻ります。</div><div class="row"><button type="button" class="btn sm primary" data-capply2="${n.id}">更新して継承元を空にする</button>${del}</div>`;
+  else box+=`<div class="sub">親が違うため、金枠・金銀枠は表示していません（銀枠は表示しています）。更新すると、この枠より先の祖先は空の枠に戻ります。</div><div class="row"><button type="button" class="btn sm primary" data-capply2="${n.id}">更新して継承元を空にする</button>${del}</div>`;
   box+='</div>';
   return h.replace(/<\/div>$/,box+'</div>')}
 function candApply(n,clearAnc,d){for(const k of CAND_KEYS)n[k]=n.cand[k];delete n.cand;
