@@ -514,7 +514,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月3日 21:52</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月3日 22:02</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1157,13 +1157,15 @@ function pickWhite(name){
 }
 function selectCard(id){
   const f=findNode(selId);if(!f)return;const n=f.n,c=CARD_BY.get(id);if(!c)return;
-  const prev=n.card&&CARD_BY.get(n.card);
-  if(!prev||prev.name!==c.name||aptKey(n.name)!==c.name){
+  /* 別のキャラに選び直したときだけ因子を空にする。キャラ未設定のカード（白因子だけ先に入れた候補など）は、入力済みの因子を残す */
+  const pc=n.card||(nameFocus&&nameFocus.id===n.id?nameFocus.card:0),prev=pc&&CARD_BY.get(pc);
+  if(prev&&prev.name!==c.name){
     const keep={id:n.id,parents:n.parents};Object.assign(n,blank(),keep);n.green={n:c.uniq,s:0};
-  }else if(!n.green.n||n.green.n===prev.uniq){n.green.n=c.uniq}
-  n.name=c.name;n.card=id;touch('plan');renderHeader();renderEditor();soft();toast(c.name+'［'+c.title+'］を選択しました');
+  }else if(!n.green.n||(prev&&n.green.n===prev.uniq)){n.green={n:c.uniq,s:n.green.s||0}}
+  n.name=c.name;n.card=id;undoKey='#sel';touch('plan');undoT=0;renderHeader();renderEditor();soft();toast(c.name+'［'+c.title+'］を選択しました');
 }
-ed.addEventListener('focusin',e=>{if(e.target.id==='ed-name')renderCList(e.target.value)});
+let nameFocus=null;
+ed.addEventListener('focusin',e=>{if(e.target.id==='ed-name'){const f=findNode(selId);nameFocus=f?{id:f.n.id,card:f.n.card}:null;renderCList(e.target.value)}});
 ed.addEventListener('focusout',e=>{if(e.target.id==='ed-name')setTimeout(hideCList,150);if(e.target.id==='ed-wq'||e.target.id==='ed-tq')setTimeout(hideWList,150);if(e.target.id==='ed-sq')setTimeout(()=>{const b=$('#ed-slist');if(b)b.hidden=true},150)});
 ed.addEventListener('mousedown',e=>{const si=e.target.closest('[data-sup]');if(si){e.preventDefault();pickSup(+si.dataset.sup);return}const wi=e.target.closest('[data-white]');if(wi){e.preventDefault();pickWhite(wi.dataset.white);return}const it=e.target.closest('[data-card]');if(it){e.preventDefault();selectCard(+it.dataset.card)}});
 function refreshStars(n){ed.querySelectorAll('[data-star]').forEach(b=>{const key=b.dataset.star;let o=key.includes('.')?getObj(n,key+'.x')[0]:n[key];b.classList.toggle('on',+b.dataset.v<=(o?o.s:0))})}
