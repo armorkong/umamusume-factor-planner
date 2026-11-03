@@ -512,7 +512,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月3日 21:06</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月3日 21:18</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -855,7 +855,7 @@ function candDiff(n,child,grand){
     const t1=new Set(b.triC||[]),t2=new Set(a.triC||[]);for(const k of t2)if(!t1.has(k))out.calc.push(`${nm}と両親の3人共通 ＋${k}`);for(const k of t1)if(!t2.has(k))out.calc.push(`${nm}と両親の3人共通 −${k}`)}
   return out}
 function candHTML(n,d,child){
-  const anc=n.parents.some(p=>!isEmpty(p)),asked=!anc||typeof n.cand.sameAnc==='boolean',same=!anc||n.cand.sameAnc===true;
+  const anc=n.parents.some(p=>!isEmpty(p)),asked=true,same=!anc||n.cand.sameAnc!==false; /* 「違う」を押すまでは親が同じとみなす */
   /* 親が違う（またはまだ答えていない）ときは、今の親を使った計算・金銀の枠は出さない */
   const view=Object.assign({},n.cand,{parents:same?n.parents:[]});
   {const old=new Map(n.whites.filter(x=>x.n.trim()).map(x=>[x.n.trim(),x.s])),og=new Map(n.genes.filter(x=>x.t).map(x=>[x.t,x.s]));CHG=new Set();
@@ -867,7 +867,7 @@ function candHTML(n,d,child){
   let h;try{h=cardHTML(view,d)}finally{CHG=null}
   h=h.replace(/<button type="button" class="ctog"[^>]*>[^<]*<\/button>/,'').replace('<div class="card','<div class="card cand').replace('<div class="gtag">'+GEN(d)+'</div>','<div class="gtag">'+GEN(d)+'</div><div class="ctag">更新候補</div>');
   const pn=n.parents.map(p=>esc(p.name||'未設定')).join('・');
-  const ask=`<div class="cask"><b>この個体の親（継承元）は、今の血統表の親（${pn}）と同じですか？</b><div class="row"><button type="button" class="btn sm${n.cand.sameAnc===true?' primary':''}" data-csame="1" data-cid="${n.id}">同じ</button><button type="button" class="btn sm${n.cand.sameAnc===false?' primary':''}" data-csame="0" data-cid="${n.id}">違う</button></div></div>`;
+  const ask=`<div class="cask"><b>この個体の親（継承元）は、今の血統表の親（${pn}）と同じとして表示しています。違う場合は「違う」を押してください。</b><div class="row"><button type="button" class="btn sm${n.cand.sameAnc!==false?' primary':''}" data-csame="1" data-cid="${n.id}">同じ</button><button type="button" class="btn sm${n.cand.sameAnc===false?' primary':''}" data-csame="0" data-cid="${n.id}">違う</button></div></div>`;
   const del=`<button type="button" class="btn sm" data-cdel="${n.id}">候補を消す</button>`;
   let box='<div class="cdiff">';
   if(anc)box+=ask;
