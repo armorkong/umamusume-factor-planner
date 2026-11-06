@@ -514,7 +514,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月6日 00:53</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月6日 11:48</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1018,8 +1018,10 @@ const rowCls=(wt,so,ow)=>{const c=[wt&&'wantrow',(so||ow)&&!wt&&'suprow'].filter
 const ownTag=()=>`<span class="c-sup" title="育成キャラ（${esc(OWNNAME)}）の初期・覚醒・育成イベントで取れる">育成</span>`;
 const supTag=so=>`<span class="c-sup" title="サポカで取れる：${esc(so.join('、'))}">サポカ</span>`;
 /* 優先白因子ごとに、直接の因子と、そのスキルのヒントが出るレース因子の★を集計 */
-function wantSec(white,cols){if(!WANT.size)return'';const rows=[...WANT].map(w=>{const src=Object.keys(white).filter(k=>k===w||RACE_SKILL[k]===w);const t=[0,0];src.forEach(k=>{t[0]+=white[k][0]||0;t[1]+=white[k][1]||0});return{w,src,t}});
-  return `<div class="sec"><h3>優先白因子</h3><div class="tw"><table class="t"><thead><tr><th>白因子</th><th>${cols[0]}</th><th>${cols[1]}</th><th>計</th></tr></thead><tbody>${rows.map(r=>`<tr class="wantrow"><td>${esc(r.w)}${supOf(r.w)?supTag(supOf(r.w)):''}${ownOf(r.w)?ownTag():''}${r.src.length?`<div class="rs">${r.src.map(k=>k===r.w?'本体':esc(k)).join('・')}</div>`:''}</td><td>${r.t[0]||''}</td><td>${r.t[1]||''}</td><td class="tot">${r.t[0]+r.t[1]||'<span class="rs">なし</span>'}</td></tr>`).join('')}</tbody></table></div><p class="hint">育成ウマ娘の編集画面で入力した優先白因子です。そのスキルのヒントが出るレース因子の★も合算しています。</p></div>`}
+function wantSec(white,cols){if(!WANT.size)return'';
+  /* 合計は白因子そのものの★だけ。レース因子（スキルのヒントが出るもの）は継承しにくいとされるため合算せず、参考として別欄に出す */
+  const rows=[...WANT].map(w=>{const r=white[w]||[0,0];const race=Object.keys(white).filter(k=>k!==w&&RACE_SKILL[k]===w).map(k=>({k,s:(white[k][0]||0)+(white[k][1]||0)}));return{w,t:[r[0]||0,r[1]||0],race}});
+  return `<div class="sec"><h3>優先白因子</h3><div class="tw"><table class="t"><thead><tr><th>白因子</th><th>${cols[0]}</th><th>${cols[1]}</th><th>計</th><th>レース因子（参考）</th></tr></thead><tbody>${rows.map(r=>`<tr class="wantrow"><td>${esc(r.w)}${supOf(r.w)?supTag(supOf(r.w)):''}${ownOf(r.w)?ownTag():''}</td><td>${r.t[0]||''}</td><td>${r.t[1]||''}</td><td class="tot">${r.t[0]+r.t[1]||'<span class="rs">なし</span>'}</td><td><span class="rs">${r.race.length?r.race.map(x=>esc(x.k)+'★'+x.s).join('・'):'—'}</span></td></tr>`).join('')}</tbody></table></div><p class="hint">育成ウマ娘の編集画面で入力した優先白因子です。「計」はその白因子そのものの★合計です。右端は、そのスキルのヒントが出るレース因子の★合計です。レース因子からスキルのヒントが継承される確率は白因子より低いとされるため、合計には含めず参考として表示しています。</p></div>`}
 function summaryHTML(f){
   calcWant();const {n}=f,p=plan(),goals=new Set();
   let h=`<div><div class="gen">${GEN(f.d)}</div><h2>${esc(n.name||'未設定')} が受け継ぐ因子</h2></div>`;
