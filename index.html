@@ -226,6 +226,7 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 body.compact .about{display:none}
 @media print{.about{display:none}}
 /* 相性 */
+.wcnt{flex:none;font-size:10px;font-weight:700;border-radius:4px;padding:0 4px;border:1px solid var(--line);color:var(--muted);font-family:var(--font-num);white-space:nowrap;background:var(--surface)}
 .aff{flex:none;font-size:10px;font-weight:700;border-radius:4px;padding:0 3px;letter-spacing:-.02em;border:1px solid var(--line);font-family:var(--font-num);white-space:nowrap}
 .aff.s2{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .aff.s1{color:var(--f-blue);border-color:color-mix(in srgb,var(--f-blue) 60%,var(--line))}
@@ -524,7 +525,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月10日 17:23</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月10日 17:30</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -814,7 +815,7 @@ function cardHTML(n,d){
   let h=`<div class="card g${Math.min(d,4)}${n.id===selId?' sel':''}${n.status==='plan'?' plan':''}" data-id="${n.id}" tabindex="0" role="button">`;
   const tog=n.parents.length?`<button type="button" class="ctog" data-tog="${n.id}" aria-expanded="${!(UI.collapsed||[]).includes(n.id)}">${(UI.collapsed||[]).includes(n.id)?'▸ 親を表示':'▾ 親を閉じる'}</button>`:'';
   const pill=n.status==='have'?'<span class="pill have">自前</span>':n.status==='rent'?'<span class="pill rent">レンタル</span>':n.status==='plan'?'<span class="pill plan">予定</span>':'';
-  h+=UI.compact?`<div class="gtag">${GEN(d)}</div><div class="chd"><b>${esc(n.name||'（名前なし）')}</b>${affBadge(n)}</div>`:`<div class="gtag">${GEN(d)}</div><div class="chd"><b>${esc(n.name||'（名前なし）')}</b>${affBadge(n)}${tog}${pill}</div>`;
+  h+=UI.compact?`<div class="gtag">${GEN(d)}</div><div class="chd"><b>${esc(n.name||'（名前なし）')}</b>${affBadge(n)}</div>`:`<div class="gtag">${GEN(d)}</div><div class="chd"><b>${esc(n.name||'（名前なし）')}</b>${affBadge(n)}${ws.length?`<span class="wcnt" title="白因子の数（スキル・レース・シナリオ・隠し因子）">白${ws.length}</span>`:''}${tog}${pill}</div>`;
   const cdc=n.card&&CARD_BY.get(n.card);
   if(UI.compact)return h+compactBody(n,cdc,ws,pill+tog,tri,d)+'</div>';
   if(cdc)h+=`<div class="costume" title="${esc(cdc.name)}（${esc(labOf(cdc))}）［${esc(cdc.title)}］"><b class="nick">${esc(labOf(cdc))}</b>［${esc(cdc.title)}］</div>`;
@@ -1919,6 +1920,7 @@ function drawTreeCanvas(){
     if(isEmpty(n)){m.title='未設定';if(n.red.t)m.rows.push({k:'chips',rows:wrap([chip(n.red.t+'★'+(n.red.s||1),S_.red)])});return finish(m)}
     m.title=n.name||'（名前なし）';
     const r=affinity(n);m.aff=r?(r.dup?'重複':r.sym+r.total):'';m.affLv=r&&!r.dup?r.lv:-1;
+    m.wc=n.whites.filter(x=>x.n.trim()).length;
     m.pill=n.status==='have'?'自前':n.status==='rent'?'レンタル':n.status==='plan'?'予定':'';
     const cdc=n.card&&CARD_BY.get(n.card);if(cdc)m.costume=[labOf(cdc),'［'+cdc.title+'］'];
     const a=[];if(n.red.t)a.push(chip(n.red.t+' ★'+(n.red.s||1),redBad(n)?S_.warn:S_.red));if(n.blue.t)a.push(chip(n.blue.t+' ★'+(n.blue.s||1),S_.blue));
@@ -1969,6 +1971,7 @@ function drawTreeCanvas(){
     let cy=y+PAD+10;g.font='bold 15px '+F;g.fillStyle=isEmpty(m.n)?C.muted:C.ink;g.fillText(m.title,x+PAD,cy);
     let rx=x+CW-PAD;const tag=(t,fg,bd)=>{g.font='11px '+F;const w=tw(t,'11px '+F)+10;rx-=w;rr(rx,cy-9,w,18,4);g.strokeStyle=bd;g.lineWidth=1;g.stroke();g.fillStyle=fg;g.fillText(t,rx+5,cy+.5);rx-=4};
     if(m.pill)tag(m.pill,m.pill==='自前'?C.accent:m.pill==='レンタル'?C.blue:C.warn,C.line);
+    if(m.wc)tag('白'+m.wc,C.muted,C.line);
     if(m.aff)tag(m.aff,m.affLv===2?C.accent:m.affLv===1?C.blue:C.muted,m.affLv===2?C.accent:C.line);
     cy+=12;
     if(m.costume){g.font='bold 11px '+F;g.fillStyle=C.accent;g.fillText(m.costume[0],x+PAD,cy+8);g.font='11px '+F;g.fillStyle=C.muted;g.fillText(m.costume[1],x+PAD+tw(m.costume[0],'bold 11px '+F)+6,cy+8);cy+=17}
