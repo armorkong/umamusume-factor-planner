@@ -524,7 +524,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月10日 15:53</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月10日 17:23</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -827,7 +827,8 @@ function cardHTML(n,d){
     h+=`<div class="apts" aria-label="育成開始時の適性">${t}</div>`}
   {const gc=geneCand(n);if(gc.length)h+=`<div class="chips" title="親・祖父母の赤因子★合計から見た、この枠に付く遺伝子">${gc.map(g=>`<span class="chip c-gc${g.sure?' sure':''}">${APT_S[g.t]}遺伝子 ${g.sure?'確定':'可能性'}<span class="s">★${g.p}</span></span>`).join('')}</div>`}
   if(n.green.n)h+=`<div class="chips"><span class="chip c-green" title="${esc(n.green.n)}">${esc(n.green.n)}<span class="s">${starTxt(n.green.s)}</span></span></div>`;
-  const pw=d>0?ws.filter(x=>isWant(x.n)):[];
+  /* 優先白因子でも、サポカ・育成キャラで取れるものを隠す設定のときは「優先」の行に出さず、隠す */
+  const pw=d>0?ws.filter(x=>isWant(x.n)&&!hideW(x.n)):[];
   const wchip=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),sv=!t&&sil&&sil.has(k),tp=t&&ptn&&ptn.has(k),so=d>0?supOf(k):null,sp=so&&!pr;const tt=[];
     if(tp)tt.push('自身と両親の3人に共通し、組む相手（子のもう一方の親）も持つ白因子');else if(t)tt.push('自身と自分の両親の3人に共通する白因子');else if(sv)tt.push('両親で共通、子は未所持の白因子');
     if(pr&&RACE_SKILL[k]&&!WANT.has(k))tt.push(RACE_SKILL[k]+'のヒント');if(so)tt.push('サポカで取れる：'+so.join('、'));if(d>0&&ownOf(k))tt.push('育成キャラ（'+OWNNAME+'）で取れる：'+ownOf(k));
@@ -992,7 +993,7 @@ function editorHTML(){
     h+=`<div class="sec"><h3>サポートカード（${SP.length}/6）</h3>`;
     if(SP.length<6)h+=`<div class="combo"><input type="text" id="ed-sq" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-slist" placeholder="サポカを検索して追加（例：キタサン、SSR 賢さ）"><div class="clist" id="ed-slist" role="listbox" hidden></div></div>`;
     if(SP.length)h+=`<div style="margin-top:6px">${SP.map((id,i)=>{const c=SUP_BY.get(id);return c?`<div class="wrow"><span style="flex:1;font-size:13px"><b>${esc(c[3])}${esc(c[4])}</b> <span class="sub">${SUP_R[c[1]]} ${SUP_T[c[2]]}</span><br><span class="sub">${esc(supSkills(id).join('、')||'白因子になるスキルなし')}</span></span><button class="x" data-delsup="${i}" aria-label="外す">×</button></div>`:''}).join('')}</div>`;
-    h+=`<p class="hint">このサポカのヒント・イベントで取れるスキルの白因子は、受け継ぐ因子・継承させる因子の表とExcelで「サポカ」と表示します（因子で継承する優先度が低いため）。血統表では「表示」の行の「サポカ外の因子のみ表示」で隠せます（優先白因子は隠しません）。</p></div>`}
+    h+=`<p class="hint">このサポカのヒント・イベントで取れるスキルの白因子は、受け継ぐ因子・継承させる因子の表とExcelで「サポカ」と表示します（因子で継承する優先度が低いため）。血統表では「表示」の行の「サポカ外の因子のみ表示」で隠せます（優先白因子に入れたものも隠れます）。</p></div>`}
   if(d===0&&!candOf)h+=`<div class="sec"><h3>育成設定のコピー</h3><div class="row"><button class="btn sm" id="edSyncOpen">他の計画とコピー・同期</button></div><p class="hint">優先白因子・サポカ（と育成ウマ娘のキャラ）を、他の計画にまとめてコピーしたり、他の計画から読み込んだりできます。一部の因子だけ違う血統表を比べるときに便利です。</p></div>`;
   if(candOf){h+=`<div class="sec"><h3>操作</h3><div class="row"><button class="btn sm" id="edCandBack">今のカードに戻る</button><button class="btn sm" id="edCandDel">候補を消す</button></div><p class="hint">更新はカードの「この内容で更新」から行います。</p></div>`;return h}
   h+=`<div class="sec"><h3>操作</h3><div class="row">`;
@@ -1926,7 +1927,7 @@ function drawTreeCanvas(){
     const gc=geneCand(n);if(gc.length)m.rows.push({k:'chips',rows:wrap(gc.map(g=>chip(APT_S[g.t]+'遺伝子 '+(g.sure?'確定':'可能性')+' ★'+g.p,g.sure?S_.gcs:S_.gc)))});
     if(n.green.n)m.rows.push({k:'chips',rows:wrap([chip(n.green.n+(n.green.s?' ★'+n.green.s:''),S_.green)])});
     const tri=TRI.get(n.id),sil=SIL.get(n.id),ptn=PTN.get(n.id),w=[];
-    const ws=sortWhites(n.whites.filter(x=>x.n.trim())),pw=d>0?ws.filter(x=>isWant(x.n)):[],rest=ws.filter(x=>!pw.includes(x));
+    const ws=sortWhites(n.whites.filter(x=>x.n.trim())),pw=d>0?ws.filter(x=>isWant(x.n)&&!hideW(x.n)):[],rest=ws.filter(x=>!pw.includes(x));
     const wc=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),c=chip(k+' '+st(x.s),t&&ptn&&ptn.has(k)?S_.trp:t?S_.tri:sil&&sil.has(k)?S_.sil:S_.w);return c};
     if(pw.length&&!UI.onlyUseful)m.rows.push({k:'chips',band:true,rows:wrap([chip('優先',S_.prio),...pw.map(x=>wc(x,true))])});
     for(const x of n.genes)if(x.t)w.push(chip(x.t+'の遺伝子 '+st(x.s),S_.gene));
