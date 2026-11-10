@@ -494,6 +494,10 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
     <div class="frow"><input type="text" id="shPaste" placeholder="共有URLを貼り付け" style="flex:1"><button class="btn" id="shLoad">読み込む</button></div>
   </div>
 </div></div>
+<div class="ov" id="ovSync" hidden><div class="dlg" role="dialog" aria-labelledby="hSync">
+  <header><h2 id="hSync">育成設定のコピー</h2><button class="btn" data-close>閉じる</button></header>
+  <div id="syncBody"></div>
+</div></div>
 <div class="ov" id="ovRecv" hidden><div class="dlg" role="dialog" aria-labelledby="hRecv">
   <header><h2 id="hRecv">共有された計画</h2><button class="btn" data-close>やめる</button></header>
   <div id="rvBody"></div>
@@ -514,7 +518,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月6日 11:48</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月10日 10:46</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -981,6 +985,7 @@ function editorHTML(){
     if(SP.length<6)h+=`<div class="combo"><input type="text" id="ed-sq" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-slist" placeholder="サポカを検索して追加（例：キタサン、SSR 賢さ）"><div class="clist" id="ed-slist" role="listbox" hidden></div></div>`;
     if(SP.length)h+=`<div style="margin-top:6px">${SP.map((id,i)=>{const c=SUP_BY.get(id);return c?`<div class="wrow"><span style="flex:1;font-size:13px"><b>${esc(c[3])}${esc(c[4])}</b> <span class="sub">${SUP_R[c[1]]} ${SUP_T[c[2]]}</span><br><span class="sub">${esc(supSkills(id).join('、')||'白因子になるスキルなし')}</span></span><button class="x" data-delsup="${i}" aria-label="外す">×</button></div>`:''}).join('')}</div>`;
     h+=`<p class="hint">このサポカのヒント・イベントで取れるスキルの白因子は、受け継ぐ因子・継承させる因子の表とExcelで「サポカ」と表示します（因子で継承する優先度が低いため）。血統表では「表示」の行の「サポカ外の因子のみ表示」で隠せます（優先白因子は隠しません）。</p></div>`}
+  if(d===0&&!candOf)h+=`<div class="sec"><h3>育成設定のコピー</h3><div class="row"><button class="btn sm" id="edSyncOpen">他の計画とコピー・同期</button></div><p class="hint">優先白因子・サポカ（と育成ウマ娘のキャラ）を、他の計画にまとめてコピーしたり、他の計画から読み込んだりできます。一部の因子だけ違う血統表を比べるときに便利です。</p></div>`;
   if(candOf){h+=`<div class="sec"><h3>操作</h3><div class="row"><button class="btn sm" id="edCandBack">今のカードに戻る</button><button class="btn sm" id="edCandDel">候補を消す</button></div><p class="hint">更新はカードの「この内容で更新」から行います。</p></div>`;return h}
   h+=`<div class="sec"><h3>操作</h3><div class="row">`;
   if(!isEmpty(n))h+=n.cand?`<button class="btn sm primary" id="edCandSel">更新候補を編集</button>`:`<button class="btn sm primary" id="edCand" title="今のカードを残したまま、空のカードに更新後の因子を入力して比べられます">更新候補を作る</button>`;
@@ -1026,6 +1031,7 @@ function summaryHTML(f){
   calcWant();const {n}=f,p=plan(),goals=new Set();
   let h=`<div><div class="gen">${GEN(f.d)}</div><h2>${esc(n.name||'未設定')} が受け継ぐ因子</h2></div>`;
   if(n.parents.length)h+=`<div><button class="btn sm" id="xlsxBtn" data-xid="${n.id}">Excelで書き出す</button></div>`;
+  if(f.d===0&&n.parents.length)h+=cmpSec(n);
   if(!n.parents.length)return h+`<p class="empty-note">この枠にはまだ親がいません。親2人・祖父母4人を入力すると、この枠が受け継ぐ因子を集計します。</p>`;
   const a=agg(n),filled=a.src.filter(s=>!isEmpty(s.n)).length;
   const np=n.parents.length,ng=a.src.length-np;
@@ -1218,6 +1224,7 @@ ed.addEventListener('click',e=>{
     case 'edCandDel':{if(f.candOf){delete f.candOf.cand;selId=f.candOf.id;touch('plan');renderAll();toast('更新候補を消しました')}break}
     case 'edAddP':{const nn=addParent(n);selId=nn.id;touch('plan');renderAll();break}
     case 'edReg':registerRoster(n);break;
+    case 'edSyncOpen':openSync();break;
     case 'openScan':openScan();break;
     case 'edPlace':openOv('#ovRoster');break;
     case 'edClear':{const keep={id:n.id,parents:n.parents};Object.assign(n,blank(),keep);touch('plan');renderAll();break}
@@ -1612,6 +1619,62 @@ function shCheckHash(){if(!/#p=/.test(location.hash))return;const h=location.has
   shFromText(h).then(ok=>{if(ok&&k){UI.shSeen=[k,...UI.shSeen.filter(x=>x!==k)].slice(0,50);saveUI()}})}
 window.addEventListener('hashchange',shCheckHash);
 setTimeout(shCheckHash,0);
+
+/* ---------- 育成設定（優先白因子・サポカ・育成ウマ娘のキャラ）を計画間でコピー ---------- */
+const rootChar=p=>{const c=p.root.card&&CARD_BY.get(p.root.card);return c?c.name:aptKey(p.root.name)};
+function openSync(){const P=plan();if(!P)return;const others=S.plans.filter(p=>!p.sample&&p.id!==P.id);const me=rootChar(P);
+  const lab=p=>`${esc(p.title)} <span class="sub">${esc(p.root.name||'育成ウマ娘未設定')}／優先${(p.wants||[]).length}・サポカ${(p.supports||[]).length}</span>`;
+  let h=`<p class="hint">今の計画「<b>${esc(P.title)}</b>」（${esc(P.root.name||'育成ウマ娘未設定')}／優先白因子${(P.wants||[]).length}・サポカ${(P.supports||[]).length}枚）の設定を使います。コピーは「↶ 元に戻す」で取り消せます。</p>`;
+  if(!others.length){$('#syncBody').innerHTML=h+'<p class="empty-note">ほかの計画がありません。</p>';openOv('#ovSync');return}
+  h+=`<div class="sec"><h3>コピーする項目</h3><div class="row" style="gap:14px"><label><input type="checkbox" id="syW" checked> 優先白因子</label><label><input type="checkbox" id="syS" checked> サポカ</label><label><input type="checkbox" id="syC"> 育成ウマ娘のキャラ</label></div></div>`;
+  h+=`<div class="sec"><h3>この計画の設定を、選んだ計画にコピー</h3><div class="list" style="max-height:40vh">${others.map(p=>`<label class="li"><input type="checkbox" data-syt="${p.id}"${me&&rootChar(p)===me?' checked':''}><span class="nm">${lab(p)}</span></label>`).join('')}</div><p class="hint">最初は、育成ウマ娘が同じキャラの計画に印を付けています。</p><div class="row"><button class="btn primary sm" id="syTo">選んだ計画にコピー</button></div></div>`;
+  h+=`<div class="sec"><h3>他の計画の設定を、この計画に読み込む</h3><div class="frow"><select id="syFrom" style="flex:1">${others.map(p=>`<option value="${p.id}"${me&&rootChar(p)===me?' selected':''}>${esc(p.title)}（${esc(p.root.name||'未設定')}）</option>`).join('')}</select><button class="btn sm" id="syFromBtn">読み込む</button></div></div>`;
+  $('#syncBody').innerHTML=h;openOv('#ovSync')}
+function syncCopy(src,dst){const w=$('#syW').checked,sp=$('#syS').checked,ch=$('#syC').checked;
+  if(w)dst.wants=[...(src.wants||[])];if(sp)dst.supports=[...(src.supports||[])];
+  if(ch){dst.root.card=src.root.card;dst.root.name=src.root.name;if(src.root.green&&src.root.green.n)dst.root.green={...src.root.green}}
+  dst.updated=Date.now();dirty.add('plan:'+dst.id);return w||sp||ch}
+$('#syncBody').addEventListener('click',e=>{const P=plan();if(!P)return;
+  if(e.target.id==='syTo'){const ids=[...document.querySelectorAll('[data-syt]:checked')].map(x=>x.dataset.syt);if(!ids.length){toast('コピー先の計画を選んでください');return}
+    let k=0;for(const id of ids){const d=S.plans.find(p=>p.id===id);if(d&&syncCopy(P,d))k++}if(!k){toast('コピーする項目を選んでください');return}
+    touch('plan');closeOv();renderAll();toast(`${k}件の計画にコピーしました`,3000)}
+  if(e.target.id==='syFromBtn'){const src=S.plans.find(p=>p.id===$('#syFrom').value);if(!src)return;if(!syncCopy(src,P)){toast('コピーする項目を選んでください');return}
+    touch('plan');closeOv();renderAll();toast(`「${src.title}」の設定を読み込みました`,3000)}});
+
+/* ---------- 計画の比較（育成ウマ娘が受け継ぐ因子を2つの計画で比べる） ---------- */
+function cmpRows(pA,pB){const A=pA.root,B=pB.root,a=agg(A),b=agg(B),rows=[];
+  const fa=affinity(A),fb=affinity(B);rows.push({cat:'相性',k:'相性値',va:fa?(fa.dup?'重複':fa.total):'',vb:fb?(fb.dup?'重複':fb.total):'',num:!!(fa&&fb&&!fa.dup&&!fb.dup)});
+  const sa=startApt(A,a),sb=startApt(B,b);for(const x of APTS){const u=sa&&sa[x]?sa[x].start:'',v=sb&&sb[x]?sb[x].start:'';if(u||v)rows.push({cat:'開始時の適性',k:x,va:u,vb:v})}
+  for(const x of APTS){const u=sum(a.apt[x]),v=sum(b.apt[x]);if(u||v)rows.push({cat:'赤因子',k:x,va:u,vb:v,num:true})}
+  for(const x of APTS){const u=sum(a.gene[x]),v=sum(b.gene[x]);if(u||v)rows.push({cat:'遺伝子',k:x+'の遺伝子',va:u,vb:v,num:true})}
+  for(const x of STATS){const u=sum(a.blue[x]),v=sum(b.blue[x]);if(u||v)rows.push({cat:'青因子',k:x,va:u,vb:v,num:true})}
+  const gm=g=>{const m={};for(const {n,r} of g.src)if(n.green.n&&n.green.s)m[n.green.n]=(m[n.green.n]||0)+n.green.s;return m};const ga=gm(a),gb=gm(b);
+  for(const k of [...new Set([...Object.keys(ga),...Object.keys(gb)])])rows.push({cat:'緑因子',k,va:ga[k]||0,vb:gb[k]||0,num:true});
+  const ks=[...new Set([...Object.keys(a.white),...Object.keys(b.white)])].sort((x,y)=>(WHITE_ORD.get(x)??90000)-(WHITE_ORD.get(y)??90000)||x.localeCompare(y,'ja'));
+  for(const k of ks)rows.push({cat:'白因子',k,va:sum(a.white[k]),vb:sum(b.white[k]),num:true,want:isWant(k)});
+  for(const r of rows)r.diff=r.num?(+r.va||0)-(+r.vb||0):(r.va===r.vb?0:null);return rows}
+function cmpSec(n){const P=plan(),others=S.plans.filter(p=>p.id!==P.id);if(!others.length)return'';
+  let pB=S.plans.find(p=>p.id===UI.cmp&&p.id!==P.id);
+  let h=`<div class="sec"><h3>他の計画と比較</h3><div class="frow"><select id="cmpSel" style="flex:1"><option value="">比べる計画を選ぶ</option>${others.map(p=>`<option value="${p.id}"${pB&&pB.id===p.id?' selected':''}>${esc(p.title)}（${esc(p.root.name||'未設定')}）</option>`).join('')}</select></div>`;
+  if(!pB)return h+`<p class="hint">一部の因子だけ違う血統表を作ったときに、育成ウマ娘が受け継ぐ因子の★合計を並べて比べられます。</p></div>`;
+  const only=UI.cmpDiff!==false,rows=cmpRows(P,pB).filter(r=>!only||r.diff!==0);
+  h+=`<div class="row" style="gap:12px;margin-top:6px"><label style="font-size:12.5px"><input type="checkbox" id="cmpDiff"${only?' checked':''}> 違いがあるものだけ</label><button class="btn sm" id="xlsxCmp">比較をExcelで書き出す</button></div>`;
+  const sg=v=>v>0?`<b style="color:var(--ok)">+${v}</b>`:v<0?`<b style="color:var(--bad)">${v}</b>`:v===null?'<b>違う</b>':'';
+  h+=rows.length?`<div class="tw"><table class="t"><thead><tr><th>因子</th><th>この計画</th><th>${esc(pB.title)}</th><th>差</th></tr></thead><tbody>${rows.map(r=>`<tr${r.want?' class="wantrow" title="優先白因子"':''}><td><span class="rs">${r.cat}</span> ${r.cat==='白因子'?raceLblH(r.k):esc(r.k)}</td><td>${r.va===0?'':esc(String(r.va))}</td><td>${r.vb===0?'':esc(String(r.vb))}</td><td>${sg(r.diff)}</td></tr>`).join('')}</tbody></table></div>`:`<p class="empty-note">違いはありません。</p>`;
+  return h+`<p class="hint">親2人・祖父母4人から受け継ぐ★の合計です。差は「この計画 − ${esc(pB.title)}」。紫の行は優先白因子です。</p></div>`}
+$('#summary').addEventListener('change',e=>{if(e.target.id==='cmpSel'){UI.cmp=e.target.value||null;saveUI();renderSummary()}if(e.target.id==='cmpDiff'){UI.cmpDiff=e.target.checked;saveUI();renderSummary()}});
+async function onXlsxCmp(b){const P=plan(),Q=S.plans.find(p=>p.id===UI.cmp);if(!P||!Q)return;b.disabled=true;const t0=b.textContent;b.textContent='作成中…';
+  try{if(!window.XLSX)await loadScript(LIB_XLSX);const X=window.XLSX,wb=X.utils.book_new();
+    const rows=cmpRows(P,Q),head=[['計画の比較（育成ウマ娘が受け継ぐ因子）'],['A：'+P.title+'（'+(P.root.name||'未設定')+'）'],['B：'+Q.title+'（'+(Q.root.name||'未設定')+'）'],[],['区分','因子','A','B','差（A−B）','優先（A）']];
+    const ws=X.utils.aoa_to_sheet(head.concat(rows.map(r=>[r.cat,r.cat==='白因子'?raceLbl(r.k):r.k,r.va===''?'':r.va,r.vb===''?'':r.vb,r.diff===null?'違う':r.diff,r.want?'○':''])));
+    ws['!cols']=[{wch:12},{wch:30},{wch:10},{wch:10},{wch:10},{wch:8}];ws['!autofilter']={ref:`A${head.length}:F${head.length+rows.length}`};X.utils.book_append_sheet(wb,ws,'比較');
+    const keep=curId;
+    for(const [lab,pl] of [['A',P],['B',Q]]){curId=pl.id;try{calcWant();const w2=xlsxBook({n:pl.root,d:0},'recv');for(const nm of w2.SheetNames)X.utils.book_append_sheet(wb,w2.Sheets[nm],(lab+'_'+nm).slice(0,31))}finally{curId=keep;calcWant()}}
+    const out=X.write(wb,{bookType:'xlsx',type:'array'});
+    await saveFile(('比較_'+P.title+'_vs_'+Q.title).replace(/[\\/:*?"<>|]/g,'_')+'.xlsx',new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));toast('比較のExcelファイルを書き出しました',3000)}
+  catch(err){const c=err&&err.code;if(c==='declined'){}else toast('Excelファイルを作成できませんでした'+(err&&err.message?'：'+err.message:''),5000)}
+  finally{b.disabled=false;b.textContent=t0}}
+$('#summary').addEventListener('click',e=>{const b=e.target.closest('#xlsxCmp');if(b)onXlsxCmp(b)});
 
 /* ---------- data export/import ---------- */
 let expOne=false;
