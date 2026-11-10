@@ -528,7 +528,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月10日 17:46</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月10日 19:16</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -656,6 +656,8 @@ function pairSort(keys,race){const set=new Set(keys),out=[],done=new Set();const
   for(const x of keys)if(!done.has(nm(x)))out.push(x);return out}
 const ownOf=k=>{k=String(k).trim();return OWNSK.get(k)||(SKILL_OF(k)&&OWNSK.get(SKILL_OF(k)))||null}; /* 育成キャラで取れるときは取り方（自前・イベント・ランダム・隠し）、取れないときは null */
 const supOf=k=>{k=String(k).trim();return SUPSK.get(k)||(SKILL_OF(k)&&SUPSK.get(SKILL_OF(k)))||null};
+/* 表示用（印・行の色）：その因子そのものが取れるときだけ。目覚め因子・レース因子にはスキル側の印を付けない（隠す処理は ownOf/supOf のまま） */
+const ownD=k=>OWNSK.get(String(k).trim())||null,supD=k=>SUPSK.get(String(k).trim())||null;
 const raceLbl=k=>RACE_SKILL[k]?k+'（'+RACE_SKILL[k]+'）':k;
 const raceLblH=k=>RACE_SKILL[k]?esc(k)+'<span class="rs">（'+esc(RACE_SKILL[k])+'）</span>':esc(k);
 let WANT=new Set();
@@ -844,9 +846,9 @@ function cardHTML(n,d){
   if(n.green.n)h+=`<div class="chips"><span class="chip c-green" title="${esc(n.green.n)}">${esc(n.green.n)}<span class="s">${starTxt(n.green.s)}</span></span></div>`;
   /* 優先白因子でも、サポカ・育成キャラで取れるものを隠す設定のときは「優先」の行に出さず、隠す */
   const pw=pairSort(d>0?ws.filter(x=>isWant(x.n)&&!hideW(x.n)):[],true);
-  const wchip=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),sv=!t&&sil&&sil.has(k),tp=t&&ptn&&ptn.has(k),so=d>0?supOf(k):null,sp=so&&!pr;const tt=[];
+  const wchip=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),sv=!t&&sil&&sil.has(k),tp=t&&ptn&&ptn.has(k),so=d>0?supD(k):null,sp=so&&!pr,so2=d>0&&!so?supOf(k):null,ow2=d>0&&!ownD(k)?ownOf(k):null;const tt=[];
     if(tp)tt.push('自身と両親の3人に共通し、組む相手（子のもう一方の親）も持つ白因子');else if(t)tt.push('自身と自分の両親の3人に共通する白因子');else if(sv)tt.push('両親で共通、子は未所持の白因子');
-    if(SKILL_OF(k))tt.push(SKILL_OF(k)+'のヒントが出る'+(RACE_SKILL[k]?'レース因子（継承されにくいとされる）':'目覚め因子'));if(so)tt.push('サポカで取れる：'+so.join('、'));if(d>0&&ownOf(k))tt.push('育成キャラ（'+OWNNAME+'）で取れる：'+ownOf(k));
+    if(SKILL_OF(k))tt.push(SKILL_OF(k)+'のヒントが出る'+(RACE_SKILL[k]?'レース因子（継承されにくいとされる）':'目覚め因子'));if(so)tt.push('サポカで取れる：'+so.join('、'));else if(so2)tt.push(SKILL_OF(k)+'はサポカで取れる：'+so2.join('、'));if(d>0&&ownD(k))tt.push('育成キャラ（'+OWNNAME+'）で取れる：'+ownD(k));else if(ow2)tt.push(SKILL_OF(k)+'は育成キャラ（'+OWNNAME+'）で取れる：'+ow2);
     return `<span class="chip c-w1${t?' tri':sv?' sil':''}${tp?' trp':''}${pr&&RACE_SKILL[k]?' raceh':''}${CHG&&CHG.has(k)?' chg':''}"${tt.length?` title="${esc(tt.join(' ／ '))}"`:''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`};
   if(pw.length&&!UI.onlyUseful)h+=`<div class="chips prio"><span class="chip c-prio" title="育成ウマ娘で設定した優先白因子">優先</span>${pw.map(x=>wchip(x,true)).join('')}</div>`;
   const rest=pairSort(ws.filter(x=>!pw.includes(x)),false);
@@ -1029,7 +1031,7 @@ function giveHTML(f){
   h+=`<div><button class="btn sm" id="xlsxGive" data-xid="${n.id}">Excelで書き出す</button></div>`;
   h+=`<p class="hint">このキャラを親にしたときに渡る因子：自身＋親${n.parents.length}人（入力済み ${filled}人）。入力している因子だけを表示します。因子カードを選ぶと、そのカードの集計に切り替わります。</p>`;
   const tri=new Set(trioOf(n)||[]);
-  const tbl=(title,keys,map,label)=>{if(!keys.length)return'';return `<div class="sec"><h3>${title}</h3><div class="tw"><table class="t"><thead><tr><th>${label}</th><th>自身</th><th>親</th><th>計</th></tr></thead><tbody>${keys.map(k=>{const r=map[k],wk=label==='白因子'&&isWant(k),so=label==='白因子'&&supOf(k),ow=label==='白因子'&&ownOf(k);return `<tr${rowCls(wk,so,ow)}><td>${label==='白因子'&&tri.has(k)?`<span class="chip c-tri" title="自身と両親の3人に共通">${raceLblH(k)}</span>`:label==='白因子'?raceLblH(k):esc(k)}${ow?ownTag(ow):''}${so?supTag(so):''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}).join('')}</tbody></table></div></div>`};
+  const tbl=(title,keys,map,label)=>{if(!keys.length)return'';return `<div class="sec"><h3>${title}</h3><div class="tw"><table class="t"><thead><tr><th>${label}</th><th>自身</th><th>親</th><th>計</th></tr></thead><tbody>${keys.map(k=>{const r=map[k],wk=label==='白因子'&&isWant(k),so=label==='白因子'&&supD(k),ow=label==='白因子'&&ownD(k);return `<tr${rowCls(wk,so,ow)}><td>${label==='白因子'&&tri.has(k)?`<span class="chip c-tri" title="自身と両親の3人に共通">${raceLblH(k)}</span>`:label==='白因子'?raceLblH(k):esc(k)}${ow?ownTag(ow):''}${so?supTag(so):''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}).join('')}</tbody></table></div></div>`};
   const gm={};for(const {n:s,r} of a.src){if(s.green.n&&s.green.s){(gm[s.green.n]??=[0,0])[r-1]+=s.green.s}}
   const gmap={};for(const x of APTS)if(sum(a.gene[x]))gmap[x+'の遺伝子']=a.gene[x];
   let body='';
@@ -1091,7 +1093,7 @@ function summaryHTML(f){
   const wk=pairSort(Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])||x.localeCompare(y,'ja')),false);
   if(wk.length)h+=wantSec(a.white,['親','祖父母']);
   if(wk.length){any=true;h+=`<div class="sec"><h3>白因子（${wk.length}種・★合計）</h3>`;h+=`<div class="tw"><table class="t"><thead><tr><th>白因子</th><th>親</th><th>祖父母</th><th>計</th></tr></thead><tbody>`;
-    for(const k of wk){const r=a.white[k],wt=isWant(k),so=supOf(k),ow=ownOf(k);h+=`<tr${rowCls(wt,so,ow)}><td>${raceLblH(k)}${ow?ownTag(ow):''}${so?supTag(so):''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}
+    for(const k of wk){const r=a.white[k],wt=isWant(k),so=supD(k),ow=ownD(k);h+=`<tr${rowCls(wt,so,ow)}><td>${raceLblH(k)}${ow?ownTag(ow):''}${so?supTag(so):''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}
     h+=`</tbody></table></div></div>`}
   if(!any)h+=`<p class="empty-note">親・祖父母にまだ因子が入力されていません。</p>`;
   return h;
@@ -1694,7 +1696,7 @@ function cmpSec(n){const P=plan(),others=S.plans.filter(p=>p.id!==P.id);if(!othe
   /* 区分ごとに見出し行を入れる。白因子は優先白因子を先頭に */
   const cats=[...new Set(rows.map(r=>r.cat))];let body='';
   for(const c of cats){let rs=rows.filter(r=>r.cat===c);if(c==='白因子'){const by=new Map(rs.map(r=>[r.k,r]));rs=[...pairSort(rs.filter(r=>r.want).map(r=>r.k),true),...pairSort(rs.filter(r=>!r.want).map(r=>r.k),false)].map(k=>by.get(k))}
-    body+=`<tr class="cmpcat"><th colspan="4">${c}</th></tr>`+rs.map(r=>{const ow=c==='白因子'?ownOf(r.k):null;return `<tr${r.want?' class="wantrow'+(RACE_SKILL[r.k]?' racerow':'')+'" title="優先白因子"':''}><td>${c==='白因子'?raceLblH(r.k):esc(r.k)}${ow?ownTag(ow):''}</td><td>${r.va===0?'':esc(String(r.va))}</td><td>${r.vb===0?'':esc(String(r.vb))}</td><td>${sg(r.diff)}</td></tr>`}).join('')}
+    body+=`<tr class="cmpcat"><th colspan="4">${c}</th></tr>`+rs.map(r=>{const ow=c==='白因子'?ownD(r.k):null;return `<tr${r.want?' class="wantrow'+(RACE_SKILL[r.k]?' racerow':'')+'" title="優先白因子"':''}><td>${c==='白因子'?raceLblH(r.k):esc(r.k)}${ow?ownTag(ow):''}</td><td>${r.va===0?'':esc(String(r.va))}</td><td>${r.vb===0?'':esc(String(r.vb))}</td><td>${sg(r.diff)}</td></tr>`}).join('')}
   h+=rows.length?`<div class="tw"><table class="t"><thead><tr><th>因子</th><th>この計画</th><th>${esc(pB.title)}</th><th>差</th></tr></thead><tbody>${body}</tbody></table></div>`:`<p class="empty-note">違いはありません。</p>`;
   return h+`<p class="hint">親2人・祖父母4人から受け継ぐ★の合計です。差は「この計画 − ${esc(pB.title)}」。紫の行は優先白因子です。</p></div>`}
 $('#summary').addEventListener('change',e=>{if(e.target.id==='cmpSel'){UI.cmp=e.target.value||null;saveUI();renderSummary()}if(e.target.id==='cmpDiff'){UI.cmpDiff=e.target.checked;saveUI();renderSummary()}});
@@ -2044,7 +2046,7 @@ async function saveFile(name,blob){
 function xlsxBook(f,mode){
   calcWant();const give=mode==='give',n=f.n,a=give?giveAgg(n):agg(n),sa=give?null:startApt(n,a),X=window.XLSX,wb=X.utils.book_new();
   const rows=[give?['区分','因子','自身★','親★','計★','備考','優先','育成キャラで取得','サポカで取得可','取れるサポカ']:['区分','因子','親★','祖父母★','計★','開始時の適性','優先','育成キャラで取得','サポカで取得可','取れるサポカ']];const fr=[];
-  const push=(k,name,r,extra,wk)=>{const so=wk!==undefined?supOf(wk):null,ow=wk!==undefined?ownOf(wk):null;rows.push([k,name+(ow?'［'+ow+'］':''),r[0]||0,r[1]||0,null,extra||'',wk!==undefined&&isWant(wk)?'○':'',ow||'',so?'○':'',so?so.join('、'):''])};
+  const push=(k,name,r,extra,wk)=>{const so=wk!==undefined?supD(wk):null,ow=wk!==undefined?ownD(wk):null;rows.push([k,name+(ow?'［'+ow+'］':''),r[0]||0,r[1]||0,null,extra||'',wk!==undefined&&isWant(wk)?'○':'',ow||'',so?'○':'',so?so.join('、'):''])};
   for(const x of APTS)if(sum(a.apt[x]))push('赤因子',x,a.apt[x],sa&&sa[x]?(sa[x].start!==sa[x].base?sa[x].base+'→'+sa[x].start:sa[x].base):'');
   for(const x of APTS)if(sum(a.gene[x]))push('遺伝子',x+'の遺伝子',a.gene[x]);
   for(const x of STATS)if(sum(a.blue[x]))push('青因子',x,a.blue[x]);
@@ -2060,7 +2062,7 @@ function xlsxBook(f,mode){
   const g=[['続柄','名前','衣装','状態','青因子','★','赤因子','★','緑因子','★','遺伝子','白因子（★）']];
   const lab={have:'自前',rent:'レンタル',plan:'予定'};
   for(const {n:s,r} of a.src){const c=s.card&&CARD_BY.get(s.card);
-    g.push([give?(r===1?'自身':'親'):(r===1?'親':'祖父母'),s.name||'未設定',c?labOf(c)+'［'+c.title+'］':'',lab[s.status]||'',s.blue.t,s.blue.t?s.blue.s:'',s.red.t,s.red.t?s.red.s:'',s.green.n,s.green.n?s.green.s:'',s.genes.filter(x=>x.t).map(x=>x.t+'★'+x.s).join('、'),s.whites.filter(w=>w.n.trim()).map(w=>w.n+'★'+w.s+(isWant(w.n)?'［優先］':(supOf(w.n)?'［サポカ］':'')+(ownOf(w.n)?'［'+ownOf(w.n)+'］':''))).join('、')])}
+    g.push([give?(r===1?'自身':'親'):(r===1?'親':'祖父母'),s.name||'未設定',c?labOf(c)+'［'+c.title+'］':'',lab[s.status]||'',s.blue.t,s.blue.t?s.blue.s:'',s.red.t,s.red.t?s.red.s:'',s.green.n,s.green.n?s.green.s:'',s.genes.filter(x=>x.t).map(x=>x.t+'★'+x.s).join('、'),s.whites.filter(w=>w.n.trim()).map(w=>w.n+'★'+w.s+(isWant(w.n)?'［優先］':(supD(w.n)?'［サポカ］':'')+(ownD(w.n)?'［'+ownD(w.n)+'］':''))).join('、')])}
   const ws2=X.utils.aoa_to_sheet(g);ws2['!cols']=[{wch:7},{wch:18},{wch:26},{wch:7},{wch:8},{wch:4},{wch:8},{wch:4},{wch:24},{wch:4},{wch:16},{wch:60}];
   X.utils.book_append_sheet(wb,ws2,give?'因子の一覧':'継承元の一覧');
   {const P=plan(),sp=(P.supports||[]).filter(id=>SUP_BY.has(id)),wl=[...WANT];
