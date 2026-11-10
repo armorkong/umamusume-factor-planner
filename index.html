@@ -524,7 +524,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月10日 15:42</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月10日 15:53</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1664,11 +1664,11 @@ function cmpRows(pA,pB){const A=pA.root,B=pB.root,a=agg(A),b=agg(B),rows=[];
   for(const r of rows)r.diff=r.num?(+r.va||0)-(+r.vb||0):(r.va===r.vb?0:null);return rows}
 function cmpSec(n){const P=plan(),others=S.plans.filter(p=>p.id!==P.id);if(!others.length)return'';
   let pB=S.plans.find(p=>p.id===UI.cmp&&p.id!==P.id);
-  let h=`<div class="sec"><h3>他の計画と比較</h3><div class="frow"><select id="cmpSel" style="flex:1"><option value="">比べる計画を選ぶ</option>${others.map(p=>`<option value="${p.id}"${pB&&pB.id===p.id?' selected':''}>${esc(p.title)}（${esc(p.root.name||'未設定')}）</option>`).join('')}</select></div>`;
+  let h=`<div class="sec"><h3>他の計画と比較</h3><div class="frow"><select id="cmpSel" style="flex:1"><option value="">比較しない（比べる計画を選ぶ）</option>${others.map(p=>`<option value="${p.id}"${pB&&pB.id===p.id?' selected':''}>${esc(p.title)}（${esc(p.root.name||'未設定')}）</option>`).join('')}</select></div>`;
   if(!pB)return h+`<p class="hint">一部の因子だけ違う血統表を作ったときに、育成ウマ娘が受け継ぐ因子の★合計を並べて比べられます。</p></div>`;
   const only=UI.cmpDiff!==false,rows=cmpRows(P,pB).filter(r=>!only||r.diff!==0);
-  h+=`<div class="row" style="gap:12px;margin-top:6px"><label style="font-size:12.5px"><input type="checkbox" id="cmpDiff"${only?' checked':''}> 違いがあるものだけ</label><button class="btn sm" id="xlsxCmp">比較をExcelで書き出す</button></div>`;
-  const sg=v=>v>0?`<b style="color:var(--ok)">+${v}</b>`:v<0?`<b style="color:var(--bad)">${v}</b>`:v===null?'<b>違う</b>':'';
+  h+=`<div class="row" style="gap:12px;margin-top:6px"><label style="font-size:12.5px"><input type="checkbox" id="cmpDiff"${only?' checked':''}> 違いがあるものだけ</label><button class="btn sm" id="xlsxCmp">比較をExcelで書き出す</button><button class="btn sm" id="cmpOff">比較をやめる</button></div>`;
+  const sg=v=>v>0?`<b style="color:var(--ok)">+${v}</b>`:v<0?`<b style="color:var(--bad)">${v}</b>`:'';
   /* 区分ごとに見出し行を入れる。白因子は優先白因子を先頭に */
   const cats=[...new Set(rows.map(r=>r.cat))];let body='';
   for(const c of cats){let rs=rows.filter(r=>r.cat===c);if(c==='白因子')rs=[...rs.filter(r=>r.want),...rs.filter(r=>!r.want)];
@@ -1679,7 +1679,7 @@ $('#summary').addEventListener('change',e=>{if(e.target.id==='cmpSel'){UI.cmp=e.
 async function onXlsxCmp(b){const P=plan(),Q=S.plans.find(p=>p.id===UI.cmp);if(!P||!Q)return;b.disabled=true;const t0=b.textContent;b.textContent='作成中…';
   try{if(!window.XLSX)await loadScript(LIB_XLSX);const X=window.XLSX,wb=X.utils.book_new();
     const rows=cmpRows(P,Q),head=[['計画の比較（育成ウマ娘が受け継ぐ因子）'],['A：'+P.title+'（'+(P.root.name||'未設定')+'）'],['B：'+Q.title+'（'+(Q.root.name||'未設定')+'）'],[],['区分','因子','A','B','差（A−B）','優先（A）']];
-    const ws=X.utils.aoa_to_sheet(head.concat(rows.map(r=>[r.cat,r.cat==='白因子'?raceLbl(r.k):r.k,r.va===''?'':r.va,r.vb===''?'':r.vb,r.diff===null?'違う':r.diff,r.want?'○':''])));
+    const ws=X.utils.aoa_to_sheet(head.concat(rows.map(r=>[r.cat,r.cat==='白因子'?raceLbl(r.k):r.k,r.va===''?'':r.va,r.vb===''?'':r.vb,r.diff===null?'':r.diff,r.want?'○':''])));
     ws['!cols']=[{wch:12},{wch:30},{wch:10},{wch:10},{wch:10},{wch:8}];
     /* 区分ごとに行の色を変える（並べ替えても色は行についていく） */
     {const FILL={'相性':'EEEEEE','開始時の適性':'F3EFE6','赤因子':'FBE3EA','遺伝子':'F6E4F0','青因子':'E2EAF8','緑因子':'E1F0E4','白因子':'FFFFFF'};const bd={style:'thin',color:{rgb:'D0D7D3'}};
@@ -1693,7 +1693,7 @@ async function onXlsxCmp(b){const P=plan(),Q=S.plans.find(p=>p.id===UI.cmp);if(!
     await saveFile(('比較_'+P.title+'_vs_'+Q.title).replace(/[\\/:*?"<>|]/g,'_')+'.xlsx',new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));toast('比較のExcelファイルを書き出しました',3000)}
   catch(err){const c=err&&err.code;if(c==='declined'){}else toast('Excelファイルを作成できませんでした'+(err&&err.message?'：'+err.message:''),5000)}
   finally{b.disabled=false;b.textContent=t0}}
-$('#summary').addEventListener('click',e=>{const b=e.target.closest('#xlsxCmp');if(b)onXlsxCmp(b)});
+$('#summary').addEventListener('click',e=>{const b=e.target.closest('#xlsxCmp');if(b)onXlsxCmp(b);if(e.target.closest('#cmpOff')){UI.cmp=null;saveUI();renderSummary()}});
 
 /* ---------- data export/import ---------- */
 let expOne=false;
