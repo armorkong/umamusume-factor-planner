@@ -140,6 +140,11 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .c-prio{background:var(--want);color:var(--want-ink);border-color:var(--want);font-weight:700;letter-spacing:.06em}
 .c-want{background:var(--want-bg);color:var(--want);border-color:var(--want);font-weight:700}
 .wantrow td:first-child{color:var(--want);font-weight:700}
+.c-own{font-size:10px;padding:0 4px;border-radius:4px;margin-left:4px;font-weight:600;vertical-align:1px;white-space:nowrap;border:1px solid}
+.c-own.o0{color:#1d5a44;border-color:#1d5a44;background:color-mix(in srgb,#1d5a44 10%,transparent)}
+.c-own.o1{color:#2c66c4;border-color:#2c66c4;background:color-mix(in srgb,#2c66c4 10%,transparent)}
+.c-own.o2{color:#b85c0e;border-color:#b85c0e;background:color-mix(in srgb,#b85c0e 10%,transparent)}
+.c-own.o3{color:#6b6f75;border-color:#9aa0a6;background:color-mix(in srgb,#9aa0a6 12%,transparent)}
 .cmpcat th{background:var(--surface2);text-align:left;font-size:12px;color:var(--muted);letter-spacing:.05em;padding-top:8px}
 .suprow td{color:var(--muted)}
 .c-sup{font-size:10px;padding:0 4px;color:var(--muted);border:1px solid var(--line);border-radius:4px;margin-left:4px;font-weight:400;vertical-align:1px}
@@ -519,7 +524,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月10日 11:36</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月10日 15:42</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1024,7 +1029,7 @@ function giveHTML(f){
 function renderSummary(){if(!plan())return;if(tab==='give')renderGive();const f=(selId&&findNode(selId))||{n:plan().root,d:0,child:null};$('#summary').innerHTML=summaryHTML(f)}
 const rowCls=(wt,so,ow)=>{const c=[wt&&'wantrow',(so||ow)&&!wt&&'suprow'].filter(Boolean);return c.length?` class="${c.join(' ')}"`:''};
 const OWN_TIP={'自前':'初期スキル・覚醒スキル（確定で取れる）','イベント':'選択肢のないイベント・レース後のイベント（一部のシナリオでは取れない）','ランダム':'選択肢のあるイベント・お出かけ・勝負服イベント（起きないことがある）','隠し':'隠しイベント（条件を満たしたときだけ）'};
-const ownTag=o=>`<span class="rs" title="育成キャラ（${esc(OWNNAME)}）の${esc(OWN_TIP[o]||'')}">（${esc(o)}）</span>`;
+const ownTag=o=>`<span class="c-own o${OWN_CAT.indexOf(o)}" title="育成キャラ（${esc(OWNNAME)}）の${esc(OWN_TIP[o]||'')}">${esc(o)}</span>`;
 const supTag=so=>`<span class="c-sup" title="サポカで取れる：${esc(so.join('、'))}">サポカ</span>`;
 /* 優先白因子ごとに、直接の因子と、そのスキルのヒントが出るレース因子の★を集計 */
 function wantSec(white,cols){if(!WANT.size)return'';
@@ -2015,7 +2020,7 @@ async function saveFile(name,blob){
 function xlsxBook(f,mode){
   calcWant();const give=mode==='give',n=f.n,a=give?giveAgg(n):agg(n),sa=give?null:startApt(n,a),X=window.XLSX,wb=X.utils.book_new();
   const rows=[give?['区分','因子','自身★','親★','計★','備考','優先','育成キャラで取得','サポカで取得可','取れるサポカ']:['区分','因子','親★','祖父母★','計★','開始時の適性','優先','育成キャラで取得','サポカで取得可','取れるサポカ']];const fr=[];
-  const push=(k,name,r,extra,wk)=>{const so=wk!==undefined?supOf(wk):null,ow=wk!==undefined?ownOf(wk):null;rows.push([k,name+(ow?'（'+ow+'）':''),r[0]||0,r[1]||0,null,extra||'',wk!==undefined&&isWant(wk)?'○':'',ow||'',so?'○':'',so?so.join('、'):''])};
+  const push=(k,name,r,extra,wk)=>{const so=wk!==undefined?supOf(wk):null,ow=wk!==undefined?ownOf(wk):null;rows.push([k,name+(ow?'［'+ow+'］':''),r[0]||0,r[1]||0,null,extra||'',wk!==undefined&&isWant(wk)?'○':'',ow||'',so?'○':'',so?so.join('、'):''])};
   for(const x of APTS)if(sum(a.apt[x]))push('赤因子',x,a.apt[x],sa&&sa[x]?(sa[x].start!==sa[x].base?sa[x].base+'→'+sa[x].start:sa[x].base):'');
   for(const x of APTS)if(sum(a.gene[x]))push('遺伝子',x+'の遺伝子',a.gene[x]);
   for(const x of STATS)if(sum(a.blue[x]))push('青因子',x,a.blue[x]);
