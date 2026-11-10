@@ -140,11 +140,14 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .c-prio{background:var(--want);color:var(--want-ink);border-color:var(--want);font-weight:700;letter-spacing:.06em}
 .c-want{background:var(--want-bg);color:var(--want);border-color:var(--want);font-weight:700}
 .wantrow td:first-child{color:var(--want);font-weight:700}
+.wantrow.racerow td{color:var(--muted);font-weight:400}
 .c-own{font-size:10px;padding:0 4px;border-radius:4px;margin-left:4px;font-weight:600;vertical-align:1px;white-space:nowrap;border:1px solid}
 .c-own.o0{color:#1d5a44;border-color:#1d5a44;background:color-mix(in srgb,#1d5a44 10%,transparent)}
 .c-own.o1{color:#2c66c4;border-color:#2c66c4;background:color-mix(in srgb,#2c66c4 10%,transparent)}
 .c-own.o2{color:#b85c0e;border-color:#b85c0e;background:color-mix(in srgb,#b85c0e 10%,transparent)}
 .c-own.o3{color:#6b6f75;border-color:#9aa0a6;background:color-mix(in srgb,#9aa0a6 12%,transparent)}
+.racerow td{color:var(--muted)}
+.chip.c-w1.raceh{color:var(--muted);font-weight:400}
 .cmpcat th{background:var(--surface2);text-align:left;font-size:12px;color:var(--muted);letter-spacing:.05em;padding-top:8px}
 .suprow td{color:var(--muted)}
 .c-sup{font-size:10px;padding:0 4px;color:var(--muted);border:1px solid var(--line);border-radius:4px;margin-left:4px;font-weight:400;vertical-align:1px}
@@ -525,7 +528,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月10日 17:30</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月10日 17:46</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -640,13 +643,24 @@ const OWN_CAT=['自前','イベント','ランダム','隠し'];
 /* 各要素：白因子の番号（2桁の36進数）＋取り方（0自前＝初期・覚醒／1イベント＝選択肢なし・レース後／2ランダム＝選択肢あり・お出かけ・勝負服／3隠し） */
 const OWN_BY=(()=>{const sl=WHITE_RAW.filter(x=>x[1]==='s').map(x=>x[0]),m=new Map();for(const e of OWN_RAW.split(',')){const [id,v]=e.split(':');const mp=new Map();for(let i=0;i+2<v.length;i+=3){const n=sl[parseInt(v.slice(i,i+2),36)];if(n)mp.set(n,OWN_CAT[+v[i+2]]||'')}m.set(+id,mp)}return m})();
 let OWNSK=new Map(),OWNNAME='';
-const ownOf=k=>{k=String(k).trim();return OWNSK.get(k)||(RACE_SKILL[k]&&OWNSK.get(RACE_SKILL[k]))||null}; /* 育成キャラで取れるときは取り方（自前・イベント・ランダム・隠し）、取れないときは null */
-const supOf=k=>{k=String(k).trim();return SUPSK.get(k)||(RACE_SKILL[k]&&SUPSK.get(RACE_SKILL[k]))||null};
+/* 目覚め因子（隠し因子）のうち、スキルのヒントが出るもの。レース因子と違い継承率は下がらないとされるので、元のスキルのすぐ後ろに並べる */
+const AWAKE={'右回りの目覚め':'右回り○','左回りの目覚め':'左回り○','春の目覚め':'春ウマ娘○','夏の目覚め':'夏ウマ娘○','秋の目覚め':'秋ウマ娘○','冬の目覚め':'冬ウマ娘○'};
+const AWAKE_OF=Object.fromEntries(Object.entries(AWAKE).map(([a,b])=>[b,a]));
+const SKILL_OF=k=>RACE_SKILL[k]||AWAKE[k]||null;
+/* 並べ替え：スキル → その目覚め因子 →（race=true のとき）そのレース因子 の順にまとめる。元の順番は保つ */
+function pairSort(keys,race){const set=new Set(keys),out=[],done=new Set();const nm=x=>typeof x==='string'?x:x.n.trim();const byN=new Map(keys.map(x=>[nm(x),x]));
+  const follows=k=>(AWAKE[k]&&set.has(byN.get(AWAKE[k])))||(race&&RACE_SKILL[k]&&set.has(byN.get(RACE_SKILL[k])));
+  for(const x of keys){const k=nm(x);if(done.has(k)||follows(k))continue;out.push(x);done.add(k);
+    const a=AWAKE_OF[k];if(a&&byN.has(a)&&!done.has(a)){out.push(byN.get(a));done.add(a)}
+    if(race)for(const y of keys){const j=nm(y);if(!done.has(j)&&RACE_SKILL[j]===k){out.push(y);done.add(j)}}}
+  for(const x of keys)if(!done.has(nm(x)))out.push(x);return out}
+const ownOf=k=>{k=String(k).trim();return OWNSK.get(k)||(SKILL_OF(k)&&OWNSK.get(SKILL_OF(k)))||null}; /* 育成キャラで取れるときは取り方（自前・イベント・ランダム・隠し）、取れないときは null */
+const supOf=k=>{k=String(k).trim();return SUPSK.get(k)||(SKILL_OF(k)&&SUPSK.get(SKILL_OF(k)))||null};
 const raceLbl=k=>RACE_SKILL[k]?k+'（'+RACE_SKILL[k]+'）':k;
 const raceLblH=k=>RACE_SKILL[k]?esc(k)+'<span class="rs">（'+esc(RACE_SKILL[k])+'）</span>':esc(k);
 let WANT=new Set();
 function calcWant(){calcSup();const p=plan();WANT=new Set(((p&&p.wants)||[]).map(x=>String(x).trim()).filter(Boolean))}
-const isWant=k=>{k=String(k).trim();return WANT.has(k)||!!(RACE_SKILL[k]&&WANT.has(RACE_SKILL[k]))};
+const isWant=k=>{k=String(k).trim();return WANT.has(k)||!!(SKILL_OF(k)&&WANT.has(SKILL_OF(k)))};
 const sortWhites=ws=>ws.map((w,i)=>[w,WHITE_ORD.get(w.n.trim())??(1e6+i)]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]);
 const SAMPLE_TITLE='使用例：10月チャンミ（先行）';
 const SAMPLE_ROOT={"card":112901,"free":false,"name":"アーモンドアイ","memo":"","status":"plan","blue":{"t":"","s":0},"red":{"t":"","s":0},"green":{"n":"Peerless Heroine","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":101803,"free":false,"name":"エアグルーヴ","memo":"","status":"have","blue":{"t":"パワー","s":3},"red":{"t":"先行","s":3},"green":{"n":"Shadow Ancestress","s":2},"genes":[{"t":"中距離","s":3},{"t":"先行","s":2}],"whites":[{"n":"大阪杯","s":2},{"n":"朝日杯FS","s":3},{"n":"マイルCS南部杯","s":3},{"n":"BC・サンタアニタパーク","s":2},{"n":"コーナー巧者○","s":3},{"n":"直線巧者","s":2},{"n":"食い下がり","s":3},{"n":"中距離コーナー○","s":1},{"n":"直滑降","s":3},{"n":"イグニッション","s":2},{"n":"勝利に向かって","s":2},{"n":"飛躍の予感","s":3},{"n":"憧れを越えて","s":3},{"n":"比類なき","s":3},{"n":"意地っ張り","s":3},{"n":"存在感","s":2},{"n":"連綿","s":2},{"n":"レースの真髄・体","s":2},{"n":"陽の加護","s":1},{"n":"恩返し、召し上がれ","s":3},{"n":"Dreamsシナリオ","s":1},{"n":"東の雄","s":2},{"n":"叩き良化型","s":1}],"targets":[],"parents":[{"card":103202,"free":false,"name":"アグネスタキオン","memo":"","status":"have","blue":{"t":"賢さ","s":3},"red":{"t":"中距離","s":3},"green":{"n":"夏空ハレーション","s":3},"genes":[{"t":"先行","s":3}],"whites":[{"n":"探求心","s":2},{"n":"勝利に向かって","s":3},{"n":"素直な一歩","s":2},{"n":"正面突破","s":3},{"n":"光差す方へ","s":2},{"n":"華麗な足取り","s":2},{"n":"灯を胸に","s":2},{"n":"淀みなし","s":2},{"n":"阿吽の呼吸","s":3},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":3},{"n":"スピードの目覚め","s":2},{"n":"パワーの目覚め","s":1},{"n":"右回りの目覚め","s":2},{"n":"秋の目覚め","s":1},{"n":"連戦連勝","s":3},{"n":"反骨精神","s":2},{"n":"宝塚記念","s":1},{"n":"帝王賞","s":3},{"n":"秋ウマ娘○","s":2},{"n":"直線巧者","s":1},{"n":"末脚","s":3},{"n":"抜け出し準備","s":2},{"n":"軽やかステップ","s":3},{"n":"直滑降","s":1},{"n":"尻尾上がり","s":2},{"n":"ありったけ","s":2},{"n":"確かな足取り","s":2}],"targets":[],"parents":[{"card":101502,"free":false,"name":"テイエムオペラオー","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"恵福バルカローレ","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":101702,"free":false,"name":"シンボリルドルフ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"翳り退く、さざめきの矢","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":111301,"free":false,"name":"フサイチパンドラ","memo":"","status":"rent","blue":{"t":"根性","s":3},"red":{"t":"中距離","s":3},"green":{"n":"ホップステップ・ゲッチュ♡","s":3},"genes":[{"t":"中距離","s":3},{"t":"先行","s":2}],"whites":[{"n":"大阪杯","s":2},{"n":"ホープフルS","s":3},{"n":"東京大賞典","s":3},{"n":"差しためらい","s":2},{"n":"直滑降","s":2},{"n":"下り坂巧者","s":2},{"n":"探求心","s":2},{"n":"品行方正","s":1},{"n":"素直な一歩","s":3},{"n":"正面突破","s":3},{"n":"決定打","s":2},{"n":"阿吽の呼吸","s":3},{"n":"存在感","s":2},{"n":"連綿","s":3},{"n":"突き抜ける走り","s":2},{"n":"レースの真髄・体","s":2},{"n":"恩返し、召し上がれ","s":2},{"n":"冬の目覚め","s":3},{"n":"旅人","s":1},{"n":"お嬢様","s":1},{"n":"叩き良化型","s":2},{"n":"秋ウマ娘○","s":3},{"n":"温泉郷シナリオ","s":3}],"targets":[],"parents":[{"card":114301,"free":false,"name":"ヴィクトワールピサ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":3},"green":{"n":"Ring-a-Link","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":103402,"free":false,"name":"イナリワン","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"灯穂","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":114101,"free":false,"name":"エピファネイア","memo":"","status":"have","blue":{"t":"パワー","s":3},"red":{"t":"中距離","s":3},"green":{"n":"光れ！弾けろ！超新星爆発！","s":2},"genes":[],"whites":[{"n":"フェブラリーS","s":1},{"n":"大阪杯","s":3},{"n":"日本ダービー","s":2},{"n":"安田記念","s":2},{"n":"チャンピオンズC","s":2},{"n":"JDダービー","s":2},{"n":"川崎記念","s":2},{"n":"BC・サンタアニタパーク","s":3},{"n":"右回り○","s":2},{"n":"秋ウマ娘○","s":1},{"n":"コーナー巧者○","s":2},{"n":"直滑降","s":2},{"n":"ウマ好み","s":2},{"n":"シンパシー","s":3},{"n":"勝利に向かって","s":3},{"n":"飛躍の予感","s":3},{"n":"さらなる高みへ","s":2},{"n":"憧れを越えて","s":3},{"n":"比類なき","s":3},{"n":"気持ちを乗せて","s":2},{"n":"余勢を駆って","s":2},{"n":"阿吽の呼吸","s":3},{"n":"流れに任せて","s":3},{"n":"存在感","s":3},{"n":"連綿","s":3},{"n":"レースの真髄・体","s":2},{"n":"レースの真髄・賢","s":3},{"n":"連戦連勝","s":3}],"targets":[],"parents":[{"card":101502,"free":false,"name":"テイエムオペラオー","memo":"","status":"have","blue":{"t":"スピード","s":2},"red":{"t":"先行","s":3},"green":{"n":"恵福バルカローレ","s":3},"genes":[{"t":"マイル","s":3},{"t":"先行","s":3}],"whites":[{"n":"宝塚記念","s":1},{"n":"天皇賞（秋）","s":1},{"n":"JDダービー","s":2},{"n":"川崎記念","s":2},{"n":"BC・サンタアニタパーク","s":3},{"n":"コーナー巧者○","s":2},{"n":"直線巧者","s":2},{"n":"食い下がり","s":3},{"n":"尻尾上がり","s":3},{"n":"シンパシー","s":2},{"n":"探求心","s":2},{"n":"飛躍の予感","s":1},{"n":"アグレッシブ","s":3},{"n":"躍動","s":1},{"n":"阿吽の呼吸","s":2},{"n":"ただその先へ","s":2},{"n":"レースの真髄・体","s":2},{"n":"アメリカンドリーム","s":2},{"n":"Dreamsシナリオ","s":2},{"n":"スピードの目覚め","s":2},{"n":"連戦連勝","s":2},{"n":"西の雄","s":3},{"n":"叩き良化型","s":2}],"targets":[],"parents":[{"card":101401,"free":false,"name":"エルコンドルパサー","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"プランチャ☆ガナドール","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"先行","s":3},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]},{"card":108602,"free":false,"name":"メジロラモーヌ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"マイル","s":3},"green":{"n":"解けぬ結い目","s":0},"genes":[],"whites":[],"targets":[],"parents":[{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":0,"free":false,"name":"","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]},{"card":107702,"free":false,"name":"ナリタトップロード","memo":"","status":"rent","blue":{"t":"スタミナ","s":3},"red":{"t":"中距離","s":3},"green":{"n":"Joy to the World","s":3},"genes":[],"whites":[{"n":"大阪杯","s":2},{"n":"天皇賞（秋）","s":2},{"n":"ホープフルS","s":2},{"n":"JDダービー","s":2},{"n":"マイルCS南部杯","s":2},{"n":"春ウマ娘○","s":2},{"n":"秋ウマ娘○","s":2},{"n":"食い下がり","s":2},{"n":"先行直線○","s":2},{"n":"直滑降","s":2},{"n":"地固め","s":2},{"n":"スリップストリーム","s":3},{"n":"真っ向勝負","s":2},{"n":"食らいつき","s":3},{"n":"会心の一歩","s":2},{"n":"品行方正","s":2},{"n":"活路を拓く！","s":1},{"n":"意地っ張り","s":3},{"n":"淀みなし","s":2},{"n":"阿吽の呼吸","s":2},{"n":"存在感","s":2},{"n":"連綿","s":2},{"n":"アオハル点火・賢","s":2},{"n":"レースの真髄・賢","s":2},{"n":"陽の加護","s":3},{"n":"地の加護","s":3},{"n":"トレセン軒シナリオ","s":3},{"n":"右回りの目覚め","s":2},{"n":"春の目覚め","s":2},{"n":"連戦連勝","s":3},{"n":"旅人","s":3},{"n":"叩き良化型","s":2},{"n":"無人島シナリオ","s":3},{"n":"温泉郷シナリオ","s":3}],"targets":[],"parents":[{"card":101901,"free":false,"name":"アグネスデジタル","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":2},"green":{"n":"尊み☆ﾗｽﾄｽﾊﾟ—(ﾟ∀ﾟ)—ﾄ!","s":0},"genes":[],"whites":[],"targets":[],"parents":[]},{"card":102303,"free":true,"name":"ビワハヤヒデ","memo":"","status":"","blue":{"t":"","s":0},"red":{"t":"ダート","s":3},"green":{"n":"勝利ヘ至ル累積","s":0},"genes":[],"whites":[],"targets":[],"parents":[]}]}]}]};
@@ -829,13 +843,13 @@ function cardHTML(n,d){
   {const gc=geneCand(n);if(gc.length)h+=`<div class="chips" title="親・祖父母の赤因子★合計から見た、この枠に付く遺伝子">${gc.map(g=>`<span class="chip c-gc${g.sure?' sure':''}">${APT_S[g.t]}遺伝子 ${g.sure?'確定':'可能性'}<span class="s">★${g.p}</span></span>`).join('')}</div>`}
   if(n.green.n)h+=`<div class="chips"><span class="chip c-green" title="${esc(n.green.n)}">${esc(n.green.n)}<span class="s">${starTxt(n.green.s)}</span></span></div>`;
   /* 優先白因子でも、サポカ・育成キャラで取れるものを隠す設定のときは「優先」の行に出さず、隠す */
-  const pw=d>0?ws.filter(x=>isWant(x.n)&&!hideW(x.n)):[];
+  const pw=pairSort(d>0?ws.filter(x=>isWant(x.n)&&!hideW(x.n)):[],true);
   const wchip=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),sv=!t&&sil&&sil.has(k),tp=t&&ptn&&ptn.has(k),so=d>0?supOf(k):null,sp=so&&!pr;const tt=[];
     if(tp)tt.push('自身と両親の3人に共通し、組む相手（子のもう一方の親）も持つ白因子');else if(t)tt.push('自身と自分の両親の3人に共通する白因子');else if(sv)tt.push('両親で共通、子は未所持の白因子');
-    if(pr&&RACE_SKILL[k]&&!WANT.has(k))tt.push(RACE_SKILL[k]+'のヒント');if(so)tt.push('サポカで取れる：'+so.join('、'));if(d>0&&ownOf(k))tt.push('育成キャラ（'+OWNNAME+'）で取れる：'+ownOf(k));
-    return `<span class="chip c-w1${t?' tri':sv?' sil':''}${tp?' trp':''}${CHG&&CHG.has(k)?' chg':''}"${tt.length?` title="${esc(tt.join(' ／ '))}"`:''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`};
+    if(SKILL_OF(k))tt.push(SKILL_OF(k)+'のヒントが出る'+(RACE_SKILL[k]?'レース因子（継承されにくいとされる）':'目覚め因子'));if(so)tt.push('サポカで取れる：'+so.join('、'));if(d>0&&ownOf(k))tt.push('育成キャラ（'+OWNNAME+'）で取れる：'+ownOf(k));
+    return `<span class="chip c-w1${t?' tri':sv?' sil':''}${tp?' trp':''}${pr&&RACE_SKILL[k]?' raceh':''}${CHG&&CHG.has(k)?' chg':''}"${tt.length?` title="${esc(tt.join(' ／ '))}"`:''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`};
   if(pw.length&&!UI.onlyUseful)h+=`<div class="chips prio"><span class="chip c-prio" title="育成ウマ娘で設定した優先白因子">優先</span>${pw.map(x=>wchip(x,true)).join('')}</div>`;
-  const rest=ws.filter(x=>!pw.includes(x));
+  const rest=pairSort(ws.filter(x=>!pw.includes(x)),false);
   let w='';
   for(const x of n.genes)if(x.t)w+=`<span class="chip c-gene c-gw${CHG&&CHG.has('遺:'+x.t)?' chg':''}">${esc(x.t)}の遺伝子<span class="s">${starTxt(x.s)}</span></span>`;
   if(UI.onlyUseful){if(ws.length)w+=`<span class="chip c-more">白因子 ${ws.length}種</span>`;if(tri&&tri.size)w+=`<span class="chip c-tri" title="${esc([...tri].join('、'))}">3人共通 ${tri.size}</span>`}
@@ -1025,7 +1039,7 @@ function giveHTML(f){
     +tbl('青因子（★合計）',STATS.filter(x=>sum(a.blue[x])),a.blue,'ステータス')
     +tbl('緑因子（★合計）',Object.keys(gm),gm,'固有スキル')
     +wantSec(a.white,['自身','親'])
-    +tbl(`白因子（${Object.keys(a.white).length}種・★合計）`,Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])||x.localeCompare(y,'ja')),a.white,'白因子');
+    +tbl(`白因子（${Object.keys(a.white).length}種・★合計）`,pairSort(Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])||x.localeCompare(y,'ja')),false),a.white,'白因子');
   return h+(body||`<p class="empty-note">このキャラと親にまだ因子が入力されていません。</p>`);
 }
 function renderSummary(){if(!plan())return;if(tab==='give')renderGive();const f=(selId&&findNode(selId))||{n:plan().root,d:0,child:null};$('#summary').innerHTML=summaryHTML(f)}
@@ -1035,9 +1049,15 @@ const ownTag=o=>`<span class="c-own o${OWN_CAT.indexOf(o)}" title="育成キャ�
 const supTag=so=>`<span class="c-sup" title="サポカで取れる：${esc(so.join('、'))}">サポカ</span>`;
 /* 優先白因子ごとに、直接の因子と、そのスキルのヒントが出るレース因子の★を集計 */
 function wantSec(white,cols){if(!WANT.size)return'';
-  /* 合計は白因子そのものの★だけ。レース因子（スキルのヒントが出るもの）は継承しにくいとされるため合算せず、参考として別欄に出す */
-  const rows=[...WANT].map(w=>{const r=white[w]||[0,0];const race=Object.keys(white).filter(k=>k!==w&&RACE_SKILL[k]===w).map(k=>({k,s:(white[k][0]||0)+(white[k][1]||0)}));return{w,t:[r[0]||0,r[1]||0],race}});
-  return `<div class="sec"><h3>優先白因子</h3><div class="tw"><table class="t"><thead><tr><th>白因子</th><th>${cols[0]}</th><th>${cols[1]}</th><th>計</th><th>レース因子（参考）</th></tr></thead><tbody>${rows.map(r=>`<tr class="wantrow"><td>${esc(r.w)}${ownOf(r.w)?ownTag(ownOf(r.w)):''}${supOf(r.w)?supTag(supOf(r.w)):''}</td><td>${r.t[0]||''}</td><td>${r.t[1]||''}</td><td class="tot">${r.t[0]+r.t[1]||'<span class="rs">なし</span>'}</td><td><span class="rs">${r.race.length?r.race.map(x=>esc(x.k)+'★'+x.s).join('・'):'—'}</span></td></tr>`).join('')}</tbody></table></div><p class="hint">育成ウマ娘の編集画面で入力した優先白因子です。「計」はその白因子そのものの★合計です。右端は、そのスキルのヒントが出るレース因子の★合計です。レース因子からスキルのヒントが継承される確率は白因子より低いとされるため、合計には含めず参考として表示しています。</p></div>`}
+  /* 優先白因子ごとに「白因子そのもの → その目覚め因子 → レース因子（灰色）」の順に並べる。目覚め因子は継承率が下がらないとされるが、レース因子は継承されにくいとされる */
+  const st=k=>{const r=white[k]||[0,0];return[r[0]||0,r[1]||0]};let body='';
+  for(const w of WANT){const rows=[{k:w,kind:'main'}];if(AWAKE_OF[w])rows.push({k:AWAKE_OF[w],kind:'awake'});
+    for(const k of Object.keys(white))if(RACE_SKILL[k]===w)rows.push({k,kind:'race'});
+    body+=rows.map((r,i)=>{const t=st(r.k),tot=t[0]+t[1];const cls=r.kind==='race'?' class="racerow"':' class="wantrow"';
+      const nm=r.kind==='main'?esc(r.k):`<span style="padding-left:1em">${esc(r.k)}</span>`+(r.kind==='race'?'<span class="rs">（レース因子）</span>':'');
+      const tags=r.kind==='main'?`${ownOf(r.k)?ownTag(ownOf(r.k)):''}${supOf(r.k)?supTag(supOf(r.k)):''}`:'';
+      return `<tr${cls}${i===0?' style="border-top:2px solid var(--line)"':''}><td>${nm}${tags}</td><td>${t[0]||''}</td><td>${t[1]||''}</td><td class="tot">${tot||(r.kind==='main'?'<span class="rs">なし</span>':'')}</td></tr>`}).join('')}
+  return `<div class="sec"><h3>優先白因子</h3><div class="tw"><table class="t"><thead><tr><th>白因子</th><th>${cols[0]}</th><th>${cols[1]}</th><th>計</th></tr></thead><tbody>${body}</tbody></table></div><p class="hint">育成ウマ娘の編集画面で入力した優先白因子ごとに、その白因子、同じスキルのヒントが出る目覚め因子（右回りの目覚めなど）、レース因子（灰色）の順に並べています。レース因子からヒントが継承される確率は白因子より低いとされます。</p></div>`}
 function summaryHTML(f){
   calcWant();const {n}=f,p=plan(),goals=new Set();
   let h=`<div><div class="gen">${GEN(f.d)}</div><h2>${esc(n.name||'未設定')} が受け継ぐ因子</h2></div>`;
@@ -1068,7 +1088,7 @@ function summaryHTML(f){
   if(bk.length){any=true;h+=`<div class="sec"><h3>青因子（★合計）</h3><div class="chips">${bk.map(x=>`<span class="chip c-blue">${x}<span class="s">★${sum(a.blue[x])}</span></span>`).join('')}</div></div>`}
   {const gm={};for(const {n:x,r} of a.src){if(x.green.n&&x.green.s){(gm[x.green.n]??=[0,0])[r-1]+=x.green.s}}const gk=Object.keys(gm);
    if(gk.length){any=true;h+=`<div class="sec"><h3>緑因子（★合計）</h3><div class="chips">${gk.map(k=>`<span class="chip c-green">${esc(k)}<span class="s">★${sum(gm[k])}</span></span>`).join('')}</div></div>`}}
-  const wk=Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])||x.localeCompare(y,'ja'));
+  const wk=pairSort(Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])||x.localeCompare(y,'ja')),false);
   if(wk.length)h+=wantSec(a.white,['親','祖父母']);
   if(wk.length){any=true;h+=`<div class="sec"><h3>白因子（${wk.length}種・★合計）</h3>`;h+=`<div class="tw"><table class="t"><thead><tr><th>白因子</th><th>親</th><th>祖父母</th><th>計</th></tr></thead><tbody>`;
     for(const k of wk){const r=a.white[k],wt=isWant(k),so=supOf(k),ow=ownOf(k);h+=`<tr${rowCls(wt,so,ow)}><td>${raceLblH(k)}${ow?ownTag(ow):''}${so?supTag(so):''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}
@@ -1662,7 +1682,7 @@ function cmpRows(pA,pB){const A=pA.root,B=pB.root,a=agg(A),b=agg(B),rows=[];
   const gm=g=>{const m={};for(const {n,r} of g.src)if(n.green.n&&n.green.s)m[n.green.n]=(m[n.green.n]||0)+n.green.s;return m};const ga=gm(a),gb=gm(b);
   for(const k of [...new Set([...Object.keys(ga),...Object.keys(gb)])])rows.push({cat:'緑因子',k,va:ga[k]||0,vb:gb[k]||0,num:true});
   const ks=[...new Set([...Object.keys(a.white),...Object.keys(b.white)])].sort((x,y)=>(WHITE_ORD.get(x)??90000)-(WHITE_ORD.get(y)??90000)||x.localeCompare(y,'ja'));
-  for(const k of ks)rows.push({cat:'白因子',k,va:sum(a.white[k]),vb:sum(b.white[k]),num:true,want:isWant(k)});
+  for(const k of pairSort(ks,false))rows.push({cat:'白因子',k,va:sum(a.white[k]),vb:sum(b.white[k]),num:true,want:isWant(k)});
   for(const r of rows)r.diff=r.num?(+r.va||0)-(+r.vb||0):(r.va===r.vb?0:null);return rows}
 function cmpSec(n){const P=plan(),others=S.plans.filter(p=>p.id!==P.id);if(!others.length)return'';
   let pB=S.plans.find(p=>p.id===UI.cmp&&p.id!==P.id);
@@ -1673,8 +1693,8 @@ function cmpSec(n){const P=plan(),others=S.plans.filter(p=>p.id!==P.id);if(!othe
   const sg=v=>v>0?`<b style="color:var(--ok)">+${v}</b>`:v<0?`<b style="color:var(--bad)">${v}</b>`:'';
   /* 区分ごとに見出し行を入れる。白因子は優先白因子を先頭に */
   const cats=[...new Set(rows.map(r=>r.cat))];let body='';
-  for(const c of cats){let rs=rows.filter(r=>r.cat===c);if(c==='白因子')rs=[...rs.filter(r=>r.want),...rs.filter(r=>!r.want)];
-    body+=`<tr class="cmpcat"><th colspan="4">${c}</th></tr>`+rs.map(r=>{const ow=c==='白因子'?ownOf(r.k):null;return `<tr${r.want?' class="wantrow" title="優先白因子"':''}><td>${c==='白因子'?raceLblH(r.k):esc(r.k)}${ow?ownTag(ow):''}</td><td>${r.va===0?'':esc(String(r.va))}</td><td>${r.vb===0?'':esc(String(r.vb))}</td><td>${sg(r.diff)}</td></tr>`}).join('')}
+  for(const c of cats){let rs=rows.filter(r=>r.cat===c);if(c==='白因子'){const by=new Map(rs.map(r=>[r.k,r]));rs=[...pairSort(rs.filter(r=>r.want).map(r=>r.k),true),...pairSort(rs.filter(r=>!r.want).map(r=>r.k),false)].map(k=>by.get(k))}
+    body+=`<tr class="cmpcat"><th colspan="4">${c}</th></tr>`+rs.map(r=>{const ow=c==='白因子'?ownOf(r.k):null;return `<tr${r.want?' class="wantrow'+(RACE_SKILL[r.k]?' racerow':'')+'" title="優先白因子"':''}><td>${c==='白因子'?raceLblH(r.k):esc(r.k)}${ow?ownTag(ow):''}</td><td>${r.va===0?'':esc(String(r.va))}</td><td>${r.vb===0?'':esc(String(r.vb))}</td><td>${sg(r.diff)}</td></tr>`}).join('')}
   h+=rows.length?`<div class="tw"><table class="t"><thead><tr><th>因子</th><th>この計画</th><th>${esc(pB.title)}</th><th>差</th></tr></thead><tbody>${body}</tbody></table></div>`:`<p class="empty-note">違いはありません。</p>`;
   return h+`<p class="hint">親2人・祖父母4人から受け継ぐ★の合計です。差は「この計画 − ${esc(pB.title)}」。紫の行は優先白因子です。</p></div>`}
 $('#summary').addEventListener('change',e=>{if(e.target.id==='cmpSel'){UI.cmp=e.target.value||null;saveUI();renderSummary()}if(e.target.id==='cmpDiff'){UI.cmpDiff=e.target.checked;saveUI();renderSummary()}});
@@ -1929,7 +1949,7 @@ function drawTreeCanvas(){
     const gc=geneCand(n);if(gc.length)m.rows.push({k:'chips',rows:wrap(gc.map(g=>chip(APT_S[g.t]+'遺伝子 '+(g.sure?'確定':'可能性')+' ★'+g.p,g.sure?S_.gcs:S_.gc)))});
     if(n.green.n)m.rows.push({k:'chips',rows:wrap([chip(n.green.n+(n.green.s?' ★'+n.green.s:''),S_.green)])});
     const tri=TRI.get(n.id),sil=SIL.get(n.id),ptn=PTN.get(n.id),w=[];
-    const ws=sortWhites(n.whites.filter(x=>x.n.trim())),pw=d>0?ws.filter(x=>isWant(x.n)&&!hideW(x.n)):[],rest=ws.filter(x=>!pw.includes(x));
+    const ws=sortWhites(n.whites.filter(x=>x.n.trim())),pw=pairSort(d>0?ws.filter(x=>isWant(x.n)&&!hideW(x.n)):[],true),rest=pairSort(ws.filter(x=>!pw.includes(x)),false);
     const wc=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),c=chip(k+' '+st(x.s),t&&ptn&&ptn.has(k)?S_.trp:t?S_.tri:sil&&sil.has(k)?S_.sil:S_.w);return c};
     if(pw.length&&!UI.onlyUseful)m.rows.push({k:'chips',band:true,rows:wrap([chip('優先',S_.prio),...pw.map(x=>wc(x,true))])});
     for(const x of n.genes)if(x.t)w.push(chip(x.t+'の遺伝子 '+st(x.s),S_.gene));
@@ -2030,7 +2050,7 @@ function xlsxBook(f,mode){
   for(const x of STATS)if(sum(a.blue[x]))push('青因子',x,a.blue[x]);
   const gm={};for(const {n:s,r} of a.src){if(s.green.n&&s.green.s){(gm[s.green.n]??=[0,0])[r-1]+=s.green.s}}
   for(const k of Object.keys(gm))push('緑因子',k,gm[k]);
-  for(const k of Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])))push('白因子',raceLbl(k),a.white[k],'',k);
+  for(const k of pairSort(Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])),false))push('白因子',raceLbl(k),a.white[k],'',k);
   const head=[[`${plan().title}`],[give?`${n.name||'未設定'} が継承させる因子（自身＋親${n.parents.length}人）`:`${n.name||'未設定'} が受け継ぐ因子（親${n.parents.length}人・祖父母${a.src.length-n.parents.length}人）`],[]];
   const ws=X.utils.aoa_to_sheet(head.concat(rows));
   for(let i=1;i<rows.length;i++){const r=head.length+i+1;ws['E'+r]={t:'n',f:`C${r}+D${r}`}}
