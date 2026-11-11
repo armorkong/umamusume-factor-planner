@@ -525,7 +525,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月11日 15:57</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月11日 16:09</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1683,29 +1683,29 @@ function cmpRows(pA,pB){const A=pA.root,B=pB.root,a=agg(A),b=agg(B),rows=[];
   for(const k of [...new Set([...Object.keys(ga),...Object.keys(gb)])])rows.push({cat:'緑因子',k,va:ga[k]||0,vb:gb[k]||0,num:true});
   const ks=[...new Set([...Object.keys(a.white),...Object.keys(b.white)])].sort((x,y)=>(WHITE_ORD.get(x)??90000)-(WHITE_ORD.get(y)??90000)||x.localeCompare(y,'ja'));
   for(const k of ks)rows.push({cat:'白因子',k,va:sum(a.white[k]),vb:sum(b.white[k]),num:true,want:isWant(k)});
-  for(const r of rows)r.diff=r.num?(+r.va||0)-(+r.vb||0):(r.va===r.vb?0:null);return rows}
+  for(const r of rows)r.diff=r.num?(+r.vb||0)-(+r.va||0):(r.va===r.vb?0:null);return rows}
 function cmpSec(n){const P=plan(),others=S.plans.filter(p=>p.id!==P.id);if(!others.length)return'';
   let pB=S.plans.find(p=>p.id===UI.cmp&&p.id!==P.id);
   let h=`<div class="sec"><h3>他の計画と比較</h3><div class="frow"><select id="cmpSel" style="flex:1"><option value="">比較しない（比べる計画を選ぶ）</option>${others.map(p=>`<option value="${p.id}"${pB&&pB.id===p.id?' selected':''}>${esc(p.title)}（${esc(p.root.name||'未設定')}）</option>`).join('')}</select></div>`;
   if(!pB)return h+`<p class="hint">一部の因子だけ違う血統表を作ったときに、育成ウマ娘が受け継ぐ因子の★合計を並べて比べられます。</p></div>`;
   const only=UI.cmpDiff!==false,rows=cmpRows(P,pB).filter(r=>!only||r.diff!==0);
   h+=`<div class="row" style="gap:12px;margin-top:6px"><label style="font-size:12.5px"><input type="checkbox" id="cmpDiff"${only?' checked':''}> 違いがあるものだけ</label><button class="btn sm" id="xlsxCmp">比較をExcelで書き出す</button><button class="btn sm" id="cmpOff">比較をやめる</button></div>`;
-  const sg=v=>v>0?`<b style="color:var(--ok)">+${v}</b>`:v<0?`<b style="color:var(--bad)">${v}</b>`:'';
+  const sg=v=>v>0?`<b style="color:var(--f-red)">+${v}</b>`:v<0?`<b style="color:var(--f-blue)">${v}</b>`:'';
   /* 区分ごとに見出し行を入れる。白因子は優先白因子を先頭に */
   const cats=[...new Set(rows.map(r=>r.cat))];let body='';
   for(const c of cats){let rs=rows.filter(r=>r.cat===c);if(c==='白因子'){const by=new Map(rs.map(r=>[r.k,r]));rs=[...pairSort(rs.filter(r=>r.want).map(r=>r.k),true),...rs.filter(r=>!r.want).map(r=>r.k)].map(k=>by.get(k))}
     body+=`<tr class="cmpcat"><th colspan="4">${c}</th></tr>`+rs.map(r=>{const ow=c==='白因子'?ownD(r.k):null;return `<tr${r.want&&!RACE_SKILL[r.k]?' class="wantrow" title="優先白因子"':''}><td>${c==='白因子'?raceLblH(r.k):esc(r.k)}${ow?ownTag(ow):''}</td><td>${r.va===0?'':esc(String(r.va))}</td><td>${r.vb===0?'':esc(String(r.vb))}</td><td>${sg(r.diff)}</td></tr>`}).join('')}
-  h+=rows.length?`<div class="tw"><table class="t"><thead><tr><th>因子</th><th>A：この計画</th><th>B：${esc(pB.title)}</th><th title="A−B（この計画 − 比べる計画）">差（A−B）</th></tr></thead><tbody>${body}</tbody></table></div>`:`<p class="empty-note">違いはありません。</p>`;
+  h+=rows.length?`<div class="tw"><table class="t"><thead><tr><th>因子</th><th>A：この計画</th><th>B：${esc(pB.title)}</th><th title="B−A（比べる計画 − この計画）。プラスは赤、マイナスは青">差（B−A）</th></tr></thead><tbody>${body}</tbody></table></div>`:`<p class="empty-note">違いはありません。</p>`;
   return h+`<p class="hint">親2人・祖父母4人から受け継ぐ★の合計です。差は「この計画 − ${esc(pB.title)}」。紫の行は優先白因子です。</p></div>`}
 $('#summary').addEventListener('change',e=>{if(e.target.id==='cmpSel'){UI.cmp=e.target.value||null;saveUI();renderSummary()}if(e.target.id==='cmpDiff'){UI.cmpDiff=e.target.checked;saveUI();renderSummary()}});
 async function onXlsxCmp(b){const P=plan(),Q=S.plans.find(p=>p.id===UI.cmp);if(!P||!Q)return;b.disabled=true;const t0=b.textContent;b.textContent='作成中…';
   try{if(!window.XLSX)await loadScript(LIB_XLSX);const X=window.XLSX,wb=X.utils.book_new();
-    const rows=cmpRows(P,Q),head=[['計画の比較（育成ウマ娘が受け継ぐ因子）'],['A：'+P.title+'（'+(P.root.name||'未設定')+'）'],['B：'+Q.title+'（'+(Q.root.name||'未設定')+'）'],[],['区分','因子','A','B','差（A−B）','優先（A）']];
-    const ws=X.utils.aoa_to_sheet(head.concat(rows.map(r=>[r.cat,r.cat==='白因子'?raceLbl(r.k):r.k,r.va===''?'':r.va,r.vb===''?'':r.vb,r.diff===null?'':r.diff,r.want?'○':''])));
+    const rows=cmpRows(P,Q),head=[['計画の比較（育成ウマ娘が受け継ぐ因子）'],['A：'+P.title+'（'+(P.root.name||'未設定')+'）'],['B：'+Q.title+'（'+(Q.root.name||'未設定')+'）'],[],['区分','因子','A','B','差（B−A）','優先（A）']];
+    const ws=X.utils.aoa_to_sheet(head.concat(rows.map(r=>[r.cat,r.cat==='白因子'?raceLbl(r.k):r.k,r.va===''?'':r.va,r.vb===''?'':r.vb,r.diff===null||!r.num?'':r.diff,r.want?'○':''])));
     ws['!cols']=[{wch:12},{wch:30},{wch:10},{wch:10},{wch:10},{wch:8}];
     /* 区分ごとに行の色を変える（並べ替えても色は行についていく） */
     {const FILL={'相性':'EEEEEE','開始時の適性':'F3EFE6','赤因子':'FBE3EA','遺伝子':'F6E4F0','青因子':'E2EAF8','緑因子':'E1F0E4','白因子':'FFFFFF'};const bd={style:'thin',color:{rgb:'D0D7D3'}};
-     for(let i=0;i<rows.length;i++){const R0=head.length+i;const f=FILL[rows[i].cat]||'FFFFFF';for(let c=0;c<6;c++){const ad=X.utils.encode_cell({r:R0,c});if(!ws[ad])ws[ad]={t:'s',v:''};ws[ad].s={fill:{patternType:'solid',fgColor:{rgb:f}},border:{top:bd,bottom:bd,left:bd,right:bd},font:rows[i].want&&!RACE_SKILL[rows[i].k]&&c<2?{bold:true,color:{rgb:'6A35D6'}}:undefined}}}
+     for(let i=0;i<rows.length;i++){const R0=head.length+i;const f=FILL[rows[i].cat]||'FFFFFF';for(let c=0;c<6;c++){const ad=X.utils.encode_cell({r:R0,c});if(!ws[ad])ws[ad]={t:'s',v:''};ws[ad].s={fill:{patternType:'solid',fgColor:{rgb:f}},border:{top:bd,bottom:bd,left:bd,right:bd},font:rows[i].want&&!RACE_SKILL[rows[i].k]&&c<2?{bold:true,color:{rgb:'6A35D6'}}:c===4&&typeof rows[i].diff==='number'&&rows[i].diff!==0?{bold:true,color:{rgb:rows[i].diff>0?'CC3D63':'2C66C4'}}:undefined}}}
      for(let c=0;c<6;c++){const ad=X.utils.encode_cell({r:head.length-1,c});if(ws[ad])ws[ad].s={font:{bold:true},fill:{patternType:'solid',fgColor:{rgb:'D9E2DC'}}}}
      if(ws.A1)ws.A1.s={font:{bold:true,sz:13}}}
     ws['!autofilter']={ref:`A${head.length}:F${head.length+rows.length}`};X.utils.book_append_sheet(wb,ws,'比較');
