@@ -525,7 +525,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月11日 16:09</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月11日 18:57</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -622,6 +622,8 @@ const WHITE_SET=new Set(WHITE_RAW.map(x=>x[0]));
 const WHITE_ORD=(()=>{const cat={r:0,s:1,c:2,o:3,h:4},m=new Map();WHITE_RAW.forEach(([n,c],i)=>m.set(n,(cat[c]??3)*10000+i));return m})();
 /* スキルのヒントが得られるレース因子（G1）。出典：アルテマ「GⅠ因子一覧」、ゲームウィズ「因子の効果一覧」。凱旋門賞・BCは作者の確認による */
 const RACE_SKILL={'フェブラリーS':'冬ウマ娘○','高松宮記念':'中京レース場○','大阪杯':'根幹距離○','桜花賞':'阪神レース場○','皐月賞':'中山レース場○','天皇賞（春）':'春ウマ娘○','オークス':'東京レース場○','日本ダービー':'東京レース場○','安田記念':'東京レース場○','宝塚記念':'夏ウマ娘○','スプリンターズS':'根幹距離○','秋華賞':'京都レース場○','菊花賞':'京都レース場○','天皇賞（秋）':'秋ウマ娘○','エリザベス女王杯':'非根幹距離○','マイルCS':'根幹距離○','ジャパンC':'東京レース場○','チャンピオンズC':'中京レース場○','有馬記念':'中山レース場○','帝王賞':'大井レース場○','JDダービー':'大井レース場○','東京大賞典':'大井レース場○','川崎記念':'川崎レース場○','かしわ記念':'船橋レース場○','マイルCS南部杯':'盛岡レース場○','全日本ジュニア優駿':'ナイター○','凱旋門賞':'ロンシャンレース場○','BC・サンタアニタパーク':'サンタアニタパークレース場○','BC・デルマー':'デルマーレース場○'};
+/* スキルのヒントが出ないレース因子（NHKマイルCなど） */
+const RACE_NOHINT=new Set(WHITE_RAW.filter(([n,c])=>c==='r'&&!RACE_SKILL[n]).map(x=>x[0]));
 /* サポートカード（JP版）：[ID, レア(0R/1SR/2SSR), タイプ, 称号, キャラ, 取れる白因子の番号(ヒント＋イベント)]
    出典：Wayzer107/uma-jp-build-advisor（ゲームのマスターデータとGameToraのデータから生成、2026-10-18時点）。
    2026-10-26実装分（10149・30322・30323）はGameToraのデータで確認し、イベントスキルはゲームウィズの情報で補った。
@@ -846,7 +848,7 @@ function cardHTML(n,d){
   const pw=pairSort(d>0?ws.filter(x=>isWant(x.n)&&!hideW(x.n)):[],true);
   const wchip=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),sv=!t&&sil&&sil.has(k),tp=t&&ptn&&ptn.has(k),so=d>0?supD(k):null,sp=so&&!pr,so2=d>0&&!so?supOf(k):null,ow2=d>0&&!ownD(k)?ownOf(k):null;const tt=[];
     if(tp)tt.push('自身と両親の3人に共通し、組む相手（子のもう一方の親）も持つ白因子');else if(t)tt.push('自身と自分の両親の3人に共通する白因子');else if(sv)tt.push('両親で共通、子は未所持の白因子');
-    if(SKILL_OF(k))tt.push(SKILL_OF(k)+'のヒントが出る'+(RACE_SKILL[k]?'レース因子（継承されにくいとされる）':'目覚め因子'));if(so)tt.push('サポカで取れる：'+so.join('、'));else if(so2)tt.push(SKILL_OF(k)+'はサポカで取れる：'+so2.join('、'));if(d>0&&ownD(k))tt.push('育成キャラ（'+OWNNAME+'）で取れる：'+ownD(k));else if(ow2)tt.push(SKILL_OF(k)+'は育成キャラ（'+OWNNAME+'）で取れる：'+ow2);
+    if(SKILL_OF(k))tt.push(SKILL_OF(k)+'のヒントが出る'+(RACE_SKILL[k]?'レース因子・継承率（低）':'目覚め因子'));else if(RACE_NOHINT.has(k))tt.push('スキルのヒントが出ないレース因子');if(so)tt.push('サポカで取れる：'+so.join('、'));else if(so2)tt.push(SKILL_OF(k)+'はサポカで取れる：'+so2.join('、'));if(d>0&&ownD(k))tt.push('育成キャラ（'+OWNNAME+'）で取れる：'+ownD(k));else if(ow2)tt.push(SKILL_OF(k)+'は育成キャラ（'+OWNNAME+'）で取れる：'+ow2);
     return `<span class="chip c-w1${t?' tri':sv?' sil':''}${tp?' trp':''}${CHG&&CHG.has(k)?' chg':''}"${tt.length?` title="${esc(tt.join(' ／ '))}"`:''}>${esc(x.n)}<span class="s">${starTxt(x.s)}</span></span>`};
   if(pw.length&&!UI.onlyUseful)h+=`<div class="chips prio"><span class="chip c-prio" title="育成ウマ娘で設定した優先白因子">優先</span>${pw.map(x=>wchip(x,true)).join('')}</div>`;
   const rest=ws.filter(x=>!pw.includes(x));
@@ -1049,15 +1051,15 @@ const ownTag=o=>`<span class="c-own o${OWN_CAT.indexOf(o)}" title="育成キャ�
 const supTag=so=>`<span class="c-sup" title="サポカで取れる：${esc(so.join('、'))}">サポカ</span>`;
 /* 優先白因子ごとに、直接の因子と、そのスキルのヒントが出るレース因子の★を集計 */
 function wantSec(white,cols){if(!WANT.size)return'';
-  /* 優先白因子ごとに「白因子そのもの → その目覚め因子 → レース因子（灰色）」の順に並べる。目覚め因子は継承率が下がらないとされるが、レース因子は継承されにくいとされる */
+  /* 優先白因子ごとに「白因子そのもの → その目覚め因子 → レース因子」の順に並べる。目覚め因子は継承率が下がらないとされるが、レース因子は継承率（低）。レース因子★3でスキルの白因子★1程度と言われる */
   const st=k=>{const r=white[k]||[0,0];return[r[0]||0,r[1]||0]};let body='';
   for(const w of WANT){const rows=[{k:w,kind:'main'}];if(AWAKE_OF[w])rows.push({k:AWAKE_OF[w],kind:'awake'});
     for(const k of Object.keys(white))if(RACE_SKILL[k]===w)rows.push({k,kind:'race'});
     body+=rows.map((r,i)=>{const t=st(r.k),tot=t[0]+t[1];const cls=r.kind==='race'?' class="racerow"':' class="wantrow"';
-      const nm=r.kind==='main'?esc(r.k):`<span style="padding-left:1em">${esc(r.k)}</span>`+(r.kind==='race'?'<span class="rs">（レース因子）</span>':'');
+      const nm=r.kind==='main'?esc(r.k):`<span style="padding-left:1em">${esc(r.k)}</span>`+(r.kind==='race'?'<span class="rs">（レース因子・継承率低）</span>':'');
       const tags=r.kind==='main'?`${ownOf(r.k)?ownTag(ownOf(r.k)):''}${supOf(r.k)?supTag(supOf(r.k)):''}`:'';
       return `<tr${cls}${i===0?' style="border-top:2px solid var(--line)"':''}><td>${nm}${tags}</td><td>${t[0]||''}</td><td>${t[1]||''}</td><td class="tot">${tot||(r.kind==='main'?'<span class="rs">なし</span>':'')}</td></tr>`}).join('')}
-  return `<div class="sec"><h3>優先白因子</h3><div class="tw"><table class="t"><thead><tr><th>白因子</th><th>${cols[0]}</th><th>${cols[1]}</th><th>計</th></tr></thead><tbody>${body}</tbody></table></div><p class="hint">育成ウマ娘の編集画面で入力した優先白因子ごとに、その白因子、同じスキルのヒントが出る目覚め因子（右回りの目覚めなど）、レース因子（灰色）の順に並べています。レース因子からヒントが継承される確率は白因子より低いとされます。</p></div>`}
+  return `<div class="sec"><h3>優先白因子</h3><div class="tw"><table class="t"><thead><tr><th>白因子</th><th>${cols[0]}</th><th>${cols[1]}</th><th>計</th></tr></thead><tbody>${body}</tbody></table></div><p class="hint">育成ウマ娘の編集画面で入力した優先白因子ごとに、その白因子、同じスキルのヒントが出る目覚め因子（右回りの目覚めなど）、レース因子の順に並べています。レース因子は継承率（低）で、レース因子★3でスキルの白因子★1程度と言われています（公式の数値は未公表）。</p></div>`}
 function summaryHTML(f){
   calcWant();const {n}=f,p=plan(),goals=new Set();
   let h=`<div><div class="gen">${GEN(f.d)}</div><h2>${esc(n.name||'未設定')} が受け継ぐ因子</h2></div>`;
