@@ -525,7 +525,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月10日 21:50</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月11日 15:57</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1695,7 +1695,7 @@ function cmpSec(n){const P=plan(),others=S.plans.filter(p=>p.id!==P.id);if(!othe
   const cats=[...new Set(rows.map(r=>r.cat))];let body='';
   for(const c of cats){let rs=rows.filter(r=>r.cat===c);if(c==='白因子'){const by=new Map(rs.map(r=>[r.k,r]));rs=[...pairSort(rs.filter(r=>r.want).map(r=>r.k),true),...rs.filter(r=>!r.want).map(r=>r.k)].map(k=>by.get(k))}
     body+=`<tr class="cmpcat"><th colspan="4">${c}</th></tr>`+rs.map(r=>{const ow=c==='白因子'?ownD(r.k):null;return `<tr${r.want&&!RACE_SKILL[r.k]?' class="wantrow" title="優先白因子"':''}><td>${c==='白因子'?raceLblH(r.k):esc(r.k)}${ow?ownTag(ow):''}</td><td>${r.va===0?'':esc(String(r.va))}</td><td>${r.vb===0?'':esc(String(r.vb))}</td><td>${sg(r.diff)}</td></tr>`}).join('')}
-  h+=rows.length?`<div class="tw"><table class="t"><thead><tr><th>因子</th><th>この計画</th><th>${esc(pB.title)}</th><th>差</th></tr></thead><tbody>${body}</tbody></table></div>`:`<p class="empty-note">違いはありません。</p>`;
+  h+=rows.length?`<div class="tw"><table class="t"><thead><tr><th>因子</th><th>A：この計画</th><th>B：${esc(pB.title)}</th><th title="A−B（この計画 − 比べる計画）">差（A−B）</th></tr></thead><tbody>${body}</tbody></table></div>`:`<p class="empty-note">違いはありません。</p>`;
   return h+`<p class="hint">親2人・祖父母4人から受け継ぐ★の合計です。差は「この計画 − ${esc(pB.title)}」。紫の行は優先白因子です。</p></div>`}
 $('#summary').addEventListener('change',e=>{if(e.target.id==='cmpSel'){UI.cmp=e.target.value||null;saveUI();renderSummary()}if(e.target.id==='cmpDiff'){UI.cmpDiff=e.target.checked;saveUI();renderSummary()}});
 async function onXlsxCmp(b){const P=plan(),Q=S.plans.find(p=>p.id===UI.cmp);if(!P||!Q)return;b.disabled=true;const t0=b.textContent;b.textContent='作成中…';
