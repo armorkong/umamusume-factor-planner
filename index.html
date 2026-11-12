@@ -380,6 +380,9 @@ table.t td:first-child{font-family:var(--font-body)}
 table.t tr.goal td:first-child{color:var(--f-red);font-weight:700}
 table.t td.tot{font-weight:600}
 .tw{overflow-x:auto}
+.wqbox{display:flex;align-items:center;gap:8px;margin:4px 0 6px}
+.wqbox .wq-in{flex:1;min-width:0;font-size:16px;padding:6px 8px}
+.wq-n{font-size:12px;color:var(--muted);white-space:nowrap}
 .st{font-family:var(--font-body);font-size:11px;border-radius:4px;padding:0 5px}
 .st.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent)}
 .st.low{color:var(--warn);background:color-mix(in srgb,var(--warn) 13%,transparent)}
@@ -525,7 +528,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月12日 13:55</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月12日 16:43</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -647,6 +650,16 @@ let OWNSK=new Map(),OWNNAME='';
 const AWAKE={'右回りの目覚め':'右回り○','左回りの目覚め':'左回り○','春の目覚め':'春ウマ娘○','夏の目覚め':'夏ウマ娘○','秋の目覚め':'秋ウマ娘○','冬の目覚め':'冬ウマ娘○'};
 const AWAKE_OF=Object.fromEntries(Object.entries(AWAKE).map(([a,b])=>[b,a]));
 const SKILL_OF=k=>RACE_SKILL[k]||AWAKE[k]||null;
+/* 白因子の表の絞り込み：名前と、ヒントが出るスキル名（宝塚記念→夏ウマ娘○）で探す */
+const wqKey=k=>kana(k+' '+(SKILL_OF(k)||''));
+const wqBox=()=>`<div class="wqbox"><input type="search" class="wq-in" autocomplete="off" placeholder="白因子を絞り込み（例：右回り、コーナー、夏ウマ）" aria-label="白因子を絞り込み" value="${esc(UI.wq||'')}"><span class="wq-n"></span></div>`;
+function applyWq(){const toks=String(UI.wq||'').split(/[\s　]+/).map(kana).filter(Boolean);
+  for(const root of [$('#summary'),$('#give')]){if(!root)continue;
+    for(const inp of root.querySelectorAll('.wq-in'))if(inp!==document.activeElement)inp.value=UI.wq||'';
+    for(const tb of root.querySelectorAll('table')){const rs=[...tb.querySelectorAll('tr[data-q]')];if(!rs.length)continue;let n=0;
+      for(const r of rs){const ok=!toks.length||toks.every(t=>r.dataset.q.includes(t));r.style.display=ok?'':'none';if(ok)n++}
+      const box=tb.closest('.sec,.cmpwrap')?.querySelector('.wq-n');if(box)box.textContent=toks.length?`${n}件 / ${rs.length}件`:''}}}
+document.addEventListener('input',e=>{if(e.target.classList&&e.target.classList.contains('wq-in')){UI.wq=e.target.value;applyWq()}});
 /* 並べ替え：スキル → その目覚め因子 →（race=true のとき）そのレース因子 の順にまとめる。元の順番は保つ */
 function pairSort(keys,race){const set=new Set(keys),out=[],done=new Set();const nm=x=>typeof x==='string'?x:x.n.trim();const byN=new Map(keys.map(x=>[nm(x),x]));
   const follows=k=>(AWAKE[k]&&set.has(byN.get(AWAKE[k])))||(race&&RACE_SKILL[k]&&(set.has(byN.get(RACE_SKILL[k]))||set.has(byN.get(AWAKE_OF[RACE_SKILL[k]]))));
@@ -677,6 +690,7 @@ let S={plans:[],settings:{useful:defaultUseful(),threshold:4,charApt:{}},roster:
 let curId=null, selId=null, tab='edit', sampleOnly=false;
 let UI={onlyUseful:false,hideSup:false,hideOwn:false,cur:null,collapsed:[],compact:false,zoom:100};
 try{UI=Object.assign(UI,JSON.parse(localStorage.getItem(UKEY)||'{}'))}catch(e){}
+UI.wq=''; /* 白因子の絞り込みは開き直したら空に戻す */
 function saveUI(){try{localStorage.setItem(UKEY,JSON.stringify(UI))}catch(e){}}
 let hadData=false;try{const raw=localStorage.getItem(LKEY);if(raw){const d=JSON.parse(raw);if(d&&Array.isArray(d.plans)){hadData=true;S=normalize(d)}}}catch(e){}
 /* 使用例はいつでも「使用例」ボタンで出せるので保存しない（過去に保存されたものは取り除く） */
@@ -1023,7 +1037,7 @@ function editorHTML(){
 }
 
 /* ---------- render: summary ---------- */
-function renderGive(){if(!plan())return;const f=(selId&&findNode(selId))||{n:plan().root,d:0,child:null};$('#give').innerHTML=giveHTML(f)}
+function renderGive(){if(!plan())return;const f=(selId&&findNode(selId))||{n:plan().root,d:0,child:null};$('#give').innerHTML=giveHTML(f);applyWq()}
 function giveHTML(f){
   calcWant();const n=f.n,a=giveAgg(n);
   let h=`<div><div class="gen">${GEN(f.d)}</div><h2>${esc(n.name||'未設定')} が継承させる因子</h2></div>`;
@@ -1031,7 +1045,7 @@ function giveHTML(f){
   h+=`<div><button class="btn sm" id="xlsxGive" data-xid="${n.id}">Excelで書き出す</button></div>`;
   h+=`<p class="hint">このキャラを親にしたときに渡る因子：自身＋親${n.parents.length}人（入力済み ${filled}人）。入力している因子だけを表示します。因子カードを選ぶと、そのカードの集計に切り替わります。</p>`;
   const tri=new Set(trioOf(n)||[]);
-  const tbl=(title,keys,map,label)=>{if(!keys.length)return'';return `<div class="sec"><h3>${title}</h3><div class="tw"><table class="t"><thead><tr><th>${label}</th><th>自身</th><th>親</th><th>計</th></tr></thead><tbody>${keys.map(k=>{const r=map[k],wk=label==='白因子'&&isWant(k)&&!RACE_SKILL[k],so=label==='白因子'&&supD(k),ow=label==='白因子'&&ownD(k);return `<tr${rowCls(wk,so,ow)}><td>${label==='白因子'&&tri.has(k)?`<span class="chip c-tri" title="自身と両親の3人に共通">${raceLblH(k)}</span>`:label==='白因子'?raceLblH(k):esc(k)}${ow?ownTag(ow):''}${so?supTag(so):''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}).join('')}</tbody></table></div></div>`};
+  const tbl=(title,keys,map,label)=>{if(!keys.length)return'';return `<div class="sec"><h3>${title}</h3>${label==='白因子'?wqBox():''}<div class="tw"><table class="t"><thead><tr><th>${label}</th><th>自身</th><th>親</th><th>計</th></tr></thead><tbody>${keys.map(k=>{const r=map[k],wk=label==='白因子'&&isWant(k)&&!RACE_SKILL[k],so=label==='白因子'&&supD(k),ow=label==='白因子'&&ownD(k);return `<tr${rowCls(wk,so,ow)}${label==='白因子'?` data-q="${esc(wqKey(k))}"`:''}><td>${label==='白因子'&&tri.has(k)?`<span class="chip c-tri" title="自身と両親の3人に共通">${raceLblH(k)}</span>`:label==='白因子'?raceLblH(k):esc(k)}${ow?ownTag(ow):''}${so?supTag(so):''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}).join('')}</tbody></table></div></div>`};
   const gm={};for(const {n:s,r} of a.src){if(s.green.n&&s.green.s){(gm[s.green.n]??=[0,0])[r-1]+=s.green.s}}
   const gmap={};for(const x of APTS)if(sum(a.gene[x]))gmap[x+'の遺伝子']=a.gene[x];
   let body='';
@@ -1044,7 +1058,7 @@ function giveHTML(f){
     +tbl(`白因子（${Object.keys(a.white).length}種・★合計）`,Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])||(WHITE_ORD.get(x)??90000)-(WHITE_ORD.get(y)??90000)||x.localeCompare(y,'ja')),a.white,'白因子');
   return h+(body||`<p class="empty-note">このキャラと親にまだ因子が入力されていません。</p>`);
 }
-function renderSummary(){if(!plan())return;if(tab==='give')renderGive();const f=(selId&&findNode(selId))||{n:plan().root,d:0,child:null};$('#summary').innerHTML=summaryHTML(f)}
+function renderSummary(){if(!plan())return;if(tab==='give')renderGive();const f=(selId&&findNode(selId))||{n:plan().root,d:0,child:null};$('#summary').innerHTML=summaryHTML(f);applyWq()}
 const rowCls=(wt,so,ow)=>{const c=[wt&&'wantrow',(so||ow)&&!wt&&'suprow'].filter(Boolean);return c.length?` class="${c.join(' ')}"`:''};
 const OWN_TIP={'自前':'初期スキル・覚醒スキル（確定で取れる）','イベント':'選択肢のないイベント・レース後のイベント（一部のシナリオでは取れない）','ランダム':'選択肢のあるイベント・お出かけ・勝負服イベント（起きないことがある）','隠し':'隠しイベント（条件を満たしたときだけ）'};
 const ownTag=o=>`<span class="c-own o${OWN_CAT.indexOf(o)}" title="育成キャラ（${esc(OWNNAME)}）の${esc(OWN_TIP[o]||'')}">${esc(o)}</span>`;
@@ -1092,8 +1106,8 @@ function summaryHTML(f){
    if(gk.length){any=true;h+=`<div class="sec"><h3>緑因子（★合計）</h3><div class="chips">${gk.map(k=>`<span class="chip c-green">${esc(k)}<span class="s">★${sum(gm[k])}</span></span>`).join('')}</div></div>`}}
   const wk=Object.keys(a.white).sort((x,y)=>sum(a.white[y])-sum(a.white[x])||(WHITE_ORD.get(x)??90000)-(WHITE_ORD.get(y)??90000)||x.localeCompare(y,'ja'));
   if(wk.length)h+=wantSec(a.white,['親','祖父母']);
-  if(wk.length){any=true;h+=`<div class="sec"><h3>白因子（${wk.length}種・★合計）</h3>`;h+=`<div class="tw"><table class="t"><thead><tr><th>白因子</th><th>親</th><th>祖父母</th><th>計</th></tr></thead><tbody>`;
-    for(const k of wk){const r=a.white[k],wt=isWant(k)&&!RACE_SKILL[k],so=supD(k),ow=ownD(k);h+=`<tr${rowCls(wt,so,ow)}><td>${raceLblH(k)}${ow?ownTag(ow):''}${so?supTag(so):''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}
+  if(wk.length){any=true;h+=`<div class="sec"><h3>白因子（${wk.length}種・★合計）</h3>${wqBox()}`;h+=`<div class="tw"><table class="t"><thead><tr><th>白因子</th><th>親</th><th>祖父母</th><th>計</th></tr></thead><tbody>`;
+    for(const k of wk){const r=a.white[k],wt=isWant(k)&&!RACE_SKILL[k],so=supD(k),ow=ownD(k);h+=`<tr${rowCls(wt,so,ow)} data-q="${esc(wqKey(k))}"><td>${raceLblH(k)}${ow?ownTag(ow):''}${so?supTag(so):''}</td><td>${r[0]||''}</td><td>${r[1]||''}</td><td class="tot">${r[0]+r[1]}</td></tr>`}
     h+=`</tbody></table></div></div>`}
   if(!any)h+=`<p class="empty-note">親・祖父母にまだ因子が入力されていません。</p>`;
   return h;
@@ -1719,9 +1733,9 @@ function cmpSec(n){const P=plan(),others=S.plans.filter(p=>p.id!==P.id);if(!othe
   /* 区分ごとに見出し行を入れる。白因子は優先白因子を先頭に */
   const cats=[...new Set(rows.map(r=>r.cat))];let body='';
   for(const c of cats){let rs=rows.filter(r=>r.cat===c);if(c==='白因子'){const by=new Map(rs.map(r=>[r.k,r]));rs=[...pairSort(rs.filter(r=>r.want).map(r=>r.k),true),...rs.filter(r=>!r.want).map(r=>r.k)].map(k=>by.get(k))}
-    body+=`<tr class="cmpcat"><th colspan="4">${c}</th></tr>`+rs.map(r=>{const ow=c==='白因子'?ownD(r.k):null;return `<tr${r.want&&!RACE_SKILL[r.k]?' class="wantrow" title="優先白因子"':''}><td>${c==='白因子'?raceLblH(r.k):esc(r.k)}${ow?ownTag(ow):''}</td><td>${r.va===0?'':esc(String(r.va))}</td><td>${r.vb===0?'':esc(String(r.vb))}</td><td>${sg(r.diff)}</td></tr>`}).join('')}
-  h+=rows.length?`<div class="tw"><table class="t"><thead><tr><th>因子</th><th>A：この計画</th><th>B：${esc(pB.title)}</th><th title="B−A（比べる計画 − この計画）。プラスは赤、マイナスは青">差（B−A）</th></tr></thead><tbody>${body}</tbody></table></div>`:`<p class="empty-note">違いはありません。</p>`;
-  return h+`<p class="hint">親2人・祖父母4人から受け継ぐ★の合計です。差は「この計画 − ${esc(pB.title)}」。紫の行は優先白因子です。</p></div>`}
+    body+=`<tr class="cmpcat"><th colspan="4">${c}</th></tr>`+rs.map(r=>{const ow=c==='白因子'?ownD(r.k):null;return `<tr${r.want&&!RACE_SKILL[r.k]?' class="wantrow" title="優先白因子"':''}${c==='白因子'?` data-q="${esc(wqKey(r.k))}"`:''}><td>${c==='白因子'?raceLblH(r.k):esc(r.k)}${ow?ownTag(ow):''}</td><td>${r.va===0?'':esc(String(r.va))}</td><td>${r.vb===0?'':esc(String(r.vb))}</td><td>${sg(r.diff)}</td></tr>`}).join('')}
+  h+=rows.length?`<div class="cmpwrap">${rows.some(r=>r.cat==='白因子')?wqBox():''}<div class="tw"><table class="t"><thead><tr><th>因子</th><th>A：この計画</th><th>B：${esc(pB.title)}</th><th title="B−A（比べる計画 − この計画）。プラスは赤、マイナスは青">差（B−A）</th></tr></thead><tbody>${body}</tbody></table></div></div>`:`<p class="empty-note">違いはありません。</p>`;
+  return h+`<p class="hint">親2人・祖父母4人から受け継ぐ★の合計です。差は「${esc(pB.title)} − この計画」（B−A）。紫の行は優先白因子です。</p></div>`}
 $('#summary').addEventListener('change',e=>{if(e.target.id==='cmpSel'){UI.cmp=e.target.value||null;saveUI();renderSummary()}if(e.target.id==='cmpDiff'){UI.cmpDiff=e.target.checked;saveUI();renderSummary()}});
 async function onXlsxCmp(b){const P=plan(),Q=S.plans.find(p=>p.id===UI.cmp);if(!P||!Q)return;b.disabled=true;const t0=b.textContent;b.textContent='作成中…';
   try{if(!window.XLSX)await loadScript(LIB_XLSX);const X=window.XLSX,wb=X.utils.book_new();
