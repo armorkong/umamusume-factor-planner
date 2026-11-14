@@ -528,7 +528,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月12日 16:43</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月14日 09:55</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1026,10 +1026,12 @@ function editorHTML(){
     if(SP.length)h+=`<div style="margin-top:6px">${SP.map((id,i)=>{const c=SUP_BY.get(id);return c?`<div class="wrow"><span style="flex:1;font-size:13px"><b>${esc(c[3])}${esc(c[4])}</b> <span class="sub">${SUP_R[c[1]]} ${SUP_T[c[2]]}</span><br><span class="sub">${esc(supSkills(id).join('、')||'白因子になるスキルなし')}</span></span><button class="x" data-delsup="${i}" aria-label="外す">×</button></div>`:''}).join('')}</div>`;
     h+=`<p class="hint">このサポカのヒント・イベントで取れるスキルの白因子は、受け継ぐ因子・継承させる因子の表とExcelで「サポカ」と表示します（因子で継承する優先度が低いため）。血統表では「表示」の行の「サポカ外の因子のみ表示」で隠せます（優先白因子に入れたものも隠れます）。</p></div>`}
   if(d===0&&!candOf)h+=`<div class="sec"><h3>育成設定のコピー</h3><div class="row"><button class="btn sm" id="edSyncOpen">他の計画とコピー・同期</button></div><p class="hint">優先白因子・サポカ（と育成ウマ娘のキャラ）を、他の計画にまとめてコピーしたり、他の計画から読み込んだりできます。一部の因子だけ違う血統表を比べるときに便利です。</p></div>`;
-  if(candOf){h+=`<div class="sec"><h3>操作</h3><div class="row"><button class="btn sm" id="edCandBack">今のカードに戻る</button><button class="btn sm" id="edCandDel">候補を消す</button></div><p class="hint">更新はカードの「この内容で更新」から行います。</p></div>`;return h}
+  if(candOf){h+=`<div class="sec"><h3>操作</h3><div class="row"><button class="btn sm" id="edCandBack">今のカードに戻る</button><button class="btn sm" id="edCandDel">候補を消す</button>${CLIP?`<button class="btn sm" id="edPaste" title="コピーしたカードのキャラと因子をこの候補に入れます">貼り付け（${esc(CLIP.card.name||'名前なし')}）</button>`:''}</div><p class="hint">更新はカードの「この内容で更新」から行います。</p></div>`;return h}
   h+=`<div class="sec"><h3>操作</h3><div class="row">`;
   if(!isEmpty(n))h+=n.cand?`<button class="btn sm primary" id="edCandSel">更新候補を編集</button>`:`<button class="btn sm primary" id="edCand" title="今のカードを残したまま、空のカードに更新後の因子を入力して比べられます">更新候補を作る</button>`;
   if(n.parents.length<2)h+=`<button class="btn sm" id="edAddP">＋ 親を追加</button>`;
+  h+=`<button class="btn sm" id="edCopy" title="このカードのキャラと因子（と継承元）をコピーします。別の枠や別の計画に貼り付けられます">カードをコピー</button>`;
+  if(CLIP)h+=`<button class="btn sm" id="edPaste" title="コピーしたカードのキャラと因子を、この枠に上書きします（この枠の継承元はそのまま）">貼り付け（${esc(CLIP.card.name||'名前なし')}）</button>`+(d>0&&clipHasP()?`<button class="btn sm" id="edPasteAll" title="コピーしたカードの継承元（親・祖父母）も一緒に、この枠に上書きします">継承元ごと貼り付け</button>`:'');
   h+=`<button class="btn sm" id="edReg">保有キャラに登録</button><button class="btn sm" id="edPlace">保有キャラから配置</button><button class="btn sm" id="edClear">因子を空にする</button>`;
   if(child)h+=`<button class="btn sm danger" id="edDel">この枠と祖先を消す</button>`;
   h+=`</div><div class="row" id="edDelConfirm" hidden><span style="font-size:13px">${d>=3?'この枠と、その先の祖先を消します。':'この枠と、その先の祖先の内容をすべて消します。'}</span><button class="btn sm danger" id="edDelYes">削除する</button><button class="btn sm" id="edDelNo">やめる</button></div><div class="row" id="edRmConfirm" hidden><span style="font-size:13px">この枠（と、その先の祖先）を血統表から取り除きます。</span><button class="btn sm danger" id="edRmYes">取り除く</button><button class="btn sm" id="edRmNo">やめる</button></div></div>`;
@@ -1281,6 +1283,9 @@ ed.addEventListener('click',e=>{
     case 'edCandDel':{if(f.candOf){delete f.candOf.cand;selId=f.candOf.id;touch('plan');renderAll();toast('更新候補を消しました')}break}
     case 'edAddP':{const nn=addParent(n);selId=nn.id;touch('plan');renderAll();break}
     case 'edReg':registerRoster(n);break;
+    case 'edCopy':copyCard(n);break;
+    case 'edPaste':pasteCard(n,false);break;
+    case 'edPasteAll':pasteCard(n,true);break;
     case 'edSyncOpen':openSync();break;
     case 'openScan':openScan();break;
     case 'edPlace':openOv('#ovRoster');break;
@@ -1590,6 +1595,18 @@ function openScan(){const f=findNode(selId);$('#scanTarget').textContent=f?`「$
   if(!scanBusy){scanRes=[];scanShots=0;scanCard=0;renderScan();$('#scanStatus').textContent='ゲームの「ウマ娘詳細」→「継承」タブのスクショを選んでください（複数枚まとめて選べます）。'}openOv('#ovScan')}
 
 /* ---------- roster ---------- */
+/* ---------- カードのコピー・貼り付け（保有キャラを通さずに、別の枠や別の計画へ写す） ---------- */
+const CKEY='inshi-tree-clip';let CLIP=null;try{CLIP=JSON.parse(localStorage.getItem(CKEY)||'null')}catch(e){}
+const clipHasP=()=>!!(CLIP&&CLIP.card&&CLIP.card.parents.some(x=>!isEmpty(x)));
+function copyCard(n){const c=trimDepth(n,2);delete c.cand;delete c.saved;delete c.slot;const strip=x=>{delete x.cand;x.parents.forEach(strip)};strip(c);
+  CLIP={card:c,at:Date.now()};try{localStorage.setItem(CKEY,JSON.stringify(CLIP))}catch(e){}
+  toast(`${n.name||'カード'}をコピーしました。貼り付けたい枠を選んで「貼り付け」を押してください`,3500);renderEditor()}
+const FIELDS=['card','free','name','memo','status','blue','red','green','genes','whites'];
+function pasteCard(n,withP){if(!CLIP||!CLIP.card)return;const c=reid(clone(CLIP.card));
+  for(const k of FIELDS)n[k]=clone(c[k]??blank()[k]);
+  if(withP)n.parents=c.parents;
+  undoKey='#paste';touch('plan');undoT=0;renderAll();
+  toast(`${c.name||'カード'}を貼り付けました${withP?'（継承元ごと）':''}。↶ 元に戻すで戻せます`,3500)}
 function trimDepth(n,d){const c=clone(n);const cut=(x,k)=>{x.parents=k>=d?[]:x.parents.map(p=>cut(p,k+1));return x};return cut(c,0)}
 function reid(n){n.id=rid();if(n.cand)n.cand.id=rid();n.parents.forEach(reid);return n}
 function registerRoster(n){
