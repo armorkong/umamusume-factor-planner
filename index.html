@@ -399,6 +399,9 @@ details summary{cursor:pointer;font-size:12px;color:var(--muted)}
 .li{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent);flex-wrap:wrap}
 .li:last-child{border-bottom:0}
 .li .nm{flex:1;min-width:120px}
+.li.plgrp{background:var(--surface2);position:sticky;top:0;z-index:1}
+.li.plrow.cur .nm{font-weight:700}
+.li.plrow select{max-width:9em}
 .li .sub{font-size:11.5px;color:var(--muted)}
 textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:7px 14px;border-radius:8px;font-size:13px;z-index:70}
@@ -414,6 +417,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
     <button class="btn" id="planDup" title="表示中の計画をコピーして、別の計画として試せます">計画を複製</button>
     <button class="btn" id="planShare" title="表示中の計画をURLにして、スマホ・パソコンの間で渡せます">URLで共有</button>
     <button class="btn" id="planMenuBtn" aria-expanded="false">計画の名前変更・削除</button>
+    <button class="btn" id="planOrg" title="計画をフォルダに分けたり、並び順を変えたりできます">計画の整理</button>
   </div>
   <div class="row">
     <button class="btn" id="openRoster">保有キャラ</button>
@@ -479,6 +483,13 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <div class="list" id="rList"></div>
 </div></div>
 
+<div class="ov" id="ovPlans" hidden><div class="dlg" role="dialog" aria-labelledby="hPl">
+  <header><h2 id="hPl">計画の整理（フォルダ・並び順）</h2><button class="btn" data-close>閉じる</button></header>
+  <p class="hint">▲▼で並び順を変え、「フォルダ」の欄で移動先を選びます。計画の選択欄にも、ここと同じ順・フォルダごとに並びます。フォルダを消しても、中の計画は消えません（フォルダなしに戻ります）。</p>
+  <div class="frow"><input type="text" id="fdNew" placeholder="新しいフォルダの名前（例：LoH、チャンミ）" style="flex:1;min-width:0"><button class="btn sm primary" id="fdAdd">フォルダを作る</button></div>
+  <div class="list" id="plList" style="max-height:60vh"></div>
+</div></div>
+
 <div class="ov" id="ovData" hidden><div class="dlg" role="dialog" aria-labelledby="hD">
   <header><h2 id="hD">書き出し・読み込み</h2><button class="btn" data-close>閉じる</button></header>
   <p class="hint">全計画・保有キャラ・衣装の愛称などの設定を1つのJSONファイルにまとめます。バックアップや別の端末への移行に使えます。計画を1つだけ移したいときは「表示中の計画だけ書き出す」を使い、移す先で「新しい計画として追加」で読み込んでください。</p>
@@ -528,7 +539,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月14日 09:55</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月16日 10:42</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -702,8 +713,8 @@ setTimeout(()=>{if(undoBase===null)undoReset()},0);
 
 function normalize(d){
   const fix=n=>{const m=mk(n||{});m.free=!!m.free;m.card=CARD_BY.has(+m.card)?+m.card:0;if(m.card&&UNIQ_OLD[m.card]&&m.green.n===UNIQ_OLD[m.card])m.green.n=CARD_BY.get(m.card).uniq;m.whites=(m.whites||[]).filter(w=>w&&w.n!==undefined).map(w=>({n:String(w.n),s:+w.s||1}));m.genes=(m.genes||[]).map(g=>({t:g.t||'',s:+g.s||1}));{const tg=(m.targets||[]).map(String).filter(Boolean);if(tg.length)m.memo=(m.memo?m.memo+' ':'')+'狙い：'+tg.join('、');delete m.targets}m.parents=(m.parents||[]).slice(0,2).map(fix);if(!m.id)m.id=rid();if(m.cand&&typeof m.cand==='object'){const c=fix(Object.assign({},m.cand,{parents:[],cand:null}));delete c.cand;m.cand=c}else delete m.cand;return m};
-  return{plans:(d.plans||[]).map(p=>({id:p.id||rid(),title:p.title||'無題の計画',goals:Array.isArray(p.goals)?p.goals:[],root:fix(p.root),wants:Array.isArray(p.wants)?[...new Set(p.wants.map(String).map(x=>x.trim()).filter(Boolean))]:[],supports:Array.isArray(p.supports)?[...new Set(p.supports.map(Number).map(x=>({990001:30322,990002:30323})[x]||x).filter(x=>SUP_BY.has(x)))].slice(0,6):[],sample:!!p.sample,updated:p.updated||Date.now()})),
-    settings:{useful:Array.isArray(d.settings?.useful)?d.settings.useful.map(u=>({n:String(u.n),p:u.p==2?2:1})):defaultUseful(),threshold:+d.settings?.threshold||4,costumeNick:(d.settings&&typeof d.settings.costumeNick==='object'&&d.settings.costumeNick)||{},charApt:(d.settings&&typeof d.settings.charApt==='object'&&d.settings.charApt)||{}},
+  return{plans:(d.plans||[]).map(p=>({id:p.id||rid(),title:p.title||'無題の計画',goals:Array.isArray(p.goals)?p.goals:[],root:fix(p.root),wants:Array.isArray(p.wants)?[...new Set(p.wants.map(String).map(x=>x.trim()).filter(Boolean))]:[],supports:Array.isArray(p.supports)?[...new Set(p.supports.map(Number).map(x=>({990001:30322,990002:30323})[x]||x).filter(x=>SUP_BY.has(x)))].slice(0,6):[],sample:!!p.sample,updated:p.updated||Date.now(),created:p.created||undefined,folder:typeof p.folder==='string'?p.folder.trim():'',ord:Number.isFinite(+p.ord)&&p.ord!==null&&p.ord!==''?+p.ord:undefined})).map((p,i)=>[p,i]).sort((a,b)=>(a[0].ord??a[1])-(b[0].ord??b[1])||a[1]-b[1]).map(x=>x[0]),
+    settings:{useful:Array.isArray(d.settings?.useful)?d.settings.useful.map(u=>({n:String(u.n),p:u.p==2?2:1})):defaultUseful(),threshold:+d.settings?.threshold||4,costumeNick:(d.settings&&typeof d.settings.costumeNick==='object'&&d.settings.costumeNick)||{},charApt:(d.settings&&typeof d.settings.charApt==='object'&&d.settings.charApt)||{},folders:Array.isArray(d.settings?.folders)?[...new Set(d.settings.folders.map(String).map(x=>x.trim()).filter(Boolean))]:[]},
     roster:Array.isArray(d.roster)?d.roster.map(fix):[]};
 }
 const plan=()=>S.plans.find(p=>p.id===curId);
@@ -759,6 +770,8 @@ let col=null, cloud='pending', dirty=new Set(), timer=null, writing=false;
 function saveLocal(){try{localStorage.setItem(LKEY,JSON.stringify({...S,plans:realPlans()}))}catch(e){}}
 function touch(kind){
   sampleOnly=false;
+  /* 計画の並び順を ord に記録し、変わった計画は保存し直す（クラウドでは計画ごとに保存されるため） */
+  S.plans.forEach((p,i)=>{if(p.ord!==i){p.ord=i;if(!p.sample)dirty.add('plan:'+p.id)}});
   if(kind==='plan'){const p=plan();if(p){p.updated=Date.now();if(!p.sample)dirty.add('plan:'+p.id)}}else dirty.add(kind);
   saveLocal();clearTimeout(timer);timer=setTimeout(flush,800);setStatus();undoRecord(kind);
 }
@@ -816,7 +829,7 @@ function setStatus(){
       for(const doc of snap.docs){let v;try{v=JSON.parse(doc.data().json)}catch(e){continue}
         if(doc.id==='settings')d.settings=v;else if(doc.id==='roster')d.roster=v;else if(doc.id.startsWith('plan_'))d.plans.push(v)}
       d.plans.filter(p=>p&&p.sample).forEach(p=>dirty.add('plan:'+p.id));d.plans=d.plans.filter(p=>p&&!p.sample);
-      if(d.plans.length){d.plans.sort((a,b)=>(a.created||0)-(b.created||0));S=normalize(d);sampleOnly=false;undoReset();
+      if(d.plans.length){d.plans.sort((a,b)=>(a.ord??1e9)-(b.ord??1e9)||(a.created||0)-(b.created||0));S=normalize(d);sampleOnly=false;undoReset();
         if(!S.plans.find(p=>p.id===curId))curId=S.plans[0].id;selId=null;saveLocal();renderAll()}
     }
     cloud='on';setStatus();if(dirty.size)flush();
@@ -978,7 +991,7 @@ function renderEmpty(){
   $('#editor').innerHTML=`<p class="empty-note">計画を作ると、ここで因子を編集できます。</p>`;$('#summary').innerHTML='';
 }
 function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#planDup').disabled=false;$('#planShare').disabled=false;$('#pdfBtn').disabled=false;$('#imgBtn').disabled=false;
-  $('#planSel').innerHTML=S.plans.map(p=>`<option value="${p.id}"${p.id===curId?' selected':''}>${esc(p.title)}</option>`).join('');
+  $('#planSel').innerHTML=planGroups().map(([fd,ps])=>{const o=ps.map(p=>`<option value="${p.id}"${p.id===curId?' selected':''}>${esc(p.title)}</option>`).join('');return fd?`<optgroup label="📁 ${esc(fd)}">${o}</optgroup>`:o}).join('');
   $('#onlyUseful').setAttribute('aria-pressed',UI.onlyUseful);$('#hideSup').setAttribute('aria-pressed',!!UI.hideSup);$('#hideOwn').setAttribute('aria-pressed',!!UI.hideOwn);applyView();
   $('#planTitle').value=plan().title;
   $('#sampleBanner').hidden=!plan().sample;
@@ -1813,7 +1826,7 @@ $('#dImpYes').onclick=()=>{const d=JSON.parse($('#dPaste').value);const old=S.pl
 $('#planSel').addEventListener('change',e=>{curId=e.target.value;UI.cur=curId;saveUI();selId=null;closePlanMenu();renderAll()});
 const fw=k=>String(k).replace(/[0-9]/g,c=>String.fromCharCode(c.charCodeAt(0)+0xFEE0));
 function nextPlanName(){const t=new Set(S.plans.map(p=>p.title));let k=1;while(t.has('新しい計画'+fw(k)))k++;return '新しい計画'+fw(k)}
-function newPlan(title){const p={id:rid(),title:title||nextPlanName(),goals:[],wants:[],supports:[],root:tree(3),created:Date.now(),updated:Date.now()};S.plans.push(p);curId=p.id;UI.cur=curId;saveUI();selId=p.root.id;touch('plan');renderAll();setTab('edit');return p}
+function newPlan(title){const fd=(plan()&&!plan().sample&&plan().folder)||'';const p={id:rid(),title:title||nextPlanName(),goals:[],wants:[],supports:[],root:tree(3),created:Date.now(),updated:Date.now(),folder:fd};S.plans.push(p);curId=p.id;UI.cur=curId;saveUI();selId=p.root.id;touch('plan');renderAll();setTab('edit');return p}
 let newMode='new';
 function uniqTitle(t){const ts=new Set(S.plans.map(p=>p.title));let x=t,k=2;while(ts.has(x)){x=t+'（'+fw(k)+'）';k++}return x}
 function openNewPanel(mode){newMode=mode||'new';const pn=$('#planNewPanel');closePlanMenu();pn.hidden=false;const i=$('#newPlanName');
@@ -1831,6 +1844,31 @@ function showSample(){let p=S.plans.find(x=>x.sample);
   curId=p.id;UI.cur=curId;saveUI();selId=null;closePlanMenu();$('#planNewPanel').hidden=true;renderAll();
   window.scrollTo({top:0,behavior:'smooth'});toast('使用例を表示しました')}
 $('#showSample').onclick=showSample;
+/* ---------- 計画の整理（フォルダ分け・並び替え） ---------- */
+function planGroups(){const F=S.settings.folders||(S.settings.folders=[]);for(const p of S.plans)if(p.folder&&!F.includes(p.folder))F.push(p.folder);
+  const g=[['',S.plans.filter(p=>!p.folder)]];for(const f of F)g.push([f,S.plans.filter(p=>p.folder===f)]);return g.filter(([f,ps])=>ps.length||f)}
+function renderPlans(){const F=S.settings.folders;let h='';
+  const fsel=p=>`<select data-pfd="${p.id}" aria-label="フォルダ"><option value="">フォルダなし</option>${F.map(f=>`<option${p.folder===f?' selected':''}>${esc(f)}</option>`).join('')}</select>`;
+  for(const [fd,ps] of planGroups()){const fi=F.indexOf(fd);
+    h+=`<div class="li plgrp"><b class="nm">${fd?'📁 '+esc(fd):'フォルダなし'}<span class="sub"> ${ps.length}件</span></b>${fd?`<button class="btn sm" data-fup="${fi}" ${fi===0?'disabled':''} aria-label="フォルダを上へ">▲</button><button class="btn sm" data-fdn="${fi}" ${fi===F.length-1?'disabled':''} aria-label="フォルダを下へ">▼</button><button class="btn sm" data-fren="${fi}">名前変更</button><button class="btn sm danger" data-fdel="${fi}">フォルダを消す</button>`:''}</div>`;
+    if(!ps.length)h+=`<div class="li"><span class="sub">（計画がありません。下の計画の「フォルダ」欄でここを選ぶと移せます）</span></div>`;
+    ps.forEach((p,i)=>{h+=`<div class="li plrow${p.id===curId?' cur':''}"><span class="nm">${esc(p.title)}${p.id===curId?' <span class="sub">（表示中）</span>':''}</span><button class="btn sm" data-pup="${p.id}" ${i===0?'disabled':''} aria-label="上へ">▲</button><button class="btn sm" data-pdn="${p.id}" ${i===ps.length-1?'disabled':''} aria-label="下へ">▼</button>${fsel(p)}<button class="btn sm" data-popen="${p.id}">開く</button></div>`})}
+  $('#plList').innerHTML=h}
+function plChanged(msg){realPlans().forEach(p=>dirty.add('plan:'+p.id));touch('settings');renderHeader();renderPlans();if(msg)toast(msg)}
+$('#planOrg').onclick=()=>{closePlanMenu();openOv('#ovPlans');renderPlans()};
+$('#fdAdd').onclick=()=>{const v=$('#fdNew').value.trim();if(!v){toast('フォルダの名前を入力してください');return}if(S.settings.folders.includes(v)){toast('同じ名前のフォルダがあります');return}S.settings.folders.push(v);$('#fdNew').value='';plChanged('フォルダ「'+v+'」を作りました')};
+$('#fdNew').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();$('#fdAdd').click()}});
+$('#plList').addEventListener('change',e=>{const id=e.target.dataset.pfd;if(id===undefined)return;const p=S.plans.find(x=>x.id===id);if(!p)return;p.folder=e.target.value;
+  /* 移した先のフォルダの最後に並べる */const i=S.plans.indexOf(p);S.plans.splice(i,1);let j=-1;S.plans.forEach((x,k)=>{if(x.folder===p.folder)j=k});S.plans.splice(j+1,0,p);
+  plChanged(`「${p.title}」を${p.folder?'フォルダ「'+p.folder+'」':'フォルダなし'}に移しました`)});
+$('#plList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset,F=S.settings.folders;
+  const mv=(id,dir)=>{const p=S.plans.find(x=>x.id===id);if(!p)return;const same=S.plans.filter(x=>x.folder===p.folder),k=same.indexOf(p),q=same[k+dir];if(!q)return;const a=S.plans.indexOf(p),c=S.plans.indexOf(q);S.plans[a]=q;S.plans[c]=p;plChanged()};
+  if(d.pup)return mv(d.pup,-1);if(d.pdn)return mv(d.pdn,1);
+  if(d.popen){curId=d.popen;UI.cur=curId;saveUI();selId=null;closeOv();renderAll();return}
+  if(d.fup!==undefined||d.fdn!==undefined){const i=+(d.fup??d.fdn),j=i+(d.fup!==undefined?-1:1);if(j<0||j>=F.length)return;[F[i],F[j]]=[F[j],F[i]];return plChanged()}
+  if(d.fren!==undefined){const i=+d.fren,old=F[i];const v=(prompt('フォルダの新しい名前',old)||'').trim();if(!v||v===old)return;if(F.includes(v)){toast('同じ名前のフォルダがあります');return}F[i]=v;S.plans.forEach(p=>{if(p.folder===old){p.folder=v;if(!p.sample)dirty.add('plan:'+p.id)}});return plChanged('フォルダ名を「'+v+'」にしました')}
+  if(d.fdel!==undefined){const i=+d.fdel,f=F[i];if(!b.dataset.armed){b.dataset.armed='1';b.textContent='もう一度押すと消す';return}
+    F.splice(i,1);S.plans.forEach(p=>{if(p.folder===f){p.folder='';if(!p.sample)dirty.add('plan:'+p.id)}});return plChanged('フォルダ「'+f+'」を消しました（中の計画はフォルダなしに移しました）')}});
 function closePlanMenu(){$('#planMenu').hidden=true;$('#planDelConfirm').hidden=true;$('#planMenuBtn').setAttribute('aria-expanded','false')}
 $('#planMenuBtn').onclick=()=>{const m=$('#planMenu');m.hidden=!m.hidden;$('#planNewPanel').hidden=true;$('#planMenuBtn').setAttribute('aria-expanded',!m.hidden);$('#planDelConfirm').hidden=true;if(!m.hidden){const i=$('#planTitle');i.focus();i.select()}};
 $('#planMenuDone').onclick=()=>{closePlanMenu();toast('計画名を「'+((plan()||{}).title||'')+'」にしました')};
@@ -1838,7 +1876,7 @@ $('#planTitle').addEventListener('keydown',e=>{if(e.isComposing||e.keyCode===229
 document.addEventListener('pointerdown',e=>{const m=$('#planMenu');if(m.hidden)return;if(e.target.closest('#planMenu,#planMenuBtn'))return;closePlanMenu()});
 $('#planTitle').addEventListener('input',e=>{if(!plan())return;plan().title=e.target.value||'無題の計画';touch('plan');const o=$('#planSel').selectedOptions[0];if(o)o.textContent=plan().title});
 function dupPlan(name){const p0=plan();if(!p0)return;const c=clone(p0);reid(c.root);c.id=rid();c.title=uniqTitle(name||((p0.sample?p0.title.replace(/^使用例：/,''):p0.title||'無題の計画')+'のコピー'));c.sample=false;c.created=c.updated=Date.now();
-  S.plans.push(c);curId=c.id;UI.cur=curId;saveUI();selId=c.root.id;touch('plan');touch('settings');renderAll();toast('「'+c.title+'」を作りました。元の計画はそのまま残っています',3500)}
+  {const i0=S.plans.indexOf(p0);if(p0.sample)c.folder='';S.plans.splice(i0>=0?i0+1:S.plans.length,0,c)}curId=c.id;UI.cur=curId;saveUI();selId=c.root.id;touch('plan');touch('settings');renderAll();toast('「'+c.title+'」を作りました。元の計画はそのまま残っています',3500)}
 $('#planDup').onclick=()=>{const pn=$('#planNewPanel');if(!pn.hidden&&newMode==='dup'){pn.hidden=true;return}if(plan())openNewPanel('dup')};
 $('#planDel').onclick=()=>$('#planDelConfirm').hidden=false;
 $('#planDelNo').onclick=()=>$('#planDelConfirm').hidden=true;
