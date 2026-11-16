@@ -63,6 +63,20 @@ button{cursor:pointer}
 .btn.sm{padding:2px 8px;font-size:12px}
 select,input[type=text],input[type=number],textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px;min-width:0}
 #planSel{max-width:240px}
+.ppick{position:relative;max-width:260px;min-width:160px}
+.ppbtn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left}
+#planPickLbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#planPickLbl .fd{color:var(--muted);font-size:.9em}
+.pparr{color:var(--muted);flex:none}
+.vh{position:absolute!important;width:1px;height:1px;opacity:0;pointer-events:none;left:0;top:0}
+.pppop{position:absolute;z-index:60;left:0;top:calc(100% + 4px);min-width:100%;width:max-content;max-width:min(380px,92vw);max-height:62vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.2);padding:4px}
+.ppi{display:flex;align-items:center;gap:6px;width:100%;text-align:left;padding:8px 10px;border:0;background:none;border-radius:6px;font-size:14px;color:var(--ink)}
+.ppi:hover,.ppi:focus-visible{background:var(--surface2)}
+.ppi.cur{font-weight:700;color:var(--accent)}
+.ppi.sub{padding-left:28px}
+.ppi.fdr{font-weight:700}
+.ppi.fdr .n{color:var(--muted);font-weight:400;font-size:12px}
+.ppi.fdr .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block}
 .status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .status i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
 .status.on i{background:var(--ok)} .status.saving i{background:var(--warn)} .status.err i{background:var(--bad)}
@@ -217,6 +231,7 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
   .tabs button{white-space:nowrap;padding:9px 4px;font-size:12.5px}
   .top .row{width:100%}
   #planSel{flex:1 1 100%;max-width:none}
+  .ppick{flex:1 1 100%;max-width:none}
 }
 .measure{position:absolute;left:-100000px;top:0}
 .about{max-width:760px;margin:28px auto 0;padding:14px 18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);line-height:1.7}
@@ -286,6 +301,7 @@ body.compact .brand h1{font-size:16px}
 body.compact .howto{font-size:11px;padding:1px 8px}
 body.compact .btn{padding:3px 8px;font-size:12px}
 body.compact #planSel{font-size:12px;padding-block:3px}
+body.compact .ppbtn{font-size:12px;padding-block:3px}
 body.compact .goals{padding-block:5px}
 body.compact .banner{padding:4px 10px;font-size:12px;margin-bottom:6px}
 body.compact .side{position:fixed;top:0;right:0;bottom:0;width:min(400px,94vw);max-height:none;border-radius:10px 0 0 10px;z-index:40;box-shadow:-8px 0 24px rgba(0,0,0,.18);transform:translateX(105%);transition:transform .18s ease;visibility:hidden}
@@ -412,7 +428,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
 <header class="top">
   <div class="brand"><h1>ウマ娘血統プランナー</h1><a class="howto" href="https://github.com/armorkong/umamusume-factor-planner#readme" target="_blank" rel="noopener">使用方法</a><button type="button" class="howto" id="showSample">使用例</button></div>
   <div class="row">
-    <select id="planSel" aria-label="計画を選択"></select>
+    <div class="ppick" id="planPickWrap"><button type="button" class="btn ppbtn" id="planPick" aria-haspopup="true" aria-expanded="false" aria-label="計画を選択"><span id="planPickLbl"></span><span class="pparr" aria-hidden="true">▾</span></button><div class="pppop" id="planPop" hidden></div><select id="planSel" class="vh" aria-hidden="true" tabindex="-1"></select></div>
     <button class="btn" id="planNew">＋ 新しい計画</button>
     <button class="btn" id="planDup" title="表示中の計画をコピーして、別の計画として試せます">計画を複製</button>
     <button class="btn" id="planShare" title="表示中の計画をURLにして、スマホ・パソコンの間で渡せます">URLで共有</button>
@@ -539,7 +555,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月16日 10:42</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月16日 11:05</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -985,13 +1001,13 @@ function renderTree(){if(!plan())return;
 
 /* ---------- render: header ---------- */
 function renderEmpty(){
-  $('#planSel').innerHTML='<option value="">（計画がありません）</option>';$('#planSel').disabled=true;
+  $('#planSel').innerHTML='<option value="">（計画がありません）</option>';$('#planSel').disabled=true;$('#planPick').disabled=true;$('#planPickLbl').textContent='（計画がありません）';$('#planPop').hidden=true;
   $('#planMenuBtn').disabled=true;$('#planDup').disabled=true;$('#planShare').disabled=true;$('#pdfBtn').disabled=true;$('#imgBtn').disabled=true;$('#planMenu').hidden=true;$('#sampleBanner').hidden=true;
   $('#genHead').innerHTML='';$('#tree').innerHTML=`<div class="empty-note" style="max-width:420px">計画がありません。<br><button class="btn primary" data-newplan style="margin-top:8px">＋ 新しい計画を作る</button> <button class="btn" data-sample style="margin-top:8px">使用例を見る</button></div>`;
   $('#editor').innerHTML=`<p class="empty-note">計画を作ると、ここで因子を編集できます。</p>`;$('#summary').innerHTML='';
 }
-function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planMenuBtn').disabled=false;$('#planDup').disabled=false;$('#planShare').disabled=false;$('#pdfBtn').disabled=false;$('#imgBtn').disabled=false;
-  $('#planSel').innerHTML=planGroups().map(([fd,ps])=>{const o=ps.map(p=>`<option value="${p.id}"${p.id===curId?' selected':''}>${esc(p.title)}</option>`).join('');return fd?`<optgroup label="📁 ${esc(fd)}">${o}</optgroup>`:o}).join('');
+function renderHeader(){if(!plan()){renderEmpty();return}$('#planSel').disabled=false;$('#planPick').disabled=false;$('#planMenuBtn').disabled=false;$('#planDup').disabled=false;$('#planShare').disabled=false;$('#pdfBtn').disabled=false;$('#imgBtn').disabled=false;
+  $('#planSel').innerHTML=planGroups().map(([fd,ps])=>{const o=ps.map(p=>`<option value="${p.id}"${p.id===curId?' selected':''}>${esc(p.title)}</option>`).join('');return fd?`<optgroup label="📁 ${esc(fd)}">${o}</optgroup>`:o}).join('');renderPick();
   $('#onlyUseful').setAttribute('aria-pressed',UI.onlyUseful);$('#hideSup').setAttribute('aria-pressed',!!UI.hideSup);$('#hideOwn').setAttribute('aria-pressed',!!UI.hideOwn);applyView();
   $('#planTitle').value=plan().title;
   $('#sampleBanner').hidden=!plan().sample;
@@ -1844,6 +1860,21 @@ function showSample(){let p=S.plans.find(x=>x.sample);
   curId=p.id;UI.cur=curId;saveUI();selId=null;closePlanMenu();$('#planNewPanel').hidden=true;renderAll();
   window.scrollTo({top:0,behavior:'smooth'});toast('使用例を表示しました')}
 $('#showSample').onclick=showSample;
+/* ---------- 計画の選択欄（フォルダはふだん閉じておき、押したときだけ開く） ---------- */
+const PP_OPEN=new Set();
+function renderPick(){const p=plan();const l=$('#planPickLbl');if(!l)return;l.innerHTML=p?(p.folder?`<span class="fd">📁 ${esc(p.folder)} › </span>`:'')+esc(p.title):'（計画がありません）';l.parentElement.title=p?p.title:'';if(!$('#planPop').hidden)renderPop()}
+function renderPop(){let h='';const it=(p,sub)=>`<button type="button" class="ppi${sub?' sub':''}${p.id===curId?' cur':''}" data-ppp="${p.id}">${esc(p.title)}</button>`;
+  for(const [fd,ps] of planGroups()){if(!fd){h+=ps.map(p=>it(p,false)).join('');continue}
+    const op=PP_OPEN.has(fd),has=ps.some(p=>p.id===curId);
+    h+=`<button type="button" class="ppi fdr" data-ppf="${esc(fd)}" aria-expanded="${op}"><span aria-hidden="true">${op?'▾':'▸'}</span>📁 ${esc(fd)} <span class="n">${ps.length}件</span>${has?'<span class="dot" title="表示中の計画が入っています"></span>':''}</button>`;
+    if(op)h+=ps.length?ps.map(p=>it(p,true)).join(''):'<div class="ppi sub" style="color:var(--muted)">（空）</div>'}
+  $('#planPop').innerHTML=h||'<div class="ppi">（計画がありません）</div>'}
+function closePick(){$('#planPop').hidden=true;$('#planPick').setAttribute('aria-expanded','false')}
+$('#planPick').onclick=()=>{const pp=$('#planPop');if(!pp.hidden){closePick();return}renderPop();pp.hidden=false;$('#planPick').setAttribute('aria-expanded','true');pp.querySelector('.cur')?.scrollIntoView({block:'nearest'})};
+$('#planPop').addEventListener('click',e=>{const f=e.target.closest('[data-ppf]');if(f){const k=f.dataset.ppf;PP_OPEN.has(k)?PP_OPEN.delete(k):PP_OPEN.add(k);renderPop();$('#planPop').querySelector(`[data-ppf="${CSS.escape(k)}"]`)?.focus();return}
+  const b=e.target.closest('[data-ppp]');if(!b)return;closePick();const s=$('#planSel');if(b.dataset.ppp===curId)return;s.value=b.dataset.ppp;s.dispatchEvent(new Event('change',{bubbles:true}))});
+document.addEventListener('pointerdown',e=>{if($('#planPop').hidden)return;if(e.target.closest('#planPickWrap'))return;closePick()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#planPop').hidden){closePick();$('#planPick').focus()}});
 /* ---------- 計画の整理（フォルダ分け・並び替え） ---------- */
 function planGroups(){const F=S.settings.folders||(S.settings.folders=[]);for(const p of S.plans)if(p.folder&&!F.includes(p.folder))F.push(p.folder);
   const g=[['',S.plans.filter(p=>!p.folder)]];for(const f of F)g.push([f,S.plans.filter(p=>p.folder===f)]);return g.filter(([f,ps])=>ps.length||f)}
@@ -1874,7 +1905,7 @@ $('#planMenuBtn').onclick=()=>{const m=$('#planMenu');m.hidden=!m.hidden;$('#pla
 $('#planMenuDone').onclick=()=>{closePlanMenu();toast('計画名を「'+((plan()||{}).title||'')+'」にしました')};
 $('#planTitle').addEventListener('keydown',e=>{if(e.isComposing||e.keyCode===229)return;if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();closePlanMenu()}});
 document.addEventListener('pointerdown',e=>{const m=$('#planMenu');if(m.hidden)return;if(e.target.closest('#planMenu,#planMenuBtn'))return;closePlanMenu()});
-$('#planTitle').addEventListener('input',e=>{if(!plan())return;plan().title=e.target.value||'無題の計画';touch('plan');const o=$('#planSel').selectedOptions[0];if(o)o.textContent=plan().title});
+$('#planTitle').addEventListener('input',e=>{if(!plan())return;plan().title=e.target.value||'無題の計画';touch('plan');const o=$('#planSel').selectedOptions[0];if(o)o.textContent=plan().title;renderPick()});
 function dupPlan(name){const p0=plan();if(!p0)return;const c=clone(p0);reid(c.root);c.id=rid();c.title=uniqTitle(name||((p0.sample?p0.title.replace(/^使用例：/,''):p0.title||'無題の計画')+'のコピー'));c.sample=false;c.created=c.updated=Date.now();
   {const i0=S.plans.indexOf(p0);if(p0.sample)c.folder='';S.plans.splice(i0>=0?i0+1:S.plans.length,0,c)}curId=c.id;UI.cur=curId;saveUI();selId=c.root.id;touch('plan');touch('settings');renderAll();toast('「'+c.title+'」を作りました。元の計画はそのまま残っています',3500)}
 $('#planDup').onclick=()=>{const pn=$('#planNewPanel');if(!pn.hidden&&newMode==='dup'){pn.hidden=true;return}if(plan())openNewPanel('dup')};
