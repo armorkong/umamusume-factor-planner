@@ -154,6 +154,11 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .c-prio{background:var(--want);color:var(--want-ink);border-color:var(--want);font-weight:700;letter-spacing:.06em}
 .c-want{background:var(--want-bg);color:var(--want);border-color:var(--want);font-weight:700}
 .wantrow td:first-child{color:var(--want);font-weight:700}
+.rsk{margin-top:6px}
+.rsh{font-size:11px;color:var(--muted);margin:2px 0 3px}
+.rsl{display:inline-flex;align-items:center}.rsl .c-own{margin-left:0}
+.chip.c-rs{background:transparent;border:1px solid var(--line);font-weight:400}
+.chip.c-rs.sup{border-style:dashed;border-color:color-mix(in srgb,var(--f-blue) 50%,var(--line))}
 .c-own{font-size:10px;padding:0 4px;border-radius:4px;margin-left:4px;font-weight:600;vertical-align:1px;white-space:nowrap;border:1px solid}
 .c-own.o0{color:#1d5a44;border-color:#1d5a44;background:color-mix(in srgb,#1d5a44 10%,transparent)}
 .c-own.o1{color:#2c66c4;border-color:#2c66c4;background:color-mix(in srgb,#2c66c4 10%,transparent)}
@@ -555,7 +560,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月17日 13:21</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月19日 14:16</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -887,6 +892,7 @@ function cardHTML(n,d){
     h+=`<div class="apts" aria-label="育成開始時の適性">${t}</div>`}
   {const gc=geneCand(n);if(gc.length)h+=`<div class="chips" title="親・祖父母の赤因子★合計から見た、この枠に付く遺伝子">${gc.map(g=>`<span class="chip c-gc${g.sure?' sure':''}">${APT_S[g.t]}遺伝子 ${g.sure?'確定':'可能性'}<span class="s">★${g.p}</span></span>`).join('')}</div>`}
   if(n.green.n)h+=`<div class="chips"><span class="chip c-green" title="${esc(n.green.n)}">${esc(n.green.n)}<span class="s">${starTxt(n.green.s)}</span></span></div>`;
+  if(d===0)h+=rootSkillsHTML(true);
   /* 優先白因子でも、サポカ・育成キャラで取れるものを隠す設定のときは「優先」の行に出さず、隠す */
   const pw=pairSort(d>0?ws.filter(x=>isWant(x.n)&&!hideW(x.n)):[],true);
   const wchip=(x,pr)=>{const k=x.n.trim(),t=tri&&tri.has(k),sv=!t&&sil&&sil.has(k),tp=t&&ptn&&ptn.has(k),so=d>0?supD(k):null,sp=so&&!pr,so2=d>0&&!so?supOf(k):null,ow2=d>0&&!ownD(k)?ownOf(k):null;const tt=[];
@@ -909,6 +915,17 @@ function cardHTML(n,d){
   return h+'</div>';
 }
 const hideW=k=>(UI.hideSup&&!!supOf(k))||(UI.hideOwn&&ownOf(k));
+/* 育成ウマ娘で取れるスキル（白因子になるもの）：育成キャラの自前・イベント・ランダム・隠しと、編成したサポカ */
+const wOrd=k=>WHITE_ORD.get(k)??90000;
+function ownSkillList(){return [...OWNSK].map(([n,c])=>({n,c})).sort((a,b)=>OWN_CAT.indexOf(a.c)-OWN_CAT.indexOf(b.c)||wOrd(a.n)-wOrd(b.n))}
+function supSkillList(){return [...SUPSK].map(([n,cs])=>({n,cs})).sort((a,b)=>wOrd(a.n)-wOrd(b.n))}
+function rootSkillsHTML(withSup){let h='';const own=ownSkillList();
+  if(own.length){h+=`<div class="rsk"><div class="rsh">育成キャラで取れるスキル（${own.length}）</div><div class="chips">`;
+    for(const c of OWN_CAT){const xs=own.filter(x=>x.c===c);if(!xs.length)continue;h+=`<span class="rsl">${ownTag(c)}</span>`+xs.map(x=>`<span class="chip c-rs" title="${esc(OWNNAME)}の${esc(OWN_TIP[c]||c)}">${esc(x.n)}</span>`).join('')}
+    h+=`</div></div>`}
+  if(withSup){const p=plan(),sp=(p&&p.supports)||[];const ss=supSkillList();
+    if(sp.length)h+=`<div class="rsk"><div class="rsh">編成サポカで取れるスキル（${sp.length}枚・${ss.length}種）</div><div class="chips">${ss.map(x=>`<span class="chip c-rs sup" title="サポカで取れる：${esc(x.cs.join('、'))}">${esc(x.n)}${x.cs.length>1?`<span class="s">×${x.cs.length}</span>`:''}</span>`).join('')}</div></div>`}
+  return h}
 const hideLbl=()=>[UI.hideSup&&'サポカ',UI.hideOwn&&'育成キャラ'].filter(Boolean).join('・');
 function compactBody(n,cdc,ws,extra,tri,d){
   let h='';if(cdc||extra)h+=`<div class="crow">${cdc?`<span class="costume" title="${esc(cdc.name)}（${esc(labOf(cdc))}）［${esc(cdc.title)}］"><b class="nick">${esc(labOf(cdc))}</b></span>`:'<span></span>'}${extra?`<span class="cact">${extra}</span>`:''}</div>`;
@@ -1047,6 +1064,7 @@ function editorHTML(){
   if(!n.whites.length)h+=`<p class="hint">上の欄に一部を入力すると、ゲーム内の白因子（スキル・レース・シナリオ・隠し因子）から候補が出ます。</p>`;
   h+=`<details><summary>まとめて入力する（因子共有サイトの一覧を貼り付け可）</summary><div style="margin-top:6px;display:flex;flex-direction:column;gap:6px"><textarea id="ed-bulk" rows="5" style="min-height:96px;font-family:var(--font-body);font-size:13px" placeholder="1行に1つ、名前のあとに★の数（例）&#10;パワー2&#10;差し3&#10;大阪杯3&#10;右回り○2, 阿吽の呼吸3"></textarea><div class="frow"><label style="font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center;flex:1"><input type="checkbox" id="ed-bulkRep"> 今の白因子を消してから入れる</label><button class="btn sm primary" id="bulkAdd">追加</button></div><p class="hint" style="margin:0">「パワー2」「差し3」のような行は青・赤因子、固有スキル名（例：夏空ハレーション3）の行は緑因子として入り、キャラ名も自動で入ります。「〇〇の遺伝子」の行は遺伝子として入ります。同じ白因子がすでにあるときは★の数を書き換えます。</p></div></details></div>`;
   if(d===0&&!candOf){const P=plan(),W=P.wants||[],SP=P.supports||[];
+    if(n.card){const rs=rootSkillsHTML(false);h+=`<div class="sec"><h3>育成キャラで取れるスキル</h3>${rs||'<p class="hint">このキャラのデータには、白因子になるスキルがありません。</p>'}<p class="hint">初期・覚醒スキル（自前）と、育成イベントで取れるスキル（イベント・ランダム・隠し）のうち、白因子になるものです。金スキルはその下位の白スキルで表しています。GameToraなどのデータをもとにしています。</p></div>`}
     h+=`<div class="sec"><h3>優先白因子</h3><div class="combo"><input type="text" id="ed-tq" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="ed-tlist" placeholder="優先したい白因子を検索して追加（例：夏ウマ娘、弧線）"><div class="clist" id="ed-tlist" role="listbox" hidden></div></div>`;
     h+=W.length?`<div class="chips" style="margin-top:6px">${W.map((w,i)=>`<span class="chip c-want">${esc(w)}<button type="button" class="x" data-delwant="${i}" aria-label="${esc(w)}を外す" style="margin-left:4px">×</button></span>`).join('')}</div>`:'';
     h+=`<p class="hint">親以降のカードで、この白因子を緑因子の下の<b style="color:var(--want)">「優先」の行</b>にまとめて表示します。スキルのヒントが出るレース因子（例：夏ウマ娘○→宝塚記念）も同じ行に入ります。</p></div>`;
