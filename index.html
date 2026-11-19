@@ -561,7 +561,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月19日 17:12</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月19日 18:37</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -1367,7 +1367,9 @@ function parseBulk(v){
     if(g&&APTS.includes(g[1])){last={t:g[1],s:st};genes.push(last);return}
     const k=BZ.get(bzn(name));if(!k)unk.push(name);const nm=k||name;const ex=whites.find(w=>w.n===nm);if(ex){ex.s=st;last=ex}else{last={n:nm,s:st};whites.push(last)}};
   /* 「恩返し、召し上がれ」のように名前の中に読点があるものは、区切り扱いしないよう一時的に置き換える */
-  let src=String(v||'');for(const n of BZC){const re=new RegExp(n.split(/[,、，]/).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('[,、，]\\s*'),'g');src=src.replace(re,n.replace(/[,、，]/g,'\u0001'))}
+  /* 固有スキル（緑因子）にも読点を含む名前が多い（例：威風堂々、夢錦！）ので、白因子と合わせて守る。長い名前から先に置き換える */
+  const BZC2=[...new Set([...BZC,...CARDS.map(c=>c.uniq),...Object.values(UNIQ_OLD)].filter(n=>n&&/[,、，]/.test(n)))].sort((a,b)=>b.length-a.length);
+  let src=String(v||'');for(const n of BZC2){const re=new RegExp(n.split(/[,、，]/).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('[,、，]\\s*'),'g');src=src.replace(re,n.replace(/[,、，]/g,'\u0001'))}
   for(let s of src.split(/[,、，\n\r\t]+/)){s=s.replace(/\u0001/g,'、').trim();if(!s)continue;
     const t=bzn(s);
     /* ★の数だけの行（メモ帳などに貼ると名前と★が別の行になる）：直前の因子の★にする */
