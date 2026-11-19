@@ -158,6 +158,7 @@ select,input[type=text],input[type=number],textarea{background:var(--surface);bo
 .rsh{font-size:11px;color:var(--muted);margin:2px 0 3px}
 .rsl{display:inline-flex;align-items:center}.rsl .c-own{margin-left:0}
 .chip.c-rs{background:transparent;border:1px solid var(--line);font-weight:400}
+.chip.c-rs.want{color:var(--want);font-weight:700}
 .chip.c-rs.sup{border-style:dashed;border-color:color-mix(in srgb,var(--f-blue) 50%,var(--line))}
 .c-own{font-size:10px;padding:0 4px;border-radius:4px;margin-left:4px;font-weight:600;vertical-align:1px;white-space:nowrap;border:1px solid}
 .c-own.o0{color:#1d5a44;border-color:#1d5a44;background:color-mix(in srgb,#1d5a44 10%,transparent)}
@@ -560,7 +561,7 @@ textarea{width:100%;min-height:120px;font-family:var(--font-num);font-size:12px}
   <p>ログイン不要で、入力内容はお使いのブラウザに自動保存されます。血統表はPDF・画像で書き出せます。スマホにも対応しています。</p>
   <p class="note">非公式のファンツールです。データ等の権利は、株式会社Cygamesに帰属します。</p>
 </section>
-<p class="credit" id="appUpdated">最終更新：2026年11月19日 14:16</p>
+<p class="credit" id="appUpdated">最終更新：2026年11月19日 14:23</p>
 <div class="toast" id="toast" hidden></div>
 <div id="printArea" hidden></div>
 <div class="ov" id="ovScan" hidden><div class="dlg" role="dialog" aria-labelledby="hScan">
@@ -921,10 +922,10 @@ function ownSkillList(){return [...OWNSK].map(([n,c])=>({n,c})).sort((a,b)=>OWN_
 function supSkillList(){return [...SUPSK].map(([n,cs])=>({n,cs})).sort((a,b)=>wOrd(a.n)-wOrd(b.n))}
 function rootSkillsHTML(withSup){let h='';const own=ownSkillList();
   if(own.length){h+=`<div class="rsk"><div class="rsh">育成キャラで取れるスキル（${own.length}）</div><div class="chips">`;
-    for(const c of OWN_CAT){const xs=own.filter(x=>x.c===c);if(!xs.length)continue;h+=`<span class="rsl">${ownTag(c)}</span>`+xs.map(x=>`<span class="chip c-rs" title="${esc(OWNNAME)}の${esc(OWN_TIP[c]||c)}">${esc(x.n)}</span>`).join('')}
+    for(const c of OWN_CAT){const xs=own.filter(x=>x.c===c);if(!xs.length)continue;h+=`<span class="rsl">${ownTag(c)}</span>`+xs.map(x=>`<span class="chip c-rs${WANT.has(x.n)?' want':''}" title="${esc(OWNNAME)}の${esc(OWN_TIP[c]||c)}${WANT.has(x.n)?'（優先白因子）':''}">${esc(x.n)}</span>`).join('')}
     h+=`</div></div>`}
   if(withSup){const p=plan(),sp=(p&&p.supports)||[];const ss=supSkillList();
-    if(sp.length)h+=`<div class="rsk"><div class="rsh">編成サポカで取れるスキル（${sp.length}枚・${ss.length}種）</div><div class="chips">${ss.map(x=>`<span class="chip c-rs sup" title="サポカで取れる：${esc(x.cs.join('、'))}">${esc(x.n)}${x.cs.length>1?`<span class="s">×${x.cs.length}</span>`:''}</span>`).join('')}</div></div>`}
+    if(sp.length)h+=`<div class="rsk"><div class="rsh">編成サポカで取れるスキル（${sp.length}枚・${ss.length}種）</div><div class="chips">${ss.map(x=>`<span class="chip c-rs sup${WANT.has(x.n)?' want':''}" title="サポカで取れる：${esc(x.cs.join('、'))}${WANT.has(x.n)?'（優先白因子）':''}">${esc(x.n)}${x.cs.length>1?`<span class="s">×${x.cs.length}</span>`:''}</span>`).join('')}</div></div>`}
   return h}
 const hideLbl=()=>[UI.hideSup&&'サポカ',UI.hideOwn&&'育成キャラ'].filter(Boolean).join('・');
 function compactBody(n,cdc,ws,extra,tri,d){
